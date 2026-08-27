@@ -23,6 +23,15 @@ final class ORAS_AI_Test_Json_Response extends RuntimeException {
 final class ORAS_AI_Test_Nonce_Exception extends RuntimeException {}
 final class ORAS_AI_Test_Die_Exception extends RuntimeException {}
 
+final class ORAS_AI_Test_Redirect_Exception extends RuntimeException {
+	public string $location;
+
+	public function __construct(string $location) {
+		parent::__construct('WordPress redirect intercepted.');
+		$this->location = $location;
+	}
+}
+
 if (!class_exists('WP_Error')) {
 	class WP_Error {
 		private string $code;
@@ -539,7 +548,7 @@ function admin_url($path = '', $scheme = 'admin'): string {
 
 function wp_safe_redirect($location, $status = 302, $x_redirect_by = 'WordPress'): bool {
 	$GLOBALS['oras_ai_test_redirects'][] = $location;
-	return true;
+	throw new ORAS_AI_Test_Redirect_Exception((string) $location);
 }
 
 function wp_nonce_field($action = -1, $name = '_wpnonce', $referer = true, $display = true): string {
@@ -552,6 +561,14 @@ function wp_nonce_field($action = -1, $name = '_wpnonce', $referer = true, $disp
 
 function selected($selected, $current = true, $display = true): string {
 	$result = (string) $selected === (string) $current ? ' selected="selected"' : '';
+	if ($display) {
+		echo $result;
+	}
+	return $result;
+}
+
+function checked($checked, $current = true, $display = true): string {
+	$result = (string) $checked === (string) $current ? ' checked="checked"' : '';
 	if ($display) {
 		echo $result;
 	}

@@ -12,6 +12,28 @@ oras_ai_test('configuration preserves exact OpenAI option names', function (): v
 		ORAS_AI_Config::OPTION_OPENAI_MODEL,
 		'OpenAI model option name changed.'
 	);
+	oras_ai_assert_same(
+		'oras_ai_member_ai_enabled',
+		ORAS_AI_Config::OPTION_MEMBER_AI_ENABLED,
+		'Member AI enabled option name changed.'
+	);
+});
+
+oras_ai_test('configuration enables member AI by default', function (): void {
+	oras_ai_test_reset();
+	oras_ai_assert_true(ORAS_AI_Config::member_ai_enabled(), 'Missing member AI option should default to enabled.');
+});
+
+oras_ai_test('configuration reads the stored enabled member AI state', function (): void {
+	oras_ai_test_reset();
+	update_option('oras_ai_member_ai_enabled', '1');
+	oras_ai_assert_true(ORAS_AI_Config::member_ai_enabled(), 'Stored enabled state should allow member AI.');
+});
+
+oras_ai_test('configuration reads the stored disabled member AI state', function (): void {
+	oras_ai_test_reset();
+	update_option('oras_ai_member_ai_enabled', '0');
+	oras_ai_assert_false(ORAS_AI_Config::member_ai_enabled(), 'Stored disabled state should block member AI.');
 });
 
 oras_ai_test('configuration returns the current default OpenAI model', function (): void {

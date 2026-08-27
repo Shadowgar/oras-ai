@@ -47,6 +47,7 @@ final class ORAS_AI_Sources {
 
 		$has_key = ORAS_AI_Config::has_openai_api_key();
 		$model   = ORAS_AI_Config::get_openai_model();
+		$member_ai_enabled = ORAS_AI_Config::member_ai_enabled();
 		$saved   = isset( $_GET['settings-updated'] );
 		?>
 		<div class="wrap oras-ai-wrap">
@@ -62,6 +63,22 @@ final class ORAS_AI_Sources {
 					<?php wp_nonce_field( 'oras_ai_save_settings', 'oras_ai_settings_nonce' ); ?>
 
 					<table class="form-table" role="presentation">
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Member AI Assistant', 'oras-ai-assistant' ); ?></th>
+							<td>
+								<label for="oras_ai_member_ai_enabled">
+									<input
+										type="checkbox"
+										name="oras_ai_member_ai_enabled"
+										id="oras_ai_member_ai_enabled"
+										value="1"
+										<?php checked( $member_ai_enabled ); ?>
+									>
+									<?php esc_html_e( 'Enable member AI assistant', 'oras-ai-assistant' ); ?>
+								</label>
+								<p class="description"><?php esc_html_e( 'When disabled, member-facing AI requests are blocked. Administrative source scanning and knowledge management remain available.', 'oras-ai-assistant' ); ?></p>
+							</td>
+						</tr>
 						<tr>
 							<th scope="row"><label for="oras_ai_api_key"><?php esc_html_e( 'OpenAI API Key', 'oras-ai-assistant' ); ?></label></th>
 							<td>
@@ -111,6 +128,11 @@ final class ORAS_AI_Sources {
 		}
 
 		check_admin_referer( 'oras_ai_save_settings', 'oras_ai_settings_nonce' );
+
+		$member_ai_enabled = isset( $_POST['oras_ai_member_ai_enabled'] )
+			? sanitize_key( wp_unslash( $_POST['oras_ai_member_ai_enabled'] ) )
+			: '';
+		ORAS_AI_Config::set_member_ai_enabled( '1' === $member_ai_enabled );
 
 		$model = isset( $_POST['oras_ai_model'] ) ? sanitize_text_field( wp_unslash( $_POST['oras_ai_model'] ) ) : ORAS_AI_Config::DEFAULT_OPENAI_MODEL;
 		ORAS_AI_Config::update_openai_model( $model );

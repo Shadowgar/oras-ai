@@ -8,6 +8,7 @@ oras_ai_test('plugin load registers baseline classes and hooks', function (): vo
 
 	oras_ai_assert_same('0.2.1', ORAS_AI_VERSION, 'Plugin version constant should remain at the v0.2.1 baseline.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Assistant'), 'Main plugin class should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_Access_Guard'), 'Member AI access guard should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Config'), 'Configuration class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Knowledge_Base'), 'Knowledge Base class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_OpenAI'), 'OpenAI class should load.');

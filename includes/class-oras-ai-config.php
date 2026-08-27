@@ -7,7 +7,16 @@ final class ORAS_AI_Config {
 
 	const OPTION_OPENAI_API_KEY = 'oras_ai_openai_api_key';
 	const OPTION_OPENAI_MODEL   = 'oras_ai_openai_model';
+	const OPTION_MEMBER_AI_ENABLED = 'oras_ai_member_ai_enabled';
 	const DEFAULT_OPENAI_MODEL  = 'gpt-5.6-luna';
+
+	public static function member_ai_enabled() {
+		return '1' === (string) get_option( self::OPTION_MEMBER_AI_ENABLED, '1' );
+	}
+
+	public static function set_member_ai_enabled( $enabled ) {
+		return update_option( self::OPTION_MEMBER_AI_ENABLED, $enabled ? '1' : '0', false );
+	}
 
 	public static function allowed_openai_models() {
 		return array( 'gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol' );
