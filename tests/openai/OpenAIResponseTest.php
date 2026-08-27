@@ -124,5 +124,6 @@ oras_ai_test('OpenAI API key constant takes precedence over stored option', func
 	if (!defined('ORAS_AI_OPENAI_API_KEY')) {
 		define('ORAS_AI_OPENAI_API_KEY', '  constant-key  ');
 	}
+	oras_ai_assert_same('constant-key', ORAS_AI_Config::get_openai_api_key(), 'Config constant precedence changed.');
 	oras_ai_assert_same('constant-key', ORAS_AI_OpenAI::get_api_key(), 'API-key constant precedence changed.');
 });

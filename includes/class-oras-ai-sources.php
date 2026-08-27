@@ -45,8 +45,8 @@ final class ORAS_AI_Sources {
 			return;
 		}
 
-		$has_key = ORAS_AI_OpenAI::has_api_key();
-		$model   = ORAS_AI_OpenAI::get_model();
+		$has_key = ORAS_AI_Config::has_openai_api_key();
+		$model   = ORAS_AI_Config::get_openai_model();
 		$saved   = isset( $_GET['settings-updated'] );
 		?>
 		<div class="wrap oras-ai-wrap">
@@ -90,7 +90,7 @@ final class ORAS_AI_Sources {
 								<p class="description"><?php esc_html_e( 'Luna is recommended for high-volume website classification because this task does not normally require the strongest model.', 'oras-ai-assistant' ); ?></p>
 							</td>
 						</tr>
-						<?php if ( $has_key && ! defined( 'ORAS_AI_OPENAI_API_KEY' ) ) : ?>
+						<?php if ( $has_key && ! ORAS_AI_Config::is_openai_api_key_constant_defined() ) : ?>
 						<tr>
 							<th scope="row"><?php esc_html_e( 'Remove Saved Key', 'oras-ai-assistant' ); ?></th>
 							<td><label><input type="checkbox" name="oras_ai_remove_key" value="1"> <?php esc_html_e( 'Remove the API key stored by this plugin', 'oras-ai-assistant' ); ?></label></td>
@@ -112,21 +112,15 @@ final class ORAS_AI_Sources {
 
 		check_admin_referer( 'oras_ai_save_settings', 'oras_ai_settings_nonce' );
 
-		$model = isset( $_POST['oras_ai_model'] ) ? sanitize_text_field( wp_unslash( $_POST['oras_ai_model'] ) ) : 'gpt-5.6-luna';
-		$allowed_models = array( 'gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol' );
+		$model = isset( $_POST['oras_ai_model'] ) ? sanitize_text_field( wp_unslash( $_POST['oras_ai_model'] ) ) : ORAS_AI_Config::DEFAULT_OPENAI_MODEL;
+		ORAS_AI_Config::update_openai_model( $model );
 
-		if ( ! in_array( $model, $allowed_models, true ) ) {
-			$model = 'gpt-5.6-luna';
-		}
-
-		update_option( ORAS_AI_OpenAI::OPTION_MODEL, $model, false );
-
-		if ( ! defined( 'ORAS_AI_OPENAI_API_KEY' ) ) {
+		if ( ! ORAS_AI_Config::is_openai_api_key_constant_defined() ) {
 			if ( ! empty( $_POST['oras_ai_remove_key'] ) ) {
-				delete_option( ORAS_AI_OpenAI::OPTION_API_KEY );
+				ORAS_AI_Config::delete_stored_openai_api_key();
 			} elseif ( ! empty( $_POST['oras_ai_api_key'] ) ) {
 				$key = trim( sanitize_text_field( wp_unslash( $_POST['oras_ai_api_key'] ) ) );
-				update_option( ORAS_AI_OpenAI::OPTION_API_KEY, $key, false );
+				ORAS_AI_Config::update_stored_openai_api_key( $key );
 			}
 		}
 
@@ -178,7 +172,7 @@ final class ORAS_AI_Sources {
 			}
 		}
 
-		$has_key = ORAS_AI_OpenAI::has_api_key();
+		$has_key = ORAS_AI_Config::has_openai_api_key();
 		?>
 		<div class="wrap oras-ai-wrap">
 			<h1><?php esc_html_e( 'Knowledge Sources', 'oras-ai-assistant' ); ?></h1>
