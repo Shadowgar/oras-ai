@@ -16,6 +16,8 @@ define( 'ORAS_AI_PLUGIN_FILE', __FILE__ );
 define( 'ORAS_AI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ORAS_AI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-config.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-access-guard.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-knowledge-base.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openai.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-sources.php';
@@ -105,7 +107,7 @@ final class ORAS_AI_Assistant {
 		}
 
 		$source_count = ORAS_AI_Sources::count_sources();
-		$api_ready    = ORAS_AI_OpenAI::has_api_key();
+		$api_ready    = ORAS_AI_Config::has_openai_api_key();
 		?>
 		<div class="wrap oras-ai-wrap">
 			<h1><?php esc_html_e( 'ORAS AI Assistant', 'oras-ai-assistant' ); ?></h1>

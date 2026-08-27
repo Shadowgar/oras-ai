@@ -5,26 +5,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class ORAS_AI_OpenAI {
 
-	const OPTION_API_KEY = 'oras_ai_openai_api_key';
-	const OPTION_MODEL   = 'oras_ai_openai_model';
+	const OPTION_API_KEY = ORAS_AI_Config::OPTION_OPENAI_API_KEY;
+	const OPTION_MODEL   = ORAS_AI_Config::OPTION_OPENAI_MODEL;
 
 	public static function get_model() {
-		$model = get_option( self::OPTION_MODEL, 'gpt-5.6-luna' );
-		$allowed = array( 'gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol' );
-
-		return in_array( $model, $allowed, true ) ? $model : 'gpt-5.6-luna';
+		return ORAS_AI_Config::get_openai_model();
 	}
 
 	public static function get_api_key() {
-		if ( defined( 'ORAS_AI_OPENAI_API_KEY' ) && ORAS_AI_OPENAI_API_KEY ) {
-			return trim( (string) ORAS_AI_OPENAI_API_KEY );
-		}
-
-		return trim( (string) get_option( self::OPTION_API_KEY, '' ) );
+		return ORAS_AI_Config::get_openai_api_key();
 	}
 
 	public static function has_api_key() {
-		return '' !== self::get_api_key();
+		return ORAS_AI_Config::has_openai_api_key();
 	}
 
 	public static function classify_source( $title, $url, $post_type, $content ) {
