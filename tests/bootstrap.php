@@ -72,6 +72,7 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_post_meta'] = array();
 	$GLOBALS['oras_ai_test_post_terms'] = array();
 	$GLOBALS['oras_ai_test_options'] = array();
+	$GLOBALS['oras_ai_test_option_autoload'] = array();
 	$GLOBALS['oras_ai_test_public_post_types'] = array(
 		'post'              => 'post',
 		'page'              => 'page',
@@ -97,6 +98,10 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_enqueued_styles'] = array();
 	$GLOBALS['oras_ai_test_localized_scripts'] = array();
 	$GLOBALS['oras_ai_test_redirects'] = array();
+	$GLOBALS['oras_ai_test_current_user_id'] = 7;
+	$GLOBALS['oras_ai_test_users'] = array(
+		7 => (object) array('ID' => 7, 'display_name' => 'Test Administrator'),
+	);
 	$GLOBALS['oras_ai_test_now_mysql'] = '2026-08-27 12:34:56';
 	$GLOBALS['oras_ai_test_now_date'] = '2026-08-27';
 	$_POST = array();
@@ -426,11 +431,15 @@ function get_option($name, $default = false) {
 
 function update_option($name, $value, $autoload = null): bool {
 	$GLOBALS['oras_ai_test_options'][(string) $name] = $value;
+	if (null !== $autoload) {
+		$GLOBALS['oras_ai_test_option_autoload'][(string) $name] = $autoload;
+	}
 	return true;
 }
 
 function delete_option($name): bool {
 	unset($GLOBALS['oras_ai_test_options'][(string) $name]);
+	unset($GLOBALS['oras_ai_test_option_autoload'][(string) $name]);
 	return true;
 }
 
@@ -487,6 +496,14 @@ function current_user_can($capability, ...$args): bool {
 	return array_key_exists((string) $capability, $GLOBALS['oras_ai_test_capabilities'])
 		? (bool) $GLOBALS['oras_ai_test_capabilities'][(string) $capability]
 		: (bool) $GLOBALS['oras_ai_test_default_capability'];
+}
+
+function get_current_user_id(): int {
+	return (int) $GLOBALS['oras_ai_test_current_user_id'];
+}
+
+function get_userdata($user_id) {
+	return $GLOBALS['oras_ai_test_users'][(int) $user_id] ?? false;
 }
 
 function wp_verify_nonce($nonce, $action): bool {

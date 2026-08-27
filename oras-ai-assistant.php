@@ -17,6 +17,7 @@ define( 'ORAS_AI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ORAS_AI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-config.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-audit-log.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-access-guard.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-knowledge-base.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openai.php';

@@ -38,6 +38,7 @@ oras_ai_test('settings save rejects users without manage_options before nonce ve
 		oras_ai_assert_contains('do not have permission', $exception->getMessage(), 'Settings permission message changed.');
 	}
 	oras_ai_assert_same(array(), $GLOBALS['oras_ai_test_admin_nonce_checks'], 'Unauthorized settings save should stop before nonce verification.');
+	oras_ai_assert_same(array(), ORAS_AI_Audit_Log::recent_events(), 'Failed capability check must not create audit events.');
 });
 
 oras_ai_test('settings save requires the oras_ai_save_settings nonce', function (): void {
@@ -55,6 +56,7 @@ oras_ai_test('settings save requires the oras_ai_save_settings nonce', function 
 		$GLOBALS['oras_ai_test_admin_nonce_checks'],
 		'Settings nonce action or field changed.'
 	);
+	oras_ai_assert_same(array(), ORAS_AI_Audit_Log::recent_events(), 'Failed nonce check must not create audit events.');
 });
 
 oras_ai_test('knowledge save requires a valid entry nonce', function (): void {

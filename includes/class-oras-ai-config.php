@@ -57,6 +57,17 @@ final class ORAS_AI_Config {
 		return '' !== self::get_openai_api_key();
 	}
 
+	public static function has_stored_openai_api_key() {
+		return '' !== trim( (string) get_option( self::OPTION_OPENAI_API_KEY, '' ) );
+	}
+
+	public static function stored_openai_api_key_matches( $candidate ) {
+		$stored    = trim( (string) get_option( self::OPTION_OPENAI_API_KEY, '' ) );
+		$candidate = trim( (string) $candidate );
+
+		return '' !== $stored && $stored === $candidate;
+	}
+
 	public static function update_stored_openai_api_key( $api_key ) {
 		if ( self::is_openai_api_key_constant_defined() ) {
 			return false;

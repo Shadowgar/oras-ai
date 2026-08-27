@@ -48,6 +48,7 @@ final class ORAS_AI_Sources {
 		$has_key = ORAS_AI_Config::has_openai_api_key();
 		$model   = ORAS_AI_Config::get_openai_model();
 		$member_ai_enabled = ORAS_AI_Config::member_ai_enabled();
+		$audit_events = ORAS_AI_Audit_Log::recent_events();
 		$saved   = isset( $_GET['settings-updated'] );
 		?>
 		<div class="wrap oras-ai-wrap">
@@ -118,6 +119,36 @@ final class ORAS_AI_Sources {
 					<?php submit_button( __( 'Save AI Settings', 'oras-ai-assistant' ) ); ?>
 				</form>
 			</div>
+
+			<div class="oras-ai-panel">
+				<h2><?php esc_html_e( 'Recent Configuration Changes', 'oras-ai-assistant' ); ?></h2>
+				<?php if ( empty( $audit_events ) ) : ?>
+					<p><?php esc_html_e( 'No configuration changes have been recorded yet.', 'oras-ai-assistant' ); ?></p>
+				<?php else : ?>
+					<table class="widefat striped">
+						<thead>
+							<tr>
+								<th><?php esc_html_e( 'Date and time', 'oras-ai-assistant' ); ?></th>
+								<th><?php esc_html_e( 'User', 'oras-ai-assistant' ); ?></th>
+								<th><?php esc_html_e( 'Configuration', 'oras-ai-assistant' ); ?></th>
+								<th><?php esc_html_e( 'Action', 'oras-ai-assistant' ); ?></th>
+								<th><?php esc_html_e( 'Change', 'oras-ai-assistant' ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ( $audit_events as $event ) : ?>
+								<tr>
+									<td><?php echo esc_html( isset( $event['timestamp'] ) ? $event['timestamp'] : '' ); ?></td>
+									<td><?php echo esc_html( $this->audit_actor_label( isset( $event['actor_user_id'] ) ? $event['actor_user_id'] : 0 ) ); ?></td>
+									<td><?php echo esc_html( $this->audit_config_label( isset( $event['config_item'] ) ? $event['config_item'] : '' ) ); ?></td>
+									<td><?php echo esc_html( $this->audit_action_label( isset( $event['action'] ) ? $event['action'] : '' ) ); ?></td>
+									<td><?php echo esc_html( $this->audit_change_label( $event ) ); ?></td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				<?php endif; ?>
+			</div>
 		</div>
 		<?php
 	}
@@ -129,25 +160,96 @@ final class ORAS_AI_Sources {
 
 		check_admin_referer( 'oras_ai_save_settings', 'oras_ai_settings_nonce' );
 
+		$old_member_ai_enabled = ORAS_AI_Config::member_ai_enabled();
 		$member_ai_enabled = isset( $_POST['oras_ai_member_ai_enabled'] )
 			? sanitize_key( wp_unslash( $_POST['oras_ai_member_ai_enabled'] ) )
 			: '';
 		ORAS_AI_Config::set_member_ai_enabled( '1' === $member_ai_enabled );
+		$new_member_ai_enabled = ORAS_AI_Config::member_ai_enabled();
 
+		if ( $old_member_ai_enabled !== $new_member_ai_enabled ) {
+			ORAS_AI_Audit_Log::log_member_ai_changed( $old_member_ai_enabled, $new_member_ai_enabled );
+		}
+
+		$old_model = ORAS_AI_Config::get_openai_model();
 		$model = isset( $_POST['oras_ai_model'] ) ? sanitize_text_field( wp_unslash( $_POST['oras_ai_model'] ) ) : ORAS_AI_Config::DEFAULT_OPENAI_MODEL;
 		ORAS_AI_Config::update_openai_model( $model );
+		$new_model = ORAS_AI_Config::get_openai_model();
+
+		if ( $old_model !== $new_model ) {
+			ORAS_AI_Audit_Log::log_openai_model_changed( $old_model, $new_model );
+		}
 
 		if ( ! ORAS_AI_Config::is_openai_api_key_constant_defined() ) {
+			$had_stored_key = ORAS_AI_Config::has_stored_openai_api_key();
+
 			if ( ! empty( $_POST['oras_ai_remove_key'] ) ) {
 				ORAS_AI_Config::delete_stored_openai_api_key();
+
+				if ( $had_stored_key && ! ORAS_AI_Config::has_stored_openai_api_key() ) {
+					ORAS_AI_Audit_Log::log_openai_api_key_changed( 'removed' );
+				}
 			} elseif ( ! empty( $_POST['oras_ai_api_key'] ) ) {
 				$key = trim( sanitize_text_field( wp_unslash( $_POST['oras_ai_api_key'] ) ) );
-				ORAS_AI_Config::update_stored_openai_api_key( $key );
+
+				if ( '' !== $key ) {
+					$key_was_unchanged = ORAS_AI_Config::stored_openai_api_key_matches( $key );
+					ORAS_AI_Config::update_stored_openai_api_key( $key );
+
+					if ( ! $key_was_unchanged && ORAS_AI_Config::stored_openai_api_key_matches( $key ) ) {
+						ORAS_AI_Audit_Log::log_openai_api_key_changed( $had_stored_key ? 'replaced' : 'set' );
+					}
+				}
 			}
 		}
 
 		wp_safe_redirect( admin_url( 'admin.php?page=oras-ai-settings&settings-updated=1' ) );
 		exit;
+	}
+
+	private function audit_actor_label( $user_id ) {
+		$user_id = absint( $user_id );
+		$user    = get_userdata( $user_id );
+
+		if ( $user && isset( $user->display_name ) && '' !== $user->display_name ) {
+			return sprintf( '%s (#%d)', $user->display_name, $user_id );
+		}
+
+		return sprintf( 'User #%d', $user_id );
+	}
+
+	private function audit_config_label( $config_item ) {
+		$labels = array(
+			ORAS_AI_Audit_Log::CONFIG_OPENAI_MODEL   => __( 'OpenAI model', 'oras-ai-assistant' ),
+			ORAS_AI_Audit_Log::CONFIG_MEMBER_AI      => __( 'Member AI Assistant', 'oras-ai-assistant' ),
+			ORAS_AI_Audit_Log::CONFIG_OPENAI_API_KEY => __( 'Stored OpenAI API key', 'oras-ai-assistant' ),
+		);
+
+		return isset( $labels[ $config_item ] ) ? $labels[ $config_item ] : (string) $config_item;
+	}
+
+	private function audit_action_label( $action ) {
+		$labels = array(
+			'changed'  => __( 'Changed', 'oras-ai-assistant' ),
+			'enabled'  => __( 'Enabled', 'oras-ai-assistant' ),
+			'disabled' => __( 'Disabled', 'oras-ai-assistant' ),
+			'set'      => __( 'Set', 'oras-ai-assistant' ),
+			'replaced' => __( 'Replaced', 'oras-ai-assistant' ),
+			'removed'  => __( 'Removed', 'oras-ai-assistant' ),
+		);
+
+		return isset( $labels[ $action ] ) ? $labels[ $action ] : (string) $action;
+	}
+
+	private function audit_change_label( $event ) {
+		$old_state = array_key_exists( 'old_state', $event ) ? $event['old_state'] : null;
+		$new_state = array_key_exists( 'new_state', $event ) ? $event['new_state'] : null;
+
+		if ( null === $old_state || null === $new_state ) {
+			return '—';
+		}
+
+		return sprintf( '%s → %s', $old_state, $new_state );
 	}
 
 	public function render_sources_page() {
