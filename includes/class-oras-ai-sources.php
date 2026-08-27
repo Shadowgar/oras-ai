@@ -6,8 +6,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class ORAS_AI_Sources {
 
 	const POST_TYPE = 'oras_ai_source';
+	private $source_classifier;
 
-	public function __construct() {
+	public function __construct( ?ORAS_AI_Source_Classifier_Interface $source_classifier = null ) {
+		$this->source_classifier = $source_classifier ?: new ORAS_AI_OpenAI_Source_Classifier();
+
 		add_action( 'init', array( $this, 'register_source_type' ) );
 
 		add_action( 'admin_post_oras_ai_save_settings', array( $this, 'save_settings' ) );
@@ -812,7 +815,7 @@ final class ORAS_AI_Sources {
 		$result = $this->deterministic_classification( $source );
 
 		if ( null === $result ) {
-			$result = ORAS_AI_OpenAI::classify_source(
+			$result = $this->source_classifier->classify_source(
 				$source->post_title,
 				$url,
 				$post_type,

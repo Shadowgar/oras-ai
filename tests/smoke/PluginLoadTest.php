@@ -13,6 +13,8 @@ oras_ai_test('plugin load registers baseline classes and hooks', function (): vo
 	oras_ai_assert_true(class_exists('ORAS_AI_Config'), 'Configuration class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Knowledge_Base'), 'Knowledge Base class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_OpenAI'), 'OpenAI class should load.');
+	oras_ai_assert_true(interface_exists('ORAS_AI_Source_Classifier_Interface'), 'Source classifier contract should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_OpenAI_Source_Classifier'), 'OpenAI source classifier adapter should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Sources'), 'Sources class should load.');
 
 	oras_ai_assert_true(oras_ai_hook_registered('admin_menu'), 'Admin menu hook should be registered.');
