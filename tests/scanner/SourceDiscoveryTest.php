@@ -15,6 +15,22 @@ function oras_ai_test_find_source_for_post(int $postId): int {
 	return empty($ids) ? 0 : (int) $ids[0];
 }
 
+function oras_ai_test_create_processed_speaker(): array {
+	$postId = oras_ai_test_add_post(
+		array(
+			'post_type' => 'oras_speaker',
+			'post_title' => 'Dr. Version',
+			'post_content' => 'Stable speaker biography',
+		)
+	);
+	$sources = new ORAS_AI_Sources();
+	oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	$sourceId = oras_ai_test_find_source_for_post($postId);
+	$result = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+
+	return array($sources, $sourceId, $result);
+}
+
 oras_ai_test('source discovery includes public content and excludes attachments and ORAS AI internals', function (): void {
 	oras_ai_test_reset();
 	$pageId = oras_ai_test_add_post(
@@ -112,4 +128,69 @@ oras_ai_test('rebuild scan requeues an unchanged terminal source', function (): 
 
 	oras_ai_assert_same(array($sourceId), $result['queue'], 'Rebuild should queue an unchanged terminal source.');
 	oras_ai_assert_same('pending', get_post_meta($sourceId, '_oras_ai_scan_status', true), 'Rebuild should set queued source to pending.');
+});
+
+oras_ai_test('processed source stores rule version one and matching version remains skipped', function (): void {
+	oras_ai_test_reset();
+	list($sources, $sourceId) = oras_ai_test_create_processed_speaker();
+
+	oras_ai_assert_same(1, get_post_meta($sourceId, '_oras_ai_rule_version', true), 'Processed source should store rule version one.');
+	$result = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	oras_ai_assert_same(array(), $result['queue'], 'Matching rule version should preserve unchanged-source skip behavior.');
+});
+
+oras_ai_test('missing rule version is legacy version one and does not requeue', function (): void {
+	oras_ai_test_reset();
+	list($sources, $sourceId) = oras_ai_test_create_processed_speaker();
+	delete_post_meta($sourceId, '_oras_ai_rule_version');
+
+	$result = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+
+	oras_ai_assert_same(array(), $result['queue'], 'Missing legacy rule version must not force a version-one rescan.');
+	oras_ai_assert_same('', get_post_meta($sourceId, '_oras_ai_rule_version', true), 'Discovery should not migrate missing rule metadata.');
+});
+
+oras_ai_test('stale rule version requeues and reprocesses without changing output or duplicating records', function (): void {
+	oras_ai_test_reset();
+	list($sources, $sourceId, $first) = oras_ai_test_create_processed_speaker();
+	update_post_meta($sourceId, '_oras_ai_rule_version', 999);
+
+	$discovery = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	oras_ai_assert_same(array($sourceId), $discovery['queue'], 'Stale rule version should queue an unchanged source.');
+	oras_ai_assert_same('pending', get_post_meta($sourceId, '_oras_ai_scan_status', true), 'Stale rule source should become pending.');
+
+	$second = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+	$sourceIds = get_posts(
+		array(
+			'post_type' => ORAS_AI_Sources::POST_TYPE,
+			'post_status' => 'publish',
+			'posts_per_page' => -1,
+			'fields' => 'ids',
+		)
+	);
+	$knowledgeIds = get_posts(
+		array(
+			'post_type' => ORAS_AI_Knowledge_Base::POST_TYPE,
+			'post_status' => 'publish',
+			'posts_per_page' => -1,
+			'fields' => 'ids',
+		)
+	);
+
+	oras_ai_assert_same('static_knowledge', $second['kind'], 'Version invalidation must not change deterministic output.');
+	oras_ai_assert_same('Events', $second['category'], 'Version invalidation must not change deterministic category.');
+	oras_ai_assert_same($first['kb_id'], $second['kb_id'], 'Rule reprocessing should reuse the linked Knowledge Base entry.');
+	oras_ai_assert_same(array($sourceId), $sourceIds, 'Rule reprocessing should not duplicate source records.');
+	oras_ai_assert_same(array($first['kb_id']), $knowledgeIds, 'Rule reprocessing should not duplicate Knowledge Base entries.');
+	oras_ai_assert_same(1, get_post_meta($sourceId, '_oras_ai_rule_version', true), 'Successful reprocessing should store current rule version.');
+});
+
+oras_ai_test('rebuild queues an unchanged source with matching rule version', function (): void {
+	oras_ai_test_reset();
+	list($sources, $sourceId) = oras_ai_test_create_processed_speaker();
+
+	$result = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(true));
+
+	oras_ai_assert_same(array($sourceId), $result['queue'], 'Rebuild should ignore matching rule version and queue the source.');
+	oras_ai_assert_same('pending', get_post_meta($sourceId, '_oras_ai_scan_status', true), 'Rebuild should set current-version source to pending.');
 });

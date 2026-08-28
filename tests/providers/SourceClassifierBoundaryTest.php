@@ -87,3 +87,23 @@ oras_ai_test('default source classifier remains available when member AI is disa
 	oras_ai_assert_same('static_knowledge', $result['kind'], 'Administrative source classification changed.');
 	oras_ai_assert_same('complete', get_post_meta($source_id, '_oras_ai_scan_status', true), 'Administrative scan should complete.');
 });
+
+oras_ai_test('deterministic source match bypasses the injected classifier', function (): void {
+	oras_ai_test_reset();
+	$classifier = new class implements ORAS_AI_Source_Classifier_Interface {
+		public $calls = 0;
+
+		public function classify_source($title, $url, $post_type, $content) {
+			$this->calls++;
+			return new WP_Error('unexpected_ai_call', 'Deterministic source reached AI.');
+		}
+	};
+	$source_id = oras_ai_test_add_source('oras_speaker', 'Deterministic speaker', 'Speaker biography');
+
+	$result = oras_ai_invoke_private(new ORAS_AI_Sources($classifier), 'process_source', array($source_id));
+
+	oras_ai_assert_same(0, $classifier->calls, 'Deterministic source should not call the injected classifier.');
+	oras_ai_assert_same(0, count($GLOBALS['oras_ai_test_remote_calls']), 'Deterministic source should not make HTTP calls.');
+	oras_ai_assert_same('static_knowledge', $result['kind'], 'Deterministic source output changed.');
+	oras_ai_assert_same('rule', $result['classified_by'], 'Deterministic source marker changed.');
+});
