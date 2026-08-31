@@ -139,3 +139,68 @@ oras_ai_test('scanned knowledge upsert records managed marker and source linkage
 	oras_ai_assert_same('public', get_post_meta($entryId, '_oras_ai_visibility', true), 'Scanned visibility changed.');
 	oras_ai_assert_same('2026-08-27', get_post_meta($entryId, '_oras_ai_last_reviewed', true), 'Approved scans should set last reviewed.');
 });
+
+oras_ai_test('scanned synchronization timestamp advances for every material artifact and provenance change', function (): void {
+	$changes = array(
+		'title' => 'Changed title',
+		'content' => 'Changed official answer',
+		'category' => 'Facilities',
+		'visibility' => 'members',
+		'status' => 'review',
+		'source_label' => 'Changed source label',
+		'source_url' => 'https://oras.org/changed/',
+		'internal_notes' => 'Changed scanner note',
+		'source_id' => 78,
+		'source_wp_post_id' => 502,
+		'source_wp_post_type' => 'post',
+		'source_hash' => 'source-hash-v2',
+		'source_modified_gmt' => '2026-08-28 10:00:00',
+		'rule_version' => 2,
+		'extraction_version' => 2,
+		'source_classification' => 'mixed',
+		'source_confidence' => 'medium',
+		'historical_event' => true,
+		'fragment_index' => 2,
+		'excluded_dynamic_claims' => array('Current admission is $25.'),
+		'dynamic_fact_types' => array('price'),
+		'extraction_reason' => 'Changed extraction reason.',
+	);
+
+	foreach ($changes as $field => $changedValue) {
+		oras_ai_test_reset();
+		$knowledgeBase = new ORAS_AI_Knowledge_Base();
+		$knowledgeBase->register_content_types();
+		$base = array(
+			'source_id' => 77,
+			'title' => 'Stable artifact',
+			'content' => 'Stable official answer',
+			'category' => 'Events',
+			'visibility' => 'public',
+			'status' => 'approved',
+			'source_label' => 'ORAS Website - Stable artifact',
+			'source_url' => 'https://oras.org/stable/',
+			'internal_notes' => 'Scanner-managed artifact.',
+			'source_wp_post_id' => 501,
+			'source_wp_post_type' => 'page',
+			'source_hash' => 'source-hash-v1',
+			'source_modified_gmt' => '2026-08-27 10:00:00',
+			'synced_at' => '2026-08-27 12:34:56',
+			'rule_version' => 1,
+			'extraction_version' => 1,
+			'source_classification' => 'static',
+			'source_confidence' => 'high',
+			'historical_event' => false,
+			'fragment_index' => 1,
+			'excluded_dynamic_claims' => array(),
+			'dynamic_fact_types' => array(),
+			'extraction_reason' => 'Stable extraction reason.',
+		);
+		$entryId = ORAS_AI_Knowledge_Base::upsert_scanned_entry($base);
+		$changed = array_merge($base, array('entry_id' => $entryId, 'synced_at' => '2026-08-28 12:34:56', $field => $changedValue));
+
+		$updatedId = ORAS_AI_Knowledge_Base::upsert_scanned_entry($changed);
+
+		oras_ai_assert_same($entryId, $updatedId, 'Material ' . $field . ' change should update the same managed artifact.');
+		oras_ai_assert_same('2026-08-28 12:34:56', get_post_meta($entryId, '_oras_ai_synced_at', true), 'Material ' . $field . ' change retained a stale synchronization timestamp.');
+	}
+});

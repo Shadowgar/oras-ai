@@ -213,3 +213,94 @@ oras_ai_test('rebuild queues an unchanged source with matching rule version', fu
 	oras_ai_assert_same(array($sourceId), $result['queue'], 'Rebuild should ignore matching rule version and queue the source.');
 	oras_ai_assert_same('pending', get_post_meta($sourceId, '_oras_ai_scan_status', true), 'Rebuild should set current-version source to pending.');
 });
+
+oras_ai_test('AT-KB-001 normal and rebuild cycles preserve one static artifact and stable sync identity', function (): void {
+	oras_ai_test_reset();
+	$postId = oras_ai_test_add_post(array('post_type' => 'oras_speaker', 'post_title' => 'Dr. Repeat', 'post_content' => 'Stable biography'));
+	$sources = new ORAS_AI_Sources();
+	$initialDiscovery = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	$sourceId = oras_ai_test_find_source_for_post($postId);
+	$first = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+	$firstSyncTime = get_post_meta($first['kb_id'], '_oras_ai_synced_at', true);
+	$firstWriteCounts = array(
+		$GLOBALS['oras_ai_test_post_writes'][$first['kb_id']] ?? 0,
+		$GLOBALS['oras_ai_test_meta_writes'][$first['kb_id']] ?? 0,
+		$GLOBALS['oras_ai_test_term_writes'][$first['kb_id']] ?? 0,
+	);
+	$GLOBALS['oras_ai_test_now_mysql'] = '2026-08-28 09:00:00';
+
+	$normal = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	$rebuildOne = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(true));
+	$second = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+	$rebuildTwo = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(true));
+	$third = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+	$artifactIds = get_posts(
+		array(
+			'post_type' => ORAS_AI_Knowledge_Base::POST_TYPE,
+			'post_status' => 'publish',
+			'posts_per_page' => -1,
+			'fields' => 'ids',
+		)
+	);
+
+	oras_ai_assert_same(array($sourceId), $initialDiscovery['queue'], 'Initial source should queue exactly once.');
+	oras_ai_assert_same(array(), $normal['queue'], 'Unchanged normal sync should skip current versions.');
+	oras_ai_assert_same(array($sourceId), $rebuildOne['queue'], 'First rebuild should force processing.');
+	oras_ai_assert_same(array($sourceId), $rebuildTwo['queue'], 'Second rebuild should force processing.');
+	oras_ai_assert_same($first['kb_id'], $second['kb_id'], 'First rebuild changed static artifact identity.');
+	oras_ai_assert_same($first['kb_id'], $third['kb_id'], 'Second rebuild changed static artifact identity.');
+	oras_ai_assert_same(array($first['kb_id']), $artifactIds, 'Repeated rebuild created a duplicate static artifact.');
+	oras_ai_assert_same($firstSyncTime, get_post_meta($first['kb_id'], '_oras_ai_synced_at', true), 'Unchanged rebuild churned artifact synchronization time.');
+	oras_ai_assert_same(
+		$firstWriteCounts,
+		array(
+			$GLOBALS['oras_ai_test_post_writes'][$first['kb_id']] ?? 0,
+			$GLOBALS['oras_ai_test_meta_writes'][$first['kb_id']] ?? 0,
+			$GLOBALS['oras_ai_test_term_writes'][$first['kb_id']] ?? 0,
+		),
+		'Unchanged rebuild rewrote the managed artifact.'
+	);
+});
+
+oras_ai_test('stale extraction version reprocesses without duplicating the managed artifact', function (): void {
+	oras_ai_test_reset();
+	list($sources, $sourceId, $first) = oras_ai_test_create_processed_speaker();
+	update_post_meta($sourceId, '_oras_ai_extraction_version', 999);
+
+	$discovery = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	$second = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+	$artifactIds = get_posts(
+		array(
+			'post_type' => ORAS_AI_Knowledge_Base::POST_TYPE,
+			'post_status' => 'publish',
+			'posts_per_page' => -1,
+			'fields' => 'ids',
+		)
+	);
+
+	oras_ai_assert_same(array($sourceId), $discovery['queue'], 'Stale extraction version should queue the source.');
+	oras_ai_assert_same($first['kb_id'], $second['kb_id'], 'Extraction invalidation changed artifact identity.');
+	oras_ai_assert_same(array($first['kb_id']), $artifactIds, 'Extraction invalidation created a duplicate artifact.');
+	oras_ai_assert_same(ORAS_AI_Source_Classification_Result::EXTRACTION_VERSION, get_post_meta($sourceId, '_oras_ai_extraction_version', true), 'Successful reprocessing did not restore current extraction version.');
+});
+
+oras_ai_test('AT-KB-007 manual snapshot survives unchanged normal sync and rebuild', function (): void {
+	oras_ai_test_reset();
+	$postId = oras_ai_test_add_post(array('post_type' => 'oras_speaker', 'post_title' => 'Manual protection speaker', 'post_content' => 'Stable biography'));
+	$sources = new ORAS_AI_Sources();
+	oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	$sourceId = oras_ai_test_find_source_for_post($postId);
+	$managed = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+	$manualId = oras_ai_test_prepare_manual_artifact($sourceId);
+	$before = oras_ai_test_manual_snapshot($manualId);
+
+	$normal = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	$rebuild = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(true));
+	$processed = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+
+	oras_ai_assert_same(array(), $normal['queue'], 'Unchanged normal scan should skip the source.');
+	oras_ai_assert_same(array($sourceId), $rebuild['queue'], 'Rebuild should queue the source.');
+	oras_ai_assert_same($before, oras_ai_test_manual_snapshot($manualId), 'Normal/rebuild scanner cycle changed manual knowledge.');
+	oras_ai_assert_same($managed['kb_id'], $processed['kb_id'], 'Rebuild should reuse the existing managed artifact.');
+	oras_ai_assert_same($managed['kb_id'], get_post_meta($sourceId, '_oras_ai_kb_entry_id', true), 'Rebuild should repair the source primary to managed knowledge.');
+});

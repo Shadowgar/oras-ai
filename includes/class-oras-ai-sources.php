@@ -372,7 +372,7 @@ final class ORAS_AI_Sources {
 						$confidence    = get_post_meta( $source->ID, '_oras_ai_source_confidence', true );
 						$classified_by = get_post_meta( $source->ID, '_oras_ai_classified_by', true );
 						$reason        = get_post_meta( $source->ID, '_oras_ai_source_reason', true );
-						$kb_id         = absint( get_post_meta( $source->ID, '_oras_ai_kb_entry_id', true ) );
+						$artifact_ids  = $this->linked_artifact_ids( $source->ID );
 						$analyzed      = get_post_meta( $source->ID, '_oras_ai_last_analyzed', true );
 						$error         = get_post_meta( $source->ID, '_oras_ai_last_error', true );
 						?>
@@ -391,8 +391,15 @@ final class ORAS_AI_Sources {
 							<td><?php echo esc_html( $category ?: '—' ); ?></td>
 							<td><?php echo esc_html( $confidence ? ucfirst( $confidence ) : '—' ); ?></td>
 							<td>
-								<?php if ( $kb_id ) : ?>
-									<a href="<?php echo esc_url( get_edit_post_link( $kb_id ) ); ?>"><?php echo esc_html( 'KB-' . str_pad( (string) $kb_id, 5, '0', STR_PAD_LEFT ) ); ?></a>
+								<?php if ( ! empty( $artifact_ids ) ) : ?>
+									<?php foreach ( $artifact_ids as $artifact_id ) : ?>
+										<?php if ( ORAS_AI_Knowledge_Base::POST_TYPE === get_post_type( $artifact_id ) ) : ?>
+											<a href="<?php echo esc_url( get_edit_post_link( $artifact_id ) ); ?>"><?php echo esc_html( 'KB-' . str_pad( (string) $artifact_id, 5, '0', STR_PAD_LEFT ) ); ?></a><br>
+											<span class="oras-ai-source-reason"><?php echo esc_html( $this->artifact_admin_label( $artifact_id ) ); ?></span><br>
+										<?php else : ?>
+											<span><?php echo esc_html( 'KB-' . str_pad( (string) $artifact_id, 5, '0', STR_PAD_LEFT ) . ' — Missing record' ); ?></span><br>
+										<?php endif; ?>
+									<?php endforeach; ?>
 								<?php else : ?>
 									—
 								<?php endif; ?>
@@ -603,6 +610,61 @@ final class ORAS_AI_Sources {
 		return ! empty( $ids ) ? (int) $ids[0] : 0;
 	}
 
+	private function linked_artifact_ids( $source_id ) {
+		$artifact_ids = array();
+		$primary_id   = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
+		$stored_ids   = get_post_meta( $source_id, '_oras_ai_kb_entry_ids', true );
+		$stored_ids   = is_array( $stored_ids ) ? $stored_ids : array();
+
+		if ( $primary_id ) {
+			$artifact_ids[] = $primary_id;
+		}
+
+		foreach ( $stored_ids as $artifact_id ) {
+			$artifact_id = absint( $artifact_id );
+			if ( $artifact_id && ! in_array( $artifact_id, $artifact_ids, true ) ) {
+				$artifact_ids[] = $artifact_id;
+			}
+		}
+
+		$backlinked_ids = get_posts(
+			array(
+				'post_type'      => ORAS_AI_Knowledge_Base::POST_TYPE,
+				'post_status'    => array( 'publish', 'future', 'draft', 'pending', 'private' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => '_oras_ai_source_record_id',
+				'meta_value'     => absint( $source_id ),
+				'no_found_rows'  => true,
+			)
+		);
+
+		foreach ( $backlinked_ids as $artifact_id ) {
+			$artifact_id = absint( $artifact_id );
+			if ( $artifact_id && ! in_array( $artifact_id, $artifact_ids, true ) ) {
+				$artifact_ids[] = $artifact_id;
+			}
+		}
+
+		return $artifact_ids;
+	}
+
+	private function artifact_admin_label( $artifact_id ) {
+		$status_labels = array(
+			'draft'    => __( 'Draft', 'oras-ai-assistant' ),
+			'approved' => __( 'Approved', 'oras-ai-assistant' ),
+			'review'   => __( 'Needs Review', 'oras-ai-assistant' ),
+			'retired'  => __( 'Retired', 'oras-ai-assistant' ),
+		);
+		$status = ORAS_AI_Knowledge_Base::lifecycle_status( $artifact_id );
+		$status_label = isset( $status_labels[ $status ] ) ? $status_labels[ $status ] : __( 'Inactive', 'oras-ai-assistant' );
+		$owner_label = ORAS_AI_Knowledge_Base::is_scanner_managed( $artifact_id )
+			? __( 'Scanner-managed', 'oras-ai-assistant' )
+			: __( 'Manual', 'oras-ai-assistant' );
+
+		return $status_label . ' — ' . $owner_label;
+	}
+
 	private function retire_missing_sources( $discovered_ids ) {
 		$all_ids = get_posts(
 			array(
@@ -618,12 +680,7 @@ final class ORAS_AI_Sources {
 
 		foreach ( $missing as $source_id ) {
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'missing' );
-
-			$kb_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
-
-			if ( $kb_id && ORAS_AI_Knowledge_Base::POST_TYPE === get_post_type( $kb_id ) ) {
-				update_post_meta( $kb_id, '_oras_ai_status', 'retired' );
-			}
+			$this->retire_managed_artifacts( $source_id );
 		}
 	}
 
@@ -661,12 +718,23 @@ final class ORAS_AI_Sources {
 	}
 
 	private function is_managed_artifact_for_source( $entry_id, $source_id ) {
-		$entry_id = absint( $entry_id );
+		$entry_id  = absint( $entry_id );
+		$source_id = absint( $source_id );
 
-		return $entry_id > 0
-			&& ORAS_AI_Knowledge_Base::POST_TYPE === get_post_type( $entry_id )
-			&& '1' === get_post_meta( $entry_id, '_oras_ai_managed_by_scan', true )
-			&& absint( get_post_meta( $entry_id, '_oras_ai_source_record_id', true ) ) === absint( $source_id );
+		if ( ! ORAS_AI_Knowledge_Base::is_scanner_managed( $entry_id ) ) {
+			return false;
+		}
+
+		$artifact_source_id = absint( get_post_meta( $entry_id, '_oras_ai_source_record_id', true ) );
+		if ( $artifact_source_id ) {
+			return $source_id === $artifact_source_id;
+		}
+
+		$primary_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
+		$stored_ids = get_post_meta( $source_id, '_oras_ai_kb_entry_ids', true );
+		$stored_ids = is_array( $stored_ids ) ? array_map( 'absint', $stored_ids ) : array();
+
+		return $entry_id === $primary_id || in_array( $entry_id, $stored_ids, true );
 	}
 
 	private function managed_artifact_ids( $source_id ) {
@@ -678,6 +746,12 @@ final class ORAS_AI_Sources {
 			array_unshift( $stored_ids, $legacy_id );
 		}
 
+		foreach ( $this->linked_artifact_ids( $source_id ) as $entry_id ) {
+			if ( ! in_array( $entry_id, $stored_ids, true ) ) {
+				$stored_ids[] = $entry_id;
+			}
+		}
+
 		$managed_ids = array();
 		foreach ( $stored_ids as $entry_id ) {
 			$entry_id = absint( $entry_id );
@@ -687,6 +761,16 @@ final class ORAS_AI_Sources {
 		}
 
 		return $managed_ids;
+	}
+
+	private function retire_managed_artifacts( $source_id, $keep_ids = array() ) {
+		$keep_ids = array_map( 'absint', $keep_ids );
+
+		foreach ( $this->managed_artifact_ids( $source_id ) as $entry_id ) {
+			if ( ! in_array( $entry_id, $keep_ids, true ) ) {
+				update_post_meta( $entry_id, '_oras_ai_status', 'retired' );
+			}
+		}
 	}
 
 	private function artifact_provenance( $source_id, $result, $fragment_index = null ) {
@@ -741,16 +825,10 @@ final class ORAS_AI_Sources {
 			$artifact_ids[] = (int) $entry_id;
 		}
 
-		foreach ( array_slice( $existing_ids, count( $artifact_ids ) ) as $surplus_id ) {
-			update_post_meta( $surplus_id, '_oras_ai_status', 'retired' );
-		}
+		$this->retire_managed_artifacts( $source_id, $artifact_ids );
 
 		update_post_meta( $source_id, '_oras_ai_kb_entry_ids', $artifact_ids );
-
-		$primary_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
-		if ( ! $primary_id || $this->is_managed_artifact_for_source( $primary_id, $source_id ) ) {
-			update_post_meta( $source_id, '_oras_ai_kb_entry_id', $artifact_ids[0] );
-		}
+		update_post_meta( $source_id, '_oras_ai_kb_entry_id', $artifact_ids[0] );
 
 		return $artifact_ids;
 	}
@@ -841,10 +919,9 @@ final class ORAS_AI_Sources {
 				return $kb_id;
 			}
 
-			$linked_kb_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
-			if ( ! $linked_kb_id || $this->is_managed_artifact_for_source( $linked_kb_id, $source_id ) ) {
-				update_post_meta( $source_id, '_oras_ai_kb_entry_id', $kb_id );
-			}
+			$this->retire_managed_artifacts( $source_id, array( $kb_id ) );
+			update_post_meta( $source_id, '_oras_ai_kb_entry_id', $kb_id );
+			delete_post_meta( $source_id, '_oras_ai_kb_entry_ids' );
 			$kb_ids = array( (int) $kb_id );
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' === $knowledge_status ? 'review' : 'complete' );
 		} elseif ( 'mixed' === $kind ) {
@@ -883,11 +960,9 @@ final class ORAS_AI_Sources {
 				return $kb_id;
 			}
 
-			$linked_kb_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
-			if ( ! $linked_kb_id || $this->is_managed_artifact_for_source( $linked_kb_id, $source_id ) ) {
-				update_post_meta( $source_id, '_oras_ai_kb_entry_id', $kb_id );
-			}
-
+			$this->retire_managed_artifacts( $source_id, array( $kb_id ) );
+			update_post_meta( $source_id, '_oras_ai_kb_entry_id', $kb_id );
+			delete_post_meta( $source_id, '_oras_ai_kb_entry_ids' );
 			$kb_ids = array( (int) $kb_id );
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' );
 		} else {
@@ -896,13 +971,7 @@ final class ORAS_AI_Sources {
 			 * Knowledge Base record but is now Live Data or Ignored, retire it.
 			 * Manual KB entries are never touched.
 			 */
-			if ( $kb_id && ORAS_AI_Knowledge_Base::POST_TYPE === get_post_type( $kb_id ) ) {
-				$managed = get_post_meta( $kb_id, '_oras_ai_managed_by_scan', true );
-
-				if ( '1' === $managed ) {
-					update_post_meta( $kb_id, '_oras_ai_status', 'retired' );
-				}
-			}
+			$this->retire_managed_artifacts( $source_id );
 
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'live_data' === $kind ? 'live' : 'ignored' );
 		}

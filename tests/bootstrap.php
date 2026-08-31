@@ -71,6 +71,9 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_next_post_id'] = 100;
 	$GLOBALS['oras_ai_test_post_meta'] = array();
 	$GLOBALS['oras_ai_test_post_terms'] = array();
+	$GLOBALS['oras_ai_test_post_writes'] = array();
+	$GLOBALS['oras_ai_test_meta_writes'] = array();
+	$GLOBALS['oras_ai_test_term_writes'] = array();
 	$GLOBALS['oras_ai_test_options'] = array();
 	$GLOBALS['oras_ai_test_option_autoload'] = array();
 	$GLOBALS['oras_ai_test_public_post_types'] = array(
@@ -296,6 +299,7 @@ function wp_insert_term($term, $taxonomy) {
 }
 
 function wp_set_post_terms($post_id, $terms, $taxonomy, $append = false) {
+	$GLOBALS['oras_ai_test_term_writes'][(int) $post_id] = ($GLOBALS['oras_ai_test_term_writes'][(int) $post_id] ?? 0) + 1;
 	$GLOBALS['oras_ai_test_post_terms'][(int) $post_id][(string) $taxonomy] = array_map('intval', (array) $terms);
 	return $GLOBALS['oras_ai_test_post_terms'][(int) $post_id][(string) $taxonomy];
 }
@@ -328,6 +332,7 @@ function wp_list_pluck($list, $field): array {
 
 function wp_insert_post($postarr, $wp_error = false) {
 	$id = isset($postarr['ID']) ? (int) $postarr['ID'] : $GLOBALS['oras_ai_test_next_post_id']++;
+	$GLOBALS['oras_ai_test_post_writes'][$id] = ($GLOBALS['oras_ai_test_post_writes'][$id] ?? 0) + 1;
 	$existing = $GLOBALS['oras_ai_test_posts'][$id] ?? (object) array();
 	$defaults = array(
 		'ID' => $id,
@@ -399,6 +404,7 @@ function get_post_types($args = array(), $output = 'names'): array {
 }
 
 function update_post_meta($post_id, $meta_key, $meta_value) {
+	$GLOBALS['oras_ai_test_meta_writes'][(int) $post_id] = ($GLOBALS['oras_ai_test_meta_writes'][(int) $post_id] ?? 0) + 1;
 	$GLOBALS['oras_ai_test_post_meta'][(int) $post_id][(string) $meta_key] = $meta_value;
 	return true;
 }
@@ -586,6 +592,14 @@ function selected($selected, $current = true, $display = true): string {
 
 function checked($checked, $current = true, $display = true): string {
 	$result = (string) $checked === (string) $current ? ' checked="checked"' : '';
+	if ($display) {
+		echo $result;
+	}
+	return $result;
+}
+
+function disabled($disabled, $current = true, $display = true): string {
+	$result = (string) $disabled === (string) $current ? ' disabled="disabled"' : '';
 	if ($display) {
 		echo $result;
 	}

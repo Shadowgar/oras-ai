@@ -46,6 +46,75 @@ final class ORAS_AI_Knowledge_Base {
 		);
 	}
 
+	public static function is_scanner_managed( $entry_id ) {
+		$entry_id = absint( $entry_id );
+
+		return $entry_id > 0
+			&& self::POST_TYPE === get_post_type( $entry_id )
+			&& '1' === get_post_meta( $entry_id, '_oras_ai_managed_by_scan', true );
+	}
+
+	public static function lifecycle_status( $entry_id ) {
+		$status = sanitize_key( get_post_meta( absint( $entry_id ), '_oras_ai_status', true ) );
+
+		return '' === $status ? 'draft' : $status;
+	}
+
+	public static function is_active_artifact( $entry_id ) {
+		$entry_id = absint( $entry_id );
+		$post     = get_post( $entry_id );
+
+		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
+			return false;
+		}
+
+		if ( ! in_array( $post->post_status, array( 'publish', 'future', 'draft', 'pending', 'private' ), true ) ) {
+			return false;
+		}
+
+		return 'approved' === self::lifecycle_status( $entry_id );
+	}
+
+	public static function count_active_artifacts() {
+		$entry_ids = get_posts(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => array( 'publish', 'future', 'draft', 'pending', 'private' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+			)
+		);
+
+		return count( array_filter( $entry_ids, array( __CLASS__, 'is_active_artifact' ) ) );
+	}
+
+	public static function count_artifacts_by_lifecycle( $status ) {
+		$status = sanitize_key( $status );
+		if ( ! in_array( $status, array( 'draft', 'approved', 'review', 'retired' ), true ) ) {
+			return 0;
+		}
+
+		$entry_ids = get_posts(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => array( 'publish', 'future', 'draft', 'pending', 'private' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+			)
+		);
+
+		return count(
+			array_filter(
+				$entry_ids,
+				static function ( $entry_id ) use ( $status ) {
+					return $status === self::lifecycle_status( $entry_id );
+				}
+			)
+		);
+	}
+
 	public static function seed_default_categories() {
 		if ( ! taxonomy_exists( self::TAXONOMY ) ) {
 			return;
@@ -521,15 +590,19 @@ final class ORAS_AI_Knowledge_Base {
 		);
 
 		$args = wp_parse_args( $args, $defaults );
+		$args['category'] = sanitize_text_field( $args['category'] );
 
 		$entry_id = absint( $args['entry_id'] );
+		if ( $entry_id && ! self::is_scanner_managed( $entry_id ) ) {
+			$entry_id = 0;
+		}
 
 		if ( ! $entry_id && $args['source_id'] && $args['lookup_existing'] ) {
 			$existing = get_posts(
 				array(
 					'post_type'      => self::POST_TYPE,
 					'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
-					'posts_per_page' => 1,
+					'posts_per_page' => -1,
 					'fields'         => 'ids',
 					'meta_key'       => '_oras_ai_source_record_id',
 					'meta_value'     => absint( $args['source_id'] ),
@@ -537,8 +610,34 @@ final class ORAS_AI_Knowledge_Base {
 				)
 			);
 
-			if ( ! empty( $existing ) ) {
-				$entry_id = (int) $existing[0];
+			foreach ( $existing as $existing_id ) {
+				if ( self::is_scanner_managed( $existing_id ) ) {
+					$entry_id = (int) $existing_id;
+					break;
+				}
+			}
+		}
+
+		$official_answer = wp_kses_post( $args['content'] );
+		$content_hash    = hash( 'sha256', $official_answer );
+		$allowed_visibility = array( 'public', 'members', 'admin' );
+		$allowed_status = array( 'draft', 'approved', 'review', 'retired' );
+		$visibility = in_array( $args['visibility'], $allowed_visibility, true ) ? $args['visibility'] : 'public';
+		$status = in_array( $args['status'], $allowed_status, true ) ? $args['status'] : 'review';
+		$unchanged_sync_identity = $entry_id && self::scanned_entry_matches(
+			$entry_id,
+			$args,
+			$official_answer,
+			$content_hash,
+			$visibility,
+			$status
+		);
+
+		if ( $unchanged_sync_identity ) {
+			$existing_synced_at = get_post_meta( $entry_id, '_oras_ai_synced_at', true );
+			$review_complete     = 'approved' !== $status || '' !== get_post_meta( $entry_id, '_oras_ai_last_reviewed', true );
+			if ( '' !== $existing_synced_at && $review_complete ) {
+				return $entry_id;
 			}
 		}
 
@@ -561,15 +660,8 @@ final class ORAS_AI_Knowledge_Base {
 
 		$entry_id = (int) $result;
 
-		$allowed_visibility = array( 'public', 'members', 'admin' );
-		$allowed_status = array( 'draft', 'approved', 'review', 'retired' );
-
-		$visibility = in_array( $args['visibility'], $allowed_visibility, true ) ? $args['visibility'] : 'public';
-		$status = in_array( $args['status'], $allowed_status, true ) ? $args['status'] : 'review';
-
-		$official_answer = wp_kses_post( $args['content'] );
 		update_post_meta( $entry_id, '_oras_ai_official_answer', $official_answer );
-		update_post_meta( $entry_id, '_oras_ai_content_hash', hash( 'sha256', $official_answer ) );
+		update_post_meta( $entry_id, '_oras_ai_content_hash', $content_hash );
 		update_post_meta( $entry_id, '_oras_ai_visibility', $visibility );
 		update_post_meta( $entry_id, '_oras_ai_status', $status );
 		update_post_meta( $entry_id, '_oras_ai_source', sanitize_text_field( $args['source_label'] ) );
@@ -605,7 +697,7 @@ final class ORAS_AI_Knowledge_Base {
 			update_post_meta( $entry_id, '_oras_ai_fragment_index', absint( $args['fragment_index'] ) );
 		}
 
-		if ( 'approved' === $status ) {
+		if ( 'approved' === $status && ( ! $unchanged_sync_identity || '' === get_post_meta( $entry_id, '_oras_ai_last_reviewed', true ) ) ) {
 			update_post_meta( $entry_id, '_oras_ai_last_reviewed', current_time( 'Y-m-d' ) );
 		}
 
@@ -621,6 +713,71 @@ final class ORAS_AI_Knowledge_Base {
 		}
 
 		return $entry_id;
+	}
+
+	private static function scanned_entry_matches( $entry_id, $args, $official_answer, $content_hash, $visibility, $status ) {
+		$post = get_post( $entry_id );
+		if ( ! $post || 'publish' !== $post->post_status || sanitize_text_field( $args['title'] ) !== $post->post_title ) {
+			return false;
+		}
+
+		$expected_meta = array(
+			'_oras_ai_official_answer'       => $official_answer,
+			'_oras_ai_content_hash'          => $content_hash,
+			'_oras_ai_visibility'            => $visibility,
+			'_oras_ai_status'                => $status,
+			'_oras_ai_source'                => sanitize_text_field( $args['source_label'] ),
+			'_oras_ai_source_url'            => esc_url_raw( $args['source_url'] ),
+			'_oras_ai_internal_notes'        => sanitize_textarea_field( $args['internal_notes'] ),
+			'_oras_ai_source_record_id'      => absint( $args['source_id'] ),
+			'_oras_ai_source_wp_post_id'     => absint( $args['source_wp_post_id'] ),
+			'_oras_ai_source_wp_post_type'   => sanitize_key( $args['source_wp_post_type'] ),
+			'_oras_ai_source_hash'           => sanitize_text_field( $args['source_hash'] ),
+			'_oras_ai_source_modified_gmt'   => sanitize_text_field( $args['source_modified_gmt'] ),
+			'_oras_ai_rule_version'          => absint( $args['rule_version'] ),
+			'_oras_ai_extraction_version'    => absint( $args['extraction_version'] ),
+			'_oras_ai_source_classification' => sanitize_key( $args['source_classification'] ),
+			'_oras_ai_source_confidence'     => sanitize_key( $args['source_confidence'] ),
+			'_oras_ai_historical_event'      => $args['historical_event'] ? '1' : '0',
+			'_oras_ai_extraction_reason'     => sanitize_textarea_field( $args['extraction_reason'] ),
+		);
+
+		foreach ( $expected_meta as $meta_key => $expected_value ) {
+			if ( (string) $expected_value !== (string) get_post_meta( $entry_id, $meta_key, true ) ) {
+				return false;
+			}
+		}
+
+		$expected_arrays = array(
+			'_oras_ai_excluded_dynamic_claims' => array_values( array_map( 'sanitize_textarea_field', is_array( $args['excluded_dynamic_claims'] ) ? $args['excluded_dynamic_claims'] : array() ) ),
+			'_oras_ai_dynamic_fact_types'      => array_values( array_map( 'sanitize_key', is_array( $args['dynamic_fact_types'] ) ? $args['dynamic_fact_types'] : array() ) ),
+		);
+
+		foreach ( $expected_arrays as $meta_key => $expected_value ) {
+			$stored_value = get_post_meta( $entry_id, $meta_key, true );
+			if ( $expected_value !== ( is_array( $stored_value ) ? array_values( $stored_value ) : array() ) ) {
+				return false;
+			}
+		}
+
+		$stored_fragment_index = get_post_meta( $entry_id, '_oras_ai_fragment_index', true );
+		if ( null === $args['fragment_index'] ) {
+			if ( '' !== $stored_fragment_index ) {
+				return false;
+			}
+		} elseif ( absint( $args['fragment_index'] ) !== absint( $stored_fragment_index ) ) {
+			return false;
+		}
+
+		$term = term_exists( $args['category'], self::TAXONOMY );
+		if ( ! $term ) {
+			return false;
+		}
+
+		$term_id         = is_array( $term ) ? (int) $term['term_id'] : (int) $term;
+		$stored_term_ids = array_map( 'intval', wp_get_post_terms( $entry_id, self::TAXONOMY, array( 'fields' => 'ids' ) ) );
+
+		return array( $term_id ) === $stored_term_ids;
 	}
 
 }

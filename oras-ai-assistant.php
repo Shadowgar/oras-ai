@@ -111,6 +111,9 @@ final class ORAS_AI_Assistant {
 			}
 		}
 
+		$active_total  = ORAS_AI_Knowledge_Base::count_active_artifacts();
+		$review_total  = ORAS_AI_Knowledge_Base::count_artifacts_by_lifecycle( 'review' );
+		$retired_total = ORAS_AI_Knowledge_Base::count_artifacts_by_lifecycle( 'retired' );
 		$source_count = ORAS_AI_Sources::count_sources();
 		$api_ready    = ORAS_AI_Config::has_openai_api_key();
 		?>
@@ -123,8 +126,20 @@ final class ORAS_AI_Assistant {
 			<div class="oras-ai-cards">
 				<div class="oras-ai-card">
 					<h2><?php esc_html_e( 'Knowledge Base', 'oras-ai-assistant' ); ?></h2>
-					<p class="oras-ai-number"><?php echo esc_html( number_format_i18n( $total ) ); ?></p>
-					<p><?php esc_html_e( 'Total knowledge entries', 'oras-ai-assistant' ); ?></p>
+					<p class="oras-ai-number"><?php echo esc_html( number_format_i18n( $active_total ) ); ?></p>
+					<p><?php esc_html_e( 'Active Approved knowledge', 'oras-ai-assistant' ); ?></p>
+					<p class="description">
+						<?php
+						echo esc_html(
+							sprintf(
+								__( '%1$s Needs Review · %2$s Retired · %3$s total records', 'oras-ai-assistant' ),
+								number_format_i18n( $review_total ),
+								number_format_i18n( $retired_total ),
+								number_format_i18n( $total )
+							)
+						);
+						?>
+					</p>
 					<p>
 						<a class="button button-primary" href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . ORAS_AI_Knowledge_Base::POST_TYPE ) ); ?>">
 							<?php esc_html_e( 'Open Knowledge Base', 'oras-ai-assistant' ); ?>

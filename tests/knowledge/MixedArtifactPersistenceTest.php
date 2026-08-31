@@ -182,7 +182,7 @@ oras_ai_test('reprocessing the same mixed source reuses the ordered artifact set
 	oras_ai_assert_same(2, count($allKbIds), 'Immediate reprocessing must not create duplicate artifacts.');
 });
 
-oras_ai_test('mixed migration never overwrites or retires a manually linked KB entry', function (): void {
+oras_ai_test('mixed migration repairs source linkage without changing a manually linked KB entry', function (): void {
 	oras_ai_test_reset();
 	$sourceId = oras_ai_test_prepare_provenance_source();
 	$manualId = oras_ai_test_add_linked_kb($sourceId, false);
@@ -196,7 +196,7 @@ oras_ai_test('mixed migration never overwrites or retires a manually linked KB e
 	);
 
 	$artifactIds = (array) get_post_meta($sourceId, '_oras_ai_kb_entry_ids', true);
-	oras_ai_assert_same($manualId, get_post_meta($sourceId, '_oras_ai_kb_entry_id', true), 'Manual primary linkage must remain untouched.');
+	oras_ai_assert_same($artifactIds[0], get_post_meta($sourceId, '_oras_ai_kb_entry_id', true), 'Source primary should be repaired to the managed fragment.');
 	oras_ai_assert_false(in_array($manualId, $artifactIds, true), 'Manual KB must not enter the managed fragment set.');
 	oras_ai_assert_same('Manual knowledge', get_post($manualId)->post_title, 'Manual title changed.');
 	oras_ai_assert_same('Owner-authored answer', get_post_meta($manualId, '_oras_ai_official_answer', true), 'Manual answer changed.');
@@ -248,6 +248,52 @@ oras_ai_test('mixed extraction retires only surplus scanner-managed fragment art
 	oras_ai_assert_same(array($first['kb_ids'][0]), $second['kb_ids'], 'Current fragment set should retain only the reusable first artifact.');
 	oras_ai_assert_same('review', get_post_meta($first['kb_ids'][0], '_oras_ai_status', true), 'Retained fragment status changed.');
 	oras_ai_assert_same('retired', get_post_meta($first['kb_ids'][1], '_oras_ai_status', true), 'Surplus managed fragment should retire.');
+});
+
+oras_ai_test('mixed fragment addition and reorder reuse the existing identity set', function (): void {
+	oras_ai_test_reset();
+	$sourceId = oras_ai_test_prepare_provenance_source();
+	$oneFragment = oras_ai_test_two_fragment_mixed_result(
+		array(
+			'stable_fragments' => array(
+				array('stable_title' => 'About AstroBlast', 'stable_content' => 'AstroBlast is ORAS\'s annual astronomy gathering.'),
+			),
+		)
+	);
+	$first = oras_ai_invoke_private(new ORAS_AI_Sources(oras_ai_test_classifier_result($oneFragment)), 'process_source', array($sourceId));
+	$second = oras_ai_invoke_private(new ORAS_AI_Sources(oras_ai_test_classifier_result(oras_ai_test_two_fragment_mixed_result())), 'process_source', array($sourceId));
+	$reordered = oras_ai_test_two_fragment_mixed_result(
+		array(
+			'stable_fragments' => array(
+				array('stable_title' => 'AstroBlast Program', 'stable_content' => 'The program combines astronomy talks and observing activities.'),
+				array('stable_title' => 'About AstroBlast', 'stable_content' => 'AstroBlast is ORAS\'s annual astronomy gathering.'),
+			),
+		)
+	);
+	$third = oras_ai_invoke_private(new ORAS_AI_Sources(oras_ai_test_classifier_result($reordered)), 'process_source', array($sourceId));
+
+	oras_ai_assert_same($first['kb_ids'][0], $second['kb_ids'][0], 'Adding a fragment should retain existing fragment identity.');
+	oras_ai_assert_same(2, count($second['kb_ids']), 'Adding one fragment should create exactly one additional artifact.');
+	oras_ai_assert_same($second['kb_ids'], $third['kb_ids'], 'Reordering fragments should reuse the existing ordinal identity set.');
+	oras_ai_assert_same('The program combines astronomy talks and observing activities.', get_post_meta($third['kb_ids'][0], '_oras_ai_official_answer', true), 'Reordered ordinal zero content did not update.');
+});
+
+oras_ai_test('mixed rebuild reuses artifacts and repairs a manual primary link without changing manual knowledge', function (): void {
+	oras_ai_test_reset();
+	$postId = oras_ai_test_add_post(array('post_type' => 'page', 'post_title' => 'Mixed rebuild page', 'post_content' => 'Stable description and tickets are $25.'));
+	$classifier = oras_ai_test_classifier_result(oras_ai_test_two_fragment_mixed_result());
+	$sources = new ORAS_AI_Sources($classifier);
+	oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+	$sourceId = oras_ai_test_find_source_for_post($postId);
+	$manualId = oras_ai_test_prepare_manual_artifact($sourceId);
+	$manualBefore = oras_ai_test_manual_snapshot($manualId);
+	$first = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+	oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(true));
+	$second = oras_ai_invoke_private($sources, 'process_source', array($sourceId));
+
+	oras_ai_assert_same($first['kb_ids'], $second['kb_ids'], 'Mixed rebuild changed the artifact identity set.');
+	oras_ai_assert_same($first['kb_ids'][0], get_post_meta($sourceId, '_oras_ai_kb_entry_id', true), 'Scanner should repair an incorrect manual primary link to its managed artifact.');
+	oras_ai_assert_same($manualBefore, oras_ai_test_manual_snapshot($manualId), 'Mixed rebuild changed manual knowledge.');
 });
 
 oras_ai_test('privacy policy and historical artifacts retain qualified provenance without retrieval behavior', function (): void {
