@@ -21,11 +21,12 @@ oras_ai_test('rules classify tribe events as current public live data', function
 		'https://oras.org/events/astroblast-2026/'
 	);
 
-	oras_ai_assert_same('live_data', $result['source_kind'], 'Event source kind changed.');
-	oras_ai_assert_same('AstroBlast', $result['category'], 'Event category changed.');
-	oras_ai_assert_same('public', $result['visibility'], 'Event visibility changed.');
-	oras_ai_assert_same('high', $result['confidence'], 'Event confidence changed.');
-	oras_ai_assert_same('rule', $result['classified_by'], 'Event classifier marker changed.');
+	oras_ai_assert_true($result instanceof ORAS_AI_Source_Classification_Result, 'Rule must return the application result.');
+	oras_ai_assert_same('live_data', $result->source_kind(), 'Event source kind changed.');
+	oras_ai_assert_same('AstroBlast', $result->category(), 'Event category changed.');
+	oras_ai_assert_same('public', $result->visibility(), 'Event visibility changed.');
+	oras_ai_assert_same('high', $result->confidence(), 'Event confidence changed.');
+	oras_ai_assert_same('rule', $result->classified_by(), 'Event classifier marker changed.');
 });
 
 oras_ai_test('rules classify products as current public live data', function (): void {
@@ -36,10 +37,10 @@ oras_ai_test('rules classify products as current public live data', function ():
 		'https://oras.org/product/observer-pass/'
 	);
 
-	oras_ai_assert_same('live_data', $result['source_kind'], 'Product source kind changed.');
-	oras_ai_assert_same('Observer Passes', $result['category'], 'Product category changed.');
-	oras_ai_assert_same('public', $result['visibility'], 'Product visibility changed.');
-	oras_ai_assert_same('rule', $result['classified_by'], 'Product classifier marker changed.');
+	oras_ai_assert_same('live_data', $result->source_kind(), 'Product source kind changed.');
+	oras_ai_assert_same('Observer Passes', $result->category(), 'Product category changed.');
+	oras_ai_assert_same('public', $result->visibility(), 'Product visibility changed.');
+	oras_ai_assert_same('rule', $result->classified_by(), 'Product classifier marker changed.');
 });
 
 oras_ai_test('rules keep current WordPress template types ignored for administrators', function (): void {
@@ -51,10 +52,10 @@ oras_ai_test('rules keep current WordPress template types ignored for administra
 			'https://oras.org/template/'
 		);
 
-		oras_ai_assert_same('ignore', $result['source_kind'], "{$post_type} source kind changed.");
-		oras_ai_assert_same('Website / Technical Help', $result['category'], "{$post_type} category changed.");
-		oras_ai_assert_same('admin', $result['visibility'], "{$post_type} visibility changed.");
-		oras_ai_assert_same('rule', $result['classified_by'], "{$post_type} classifier marker changed.");
+		oras_ai_assert_same('ignore', $result->source_kind(), "{$post_type} source kind changed.");
+		oras_ai_assert_same('Website / Technical Help', $result->category(), "{$post_type} category changed.");
+		oras_ai_assert_same('admin', $result->visibility(), "{$post_type} visibility changed.");
+		oras_ai_assert_same('rule', $result->classified_by(), "{$post_type} classifier marker changed.");
 	}
 });
 
@@ -71,8 +72,8 @@ oras_ai_test('rules keep known utility page paths ignored for administrators', f
 	foreach ($paths as $url) {
 		oras_ai_test_reset();
 		$result = (new ORAS_AI_Source_Classification_Rules())->classify('page', 'Utility page', $url);
-		oras_ai_assert_same('ignore', $result['source_kind'], "Utility detection changed for {$url}.");
-		oras_ai_assert_same('admin', $result['visibility'], "Utility visibility changed for {$url}.");
+		oras_ai_assert_same('ignore', $result->source_kind(), "Utility detection changed for {$url}.");
+		oras_ai_assert_same('admin', $result->visibility(), "Utility visibility changed for {$url}.");
 	}
 });
 
@@ -84,11 +85,11 @@ oras_ai_test('rules keep ORAS speakers as static public event knowledge', functi
 		'https://oras.org/speakers/dr-nova/'
 	);
 
-	oras_ai_assert_same('static_knowledge', $result['source_kind'], 'Speaker source kind changed.');
-	oras_ai_assert_same('Events', $result['category'], 'Speaker category changed.');
-	oras_ai_assert_same('public', $result['visibility'], 'Speaker visibility changed.');
-	oras_ai_assert_same('high', $result['confidence'], 'Speaker confidence changed.');
-	oras_ai_assert_same('rule', $result['classified_by'], 'Speaker classifier marker changed.');
+	oras_ai_assert_same('static_knowledge', $result->source_kind(), 'Speaker source kind changed.');
+	oras_ai_assert_same('Events', $result->category(), 'Speaker category changed.');
+	oras_ai_assert_same('public', $result->visibility(), 'Speaker visibility changed.');
+	oras_ai_assert_same('high', $result->confidence(), 'Speaker confidence changed.');
+	oras_ai_assert_same('rule', $result->classified_by(), 'Speaker classifier marker changed.');
 });
 
 oras_ai_test('rules preserve current deterministic category priority and fallback', function (): void {

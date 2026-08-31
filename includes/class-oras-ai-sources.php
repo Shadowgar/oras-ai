@@ -411,6 +411,7 @@ final class ORAS_AI_Sources {
 		$labels = array(
 			'static_knowledge' => __( 'Knowledge', 'oras-ai-assistant' ),
 			'live_data'        => __( 'Live Data', 'oras-ai-assistant' ),
+			'mixed'            => __( 'Mixed — Needs Review', 'oras-ai-assistant' ),
 			'ignore'           => __( 'Ignored', 'oras-ai-assistant' ),
 			'review'           => __( 'Needs Review', 'oras-ai-assistant' ),
 		);
@@ -639,11 +640,15 @@ final class ORAS_AI_Sources {
 	}
 
 	private function should_auto_approve( $post_type, $classification ) {
-		if ( 'static_knowledge' !== $classification['source_kind'] ) {
+		if ( ! $classification instanceof ORAS_AI_Source_Classification_Result ) {
 			return false;
 		}
 
-		if ( 'high' !== $classification['confidence'] ) {
+		if ( 'static_knowledge' !== $classification->source_kind() ) {
+			return false;
+		}
+
+		if ( 'high' !== $classification->confidence() || $classification->requires_review() ) {
 			return false;
 		}
 
@@ -680,17 +685,25 @@ final class ORAS_AI_Sources {
 				update_post_meta( $source_id, '_oras_ai_last_error', $result->get_error_message() );
 				return $result;
 			}
-
-			$result['classified_by'] = 'ai';
 		}
 
-		$kind          = sanitize_key( $result['source_kind'] );
-		$category      = sanitize_text_field( $result['category'] );
-		$visibility    = sanitize_key( $result['visibility'] );
-		$confidence    = sanitize_key( $result['confidence'] );
-		$title         = sanitize_text_field( $result['knowledge_title'] );
-		$reason        = sanitize_textarea_field( $result['reason'] );
-		$classified_by = isset( $result['classified_by'] ) ? sanitize_key( $result['classified_by'] ) : 'ai';
+		if ( ! $result instanceof ORAS_AI_Source_Classification_Result ) {
+			$error = new WP_Error(
+				'oras_ai_invalid_classification_result',
+				__( 'Source classifier returned an invalid application result.', 'oras-ai-assistant' )
+			);
+			update_post_meta( $source_id, '_oras_ai_scan_status', 'error' );
+			update_post_meta( $source_id, '_oras_ai_last_error', $error->get_error_message() );
+			return $error;
+		}
+
+		$kind          = $result->source_kind();
+		$category      = $result->category();
+		$visibility    = $result->visibility();
+		$confidence    = $result->confidence();
+		$title         = $result->knowledge_title();
+		$reason        = $result->reason();
+		$classified_by = $result->classified_by();
 
 		update_post_meta( $source_id, '_oras_ai_source_kind', $kind );
 		update_post_meta( $source_id, '_oras_ai_source_category', $category );
@@ -729,8 +742,11 @@ final class ORAS_AI_Sources {
 			}
 
 			update_post_meta( $source_id, '_oras_ai_kb_entry_id', $kb_id );
-			update_post_meta( $source_id, '_oras_ai_scan_status', 'complete' );
-		} elseif ( 'review' === $kind ) {
+			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' === $knowledge_status ? 'review' : 'complete' );
+		} elseif ( 'review' === $kind || 'mixed' === $kind || $result->requires_review() ) {
+			$review_note = 'mixed' === $kind
+				? 'Scanner retained this Mixed source for review; extracted stable fragments are not persisted until M2 Task 2. '
+				: 'Scanner marked this source for review. ';
 			$kb_id = ORAS_AI_Knowledge_Base::upsert_scanned_entry(
 				array(
 					'entry_id'       => $kb_id,
@@ -742,7 +758,7 @@ final class ORAS_AI_Sources {
 					'status'         => 'review',
 					'source_label'   => 'ORAS Website – ' . $source->post_title,
 					'source_url'     => $url,
-					'internal_notes' => 'Scanner marked this source for review. Classified by ' . ( 'rule' === $classified_by ? 'WordPress rule' : 'AI' ) . '. ' . $reason,
+					'internal_notes' => $review_note . 'Classified by ' . ( 'rule' === $classified_by ? 'WordPress rule' : 'AI' ) . '. ' . $reason,
 				)
 			);
 

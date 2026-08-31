@@ -10,6 +10,14 @@ function oras_ai_test_classification(array $overrides = array()): array {
 			'confidence' => 'high',
 			'knowledge_title' => 'Stable facts',
 			'reason' => 'The source contains stable information.',
+			'historical_event' => false,
+			'stable_fragments' => array(),
+			'excluded_dynamic_claims' => array(),
+			'dynamic_fact_types' => array(),
+			'validation' => array(
+				'stable_dynamic_separation' => true,
+				'critical_qualifications_preserved' => true,
+			),
 		),
 		$overrides
 	);
@@ -56,6 +64,72 @@ oras_ai_test('OpenAI classifier accepts direct output_text structured JSON', fun
 	$payload = json_decode($request['body'], true);
 	oras_ai_assert_same('gpt-5.6-luna', $payload['model'], 'Default request model changed.');
 	oras_ai_assert_same('json_schema', $payload['text']['format']['type'], 'Structured output request changed.');
+});
+
+oras_ai_test('OpenAI structured schema exposes exactly five outcomes and mixed extraction fields', function (): void {
+	oras_ai_test_reset();
+	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
+	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
+		200,
+		array('output_text' => wp_json_encode(oras_ai_test_mixed_classification()))
+	);
+
+	ORAS_AI_OpenAI::classify_source('AstroBlast', 'https://oras.org/astroblast/', 'page', 'Mixed content');
+
+	$payload = json_decode($GLOBALS['oras_ai_test_remote_calls'][0]['args']['body'], true);
+	$schema = $payload['text']['format']['schema'];
+	oras_ai_assert_same(
+		array('static_knowledge', 'live_data', 'mixed', 'ignore', 'review'),
+		$schema['properties']['source_kind']['enum'],
+		'OpenAI schema source dispositions changed.'
+	);
+	foreach (array('historical_event', 'stable_fragments', 'excluded_dynamic_claims', 'dynamic_fact_types', 'validation') as $field) {
+		oras_ai_assert_true(isset($schema['properties'][$field]), "OpenAI schema must define {$field}.");
+		oras_ai_assert_true(in_array($field, $schema['required'], true), "OpenAI schema must require {$field}.");
+	}
+});
+
+oras_ai_test('OpenAI policy prompt keeps legitimate ORAS privacy and security pages eligible', function (): void {
+	oras_ai_test_reset();
+	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
+	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
+		200,
+		array('output_text' => wp_json_encode(oras_ai_test_classification(array('category' => 'Policies & Rules'))))
+	);
+
+	ORAS_AI_OpenAI::classify_source(
+		'ORAS Privacy Policy',
+		'https://oras.org/privacy-policy/',
+		'page',
+		'ORAS explains how member contact data is handled.'
+	);
+
+	$payload = json_decode($GLOBALS['oras_ai_test_remote_calls'][0]['args']['body'], true);
+	$system = $payload['input'][0]['content'];
+	oras_ai_assert_contains('Public ORAS privacy and website-security policy pages are eligible searchable knowledge under Policies & Rules', $system, 'ORAS policy eligibility instruction is missing.');
+	oras_ai_assert_not_contains('legal/privacy/cookie content', $system, 'Legacy blanket privacy/legal ignore instruction must be removed.');
+	oras_ai_assert_contains('third-party legal, privacy, or cookie boilerplate', $system, 'Third-party boilerplate safeguard is missing.');
+});
+
+oras_ai_test('OpenAI policy prompt represents historical ORAS events as durable event knowledge', function (): void {
+	oras_ai_test_reset();
+	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
+	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
+		200,
+		array('output_text' => wp_json_encode(oras_ai_test_classification(array('category' => 'Events'))))
+	);
+
+	ORAS_AI_OpenAI::classify_source(
+		'AstroBlast 2018 Archive',
+		'https://oras.org/astroblast-2018/',
+		'page',
+		'An archival description of speakers and activities.'
+	);
+
+	$payload = json_decode($GLOBALS['oras_ai_test_remote_calls'][0]['args']['body'], true);
+	$system = $payload['input'][0]['content'];
+	oras_ai_assert_contains('Historical ORAS event pages with archival value use static_knowledge in Events', $system, 'Historical-event ingestion instruction is missing.');
+	oras_ai_assert_contains('must not preserve current dates, prices, deadlines, schedules, or availability as durable facts', $system, 'Historical current-fact safeguard is missing.');
 });
 
 oras_ai_test('OpenAI classifier accepts nested output content text', function (): void {

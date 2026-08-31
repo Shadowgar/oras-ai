@@ -20,6 +20,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-config.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-audit-log.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-access-guard.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-knowledge-base.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-classification-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-source-classifier.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openai.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openai-source-classifier.php';

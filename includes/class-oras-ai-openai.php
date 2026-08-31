@@ -34,8 +34,14 @@ final class ORAS_AI_OpenAI {
 			. 'Do not invent facts. Classify only what the supplied source contains. '
 			. 'static_knowledge means stable information useful for answering future ORAS questions. '
 			. 'live_data means information whose answer should be retrieved live instead of memorized, such as current/upcoming event dates, calendars, ticket or observer-pass inventory, schedules, weather, current observing conditions, account/member status, checkout data, or other frequently changing records. '
-			. 'ignore means navigation, empty content, boilerplate, legal/privacy/cookie content, search/account/checkout utility pages, or content with no useful ORAS knowledge. '
-			. 'review means mixed or ambiguous content that should not be auto-approved. '
+			. 'mixed means a source with both durable knowledge and changing facts; return durable facts only in stable_fragments and place current facts in excluded_dynamic_claims with their dynamic_fact_types. '
+			. 'ignore means navigation, empty content, third-party legal, privacy, or cookie boilerplate, search/account/checkout utility pages, or content with no useful ORAS knowledge. '
+			. 'review means content that cannot be safely classified or separated, has policy/effective-date ambiguity, would lose critical qualifications, has low confidence, or fails stable/dynamic validation. '
+			. 'Public ORAS privacy and website-security policy pages are eligible searchable knowledge under Policies & Rules; do not ignore legitimate ORAS policy merely because it concerns privacy, security, legal terms, data handling, or vulnerability reporting. '
+			. 'Historical ORAS event pages with archival value use static_knowledge in Events when they contain durable past-event context, but must not preserve current dates, prices, deadlines, schedules, or availability as durable facts. '
+			. 'Set historical_event true only for Historical Event Knowledge and false for every other source. Historical Event Knowledge always requires human review during this milestone. '
+			. 'For non-mixed outcomes return empty stable_fragments, excluded_dynamic_claims, and dynamic_fact_types arrays. '
+			. 'Set validation.stable_dynamic_separation true only when durable and changing information are safely separated, and validation.critical_qualifications_preserved true only when the durable content retains necessary qualifications. '
 			. 'Choose exactly one of the supplied ORAS categories. '
 			. 'Visibility should reflect the apparent intended audience of the content; when uncertain for a normal published website page, choose public.';
 
@@ -46,7 +52,7 @@ final class ORAS_AI_OpenAI {
 			'properties'           => array(
 				'source_kind' => array(
 					'type' => 'string',
-					'enum' => array( 'static_knowledge', 'live_data', 'ignore', 'review' ),
+					'enum' => array( 'static_knowledge', 'live_data', 'mixed', 'ignore', 'review' ),
 				),
 				'category' => array(
 					'type' => 'string',
@@ -68,8 +74,68 @@ final class ORAS_AI_OpenAI {
 					'type'      => 'string',
 					'minLength' => 1,
 				),
+				'historical_event' => array(
+					'type' => 'boolean',
+				),
+				'stable_fragments' => array(
+					'type'  => 'array',
+					'items' => array(
+						'type'                 => 'object',
+						'properties'           => array(
+							'stable_title' => array(
+								'type'      => 'string',
+								'minLength' => 1,
+							),
+							'stable_content' => array(
+								'type'      => 'string',
+								'minLength' => 1,
+							),
+						),
+						'required'             => array( 'stable_title', 'stable_content' ),
+						'additionalProperties' => false,
+					),
+				),
+				'excluded_dynamic_claims' => array(
+					'type'  => 'array',
+					'items' => array(
+						'type'      => 'string',
+						'minLength' => 1,
+					),
+				),
+				'dynamic_fact_types' => array(
+					'type'  => 'array',
+					'items' => array(
+						'type'      => 'string',
+						'minLength' => 1,
+					),
+				),
+				'validation' => array(
+					'type'                 => 'object',
+					'properties'           => array(
+						'stable_dynamic_separation' => array(
+							'type' => 'boolean',
+						),
+						'critical_qualifications_preserved' => array(
+							'type' => 'boolean',
+						),
+					),
+					'required'             => array( 'stable_dynamic_separation', 'critical_qualifications_preserved' ),
+					'additionalProperties' => false,
+				),
 			),
-			'required'             => array( 'source_kind', 'category', 'visibility', 'confidence', 'knowledge_title', 'reason' ),
+			'required'             => array(
+				'source_kind',
+				'category',
+				'visibility',
+				'confidence',
+				'knowledge_title',
+				'reason',
+				'historical_event',
+				'stable_fragments',
+				'excluded_dynamic_claims',
+				'dynamic_fact_types',
+				'validation',
+			),
 			'additionalProperties' => false,
 		);
 

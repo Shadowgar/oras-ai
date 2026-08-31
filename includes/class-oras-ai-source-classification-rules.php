@@ -23,7 +23,7 @@ final class ORAS_AI_Source_Classification_Rules {
 		 * changing data.
 		 */
 		if ( 'tribe_events' === $post_type ) {
-			return array(
+			return $this->result( array(
 				'source_kind'     => 'live_data',
 				'category'        => $this->category_for( $title, $url, 'Events' ),
 				'visibility'      => 'public',
@@ -31,11 +31,11 @@ final class ORAS_AI_Source_Classification_Rules {
 				'knowledge_title' => $title,
 				'reason'          => 'The Events Calendar event records are time-sensitive and must be queried live.',
 				'classified_by'   => 'rule',
-			);
+			) );
 		}
 
 		if ( 'product' === $post_type ) {
-			return array(
+			return $this->result( array(
 				'source_kind'     => 'live_data',
 				'category'        => $this->category_for( $title, $url, 'Events' ),
 				'visibility'      => 'public',
@@ -43,11 +43,11 @@ final class ORAS_AI_Source_Classification_Rules {
 				'knowledge_title' => $title,
 				'reason'          => 'WooCommerce product price, availability, ticket inventory, and purchase state can change.',
 				'classified_by'   => 'rule',
-			);
+			) );
 		}
 
 		if ( in_array( $post_type, array( 'elementor_library', 'mailpoet_page', 'gm_menu_block' ), true ) ) {
-			return array(
+			return $this->result( array(
 				'source_kind'     => 'ignore',
 				'category'        => 'Website / Technical Help',
 				'visibility'      => 'admin',
@@ -55,11 +55,11 @@ final class ORAS_AI_Source_Classification_Rules {
 				'knowledge_title' => $title,
 				'reason'          => 'This is a WordPress/plugin template or utility record, not an authoritative end-user knowledge source.',
 				'classified_by'   => 'rule',
-			);
+			) );
 		}
 
 		if ( 'oras_speaker' === $post_type ) {
-			return array(
+			return $this->result( array(
 				'source_kind'     => 'static_knowledge',
 				'category'        => 'Events',
 				'visibility'      => 'public',
@@ -67,11 +67,11 @@ final class ORAS_AI_Source_Classification_Rules {
 				'knowledge_title' => $title,
 				'reason'          => 'ORAS speaker biography records are useful reference information and remain synchronized to WordPress changes.',
 				'classified_by'   => 'rule',
-			);
+			) );
 		}
 
 		if ( 'page' === $post_type && $this->is_utility_page( $url ) ) {
-			return array(
+			return $this->result( array(
 				'source_kind'     => 'ignore',
 				'category'        => $this->category_for( $title, $url, 'Website / Technical Help' ),
 				'visibility'      => 'admin',
@@ -79,7 +79,7 @@ final class ORAS_AI_Source_Classification_Rules {
 				'knowledge_title' => $title,
 				'reason'          => 'This is an account, checkout, form, confirmation, test, or other utility page rather than durable ORAS knowledge.',
 				'classified_by'   => 'rule',
-			);
+			) );
 		}
 
 		/*
@@ -87,6 +87,23 @@ final class ORAS_AI_Source_Classification_Rules {
 		 * normal pages can be informational or dynamic. Let the model judge.
 		 */
 		return null;
+	}
+
+	private function result( $values ) {
+		$values['historical_event']          = false;
+		$values['stable_fragments']          = array();
+		$values['excluded_dynamic_claims']   = array();
+		$values['dynamic_fact_types']        = array();
+		$values['validation']                = array(
+			'stable_dynamic_separation'         => true,
+			'critical_qualifications_preserved' => true,
+		);
+
+		return ORAS_AI_Source_Classification_Result::from_array(
+			$values,
+			'rule',
+			isset( $values['knowledge_title'] ) ? $values['knowledge_title'] : ''
+		);
 	}
 
 	public function category_for( $title, $url, $fallback = 'General FAQ' ) {
