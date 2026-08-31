@@ -548,8 +548,9 @@ final class ORAS_AI_Sources {
 			$status = get_post_meta( $source_id, '_oras_ai_scan_status', true );
 			$stored_rule_version = get_post_meta( $source_id, ORAS_AI_Source_Classification_Rules::META_RULE_VERSION, true );
 			$effective_rule_version = $this->classification_rules->effective_version( $stored_rule_version );
+			$stored_extraction_version = absint( get_post_meta( $source_id, '_oras_ai_extraction_version', true ) );
 
-			if ( $force || $hash !== $old_hash || $effective_rule_version !== $this->classification_rules->version() || ! in_array( $status, array( 'complete', 'ignored', 'live', 'review' ), true ) ) {
+			if ( $force || $hash !== $old_hash || $effective_rule_version !== $this->classification_rules->version() || ORAS_AI_Source_Classification_Result::EXTRACTION_VERSION !== $stored_extraction_version || ! in_array( $status, array( 'complete', 'ignored', 'live', 'review' ), true ) ) {
 				update_post_meta( $source_id, '_oras_ai_scan_status', 'pending' );
 				$queue[] = $source_id;
 			}
@@ -659,6 +660,101 @@ final class ORAS_AI_Sources {
 		return in_array( $post_type, array( 'page', 'oras_speaker' ), true );
 	}
 
+	private function is_managed_artifact_for_source( $entry_id, $source_id ) {
+		$entry_id = absint( $entry_id );
+
+		return $entry_id > 0
+			&& ORAS_AI_Knowledge_Base::POST_TYPE === get_post_type( $entry_id )
+			&& '1' === get_post_meta( $entry_id, '_oras_ai_managed_by_scan', true )
+			&& absint( get_post_meta( $entry_id, '_oras_ai_source_record_id', true ) ) === absint( $source_id );
+	}
+
+	private function managed_artifact_ids( $source_id ) {
+		$stored_ids = get_post_meta( $source_id, '_oras_ai_kb_entry_ids', true );
+		$stored_ids = is_array( $stored_ids ) ? $stored_ids : array();
+		$legacy_id  = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
+
+		if ( $legacy_id && ! in_array( $legacy_id, $stored_ids, true ) ) {
+			array_unshift( $stored_ids, $legacy_id );
+		}
+
+		$managed_ids = array();
+		foreach ( $stored_ids as $entry_id ) {
+			$entry_id = absint( $entry_id );
+			if ( $this->is_managed_artifact_for_source( $entry_id, $source_id ) && ! in_array( $entry_id, $managed_ids, true ) ) {
+				$managed_ids[] = $entry_id;
+			}
+		}
+
+		return $managed_ids;
+	}
+
+	private function artifact_provenance( $source_id, $result, $fragment_index = null ) {
+		return array(
+			'source_wp_post_id'       => get_post_meta( $source_id, '_oras_ai_wp_post_id', true ),
+			'source_wp_post_type'     => get_post_meta( $source_id, '_oras_ai_wp_post_type', true ),
+			'source_hash'             => get_post_meta( $source_id, '_oras_ai_source_hash', true ),
+			'source_modified_gmt'     => get_post_meta( $source_id, '_oras_ai_wp_modified_gmt', true ),
+			'synced_at'               => current_time( 'mysql' ),
+			'rule_version'            => $this->classification_rules->version(),
+			'extraction_version'      => $result->extraction_version(),
+			'source_classification'   => $result->source_kind(),
+			'source_confidence'       => $result->confidence(),
+			'historical_event'        => $result->is_historical_event(),
+			'fragment_index'          => $fragment_index,
+			'excluded_dynamic_claims' => $result->excluded_dynamic_claims(),
+			'dynamic_fact_types'      => $result->dynamic_fact_types(),
+			'extraction_reason'       => $result->reason(),
+		);
+	}
+
+	private function sync_mixed_artifacts( $source, $result, $url ) {
+		$source_id    = (int) $source->ID;
+		$existing_ids = $this->managed_artifact_ids( $source_id );
+		$artifact_ids = array();
+
+		foreach ( $result->stable_fragments() as $index => $fragment ) {
+			$entry_id = isset( $existing_ids[ $index ] ) ? $existing_ids[ $index ] : 0;
+			$entry_id = ORAS_AI_Knowledge_Base::upsert_scanned_entry(
+				array_merge(
+					array(
+						'entry_id'        => $entry_id,
+						'source_id'       => $source_id,
+						'title'           => $fragment['stable_title'],
+						'content'         => $fragment['stable_content'],
+						'category'        => $result->category(),
+						'visibility'      => $result->visibility(),
+						'status'          => 'review',
+						'source_label'    => 'ORAS Website – ' . $source->post_title,
+						'source_url'      => $url,
+						'internal_notes'  => 'Automatically extracted stable knowledge from a Mixed source. Review required. ' . $result->reason(),
+						'lookup_existing' => false,
+					),
+					$this->artifact_provenance( $source_id, $result, $index )
+				)
+			);
+
+			if ( is_wp_error( $entry_id ) ) {
+				return $entry_id;
+			}
+
+			$artifact_ids[] = (int) $entry_id;
+		}
+
+		foreach ( array_slice( $existing_ids, count( $artifact_ids ) ) as $surplus_id ) {
+			update_post_meta( $surplus_id, '_oras_ai_status', 'retired' );
+		}
+
+		update_post_meta( $source_id, '_oras_ai_kb_entry_ids', $artifact_ids );
+
+		$primary_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
+		if ( ! $primary_id || $this->is_managed_artifact_for_source( $primary_id, $source_id ) ) {
+			update_post_meta( $source_id, '_oras_ai_kb_entry_id', $artifact_ids[0] );
+		}
+
+		return $artifact_ids;
+	}
+
 	private function process_source( $source_id ) {
 		$source = get_post( $source_id );
 
@@ -715,23 +811,27 @@ final class ORAS_AI_Sources {
 		update_post_meta( $source_id, '_oras_ai_last_analyzed', current_time( 'mysql' ) );
 		delete_post_meta( $source_id, '_oras_ai_last_error' );
 
-		$kb_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
+		$kb_id  = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
+		$kb_ids = array();
 
 		if ( 'static_knowledge' === $kind ) {
 			$knowledge_status = $this->should_auto_approve( $post_type, $result ) ? 'approved' : 'review';
 
 			$kb_id = ORAS_AI_Knowledge_Base::upsert_scanned_entry(
-				array(
-					'entry_id'       => $kb_id,
-					'source_id'      => $source_id,
-					'title'          => $title ?: $source->post_title,
-					'content'        => $content,
-					'category'       => $category,
-					'visibility'     => $visibility,
-					'status'         => $knowledge_status,
-					'source_label'   => 'ORAS Website – ' . $source->post_title,
-					'source_url'     => $url,
-					'internal_notes' => 'Automatically managed by the ORAS AI website scanner. Classified by ' . ( 'rule' === $classified_by ? 'WordPress rule' : 'AI' ) . '. ' . $reason,
+				array_merge(
+					array(
+						'entry_id'       => $this->is_managed_artifact_for_source( $kb_id, $source_id ) ? $kb_id : 0,
+						'source_id'      => $source_id,
+						'title'          => $title ?: $source->post_title,
+						'content'        => $content,
+						'category'       => $category,
+						'visibility'     => $visibility,
+						'status'         => $knowledge_status,
+						'source_label'   => 'ORAS Website – ' . $source->post_title,
+						'source_url'     => $url,
+						'internal_notes' => 'Automatically managed by the ORAS AI website scanner. Classified by ' . ( 'rule' === $classified_by ? 'WordPress rule' : 'AI' ) . '. ' . $reason,
+					),
+					$this->artifact_provenance( $source_id, $result )
 				)
 			);
 
@@ -741,31 +841,54 @@ final class ORAS_AI_Sources {
 				return $kb_id;
 			}
 
-			update_post_meta( $source_id, '_oras_ai_kb_entry_id', $kb_id );
+			$linked_kb_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
+			if ( ! $linked_kb_id || $this->is_managed_artifact_for_source( $linked_kb_id, $source_id ) ) {
+				update_post_meta( $source_id, '_oras_ai_kb_entry_id', $kb_id );
+			}
+			$kb_ids = array( (int) $kb_id );
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' === $knowledge_status ? 'review' : 'complete' );
-		} elseif ( 'review' === $kind || 'mixed' === $kind || $result->requires_review() ) {
-			$review_note = 'mixed' === $kind
-				? 'Scanner retained this Mixed source for review; extracted stable fragments are not persisted until M2 Task 2. '
-				: 'Scanner marked this source for review. ';
+		} elseif ( 'mixed' === $kind ) {
+			$kb_ids = $this->sync_mixed_artifacts( $source, $result, $url );
+
+			if ( is_wp_error( $kb_ids ) ) {
+				update_post_meta( $source_id, '_oras_ai_scan_status', 'error' );
+				update_post_meta( $source_id, '_oras_ai_last_error', $kb_ids->get_error_message() );
+				return $kb_ids;
+			}
+
+			$kb_id = $kb_ids[0];
+			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' );
+		} elseif ( 'review' === $kind || $result->requires_review() ) {
 			$kb_id = ORAS_AI_Knowledge_Base::upsert_scanned_entry(
-				array(
-					'entry_id'       => $kb_id,
-					'source_id'      => $source_id,
-					'title'          => $title ?: $source->post_title,
-					'content'        => $content,
-					'category'       => $category,
-					'visibility'     => $visibility,
-					'status'         => 'review',
-					'source_label'   => 'ORAS Website – ' . $source->post_title,
-					'source_url'     => $url,
-					'internal_notes' => $review_note . 'Classified by ' . ( 'rule' === $classified_by ? 'WordPress rule' : 'AI' ) . '. ' . $reason,
+				array_merge(
+					array(
+						'entry_id'       => $this->is_managed_artifact_for_source( $kb_id, $source_id ) ? $kb_id : 0,
+						'source_id'      => $source_id,
+						'title'          => $title ?: $source->post_title,
+						'content'        => $content,
+						'category'       => $category,
+						'visibility'     => $visibility,
+						'status'         => 'review',
+						'source_label'   => 'ORAS Website – ' . $source->post_title,
+						'source_url'     => $url,
+						'internal_notes' => 'Scanner marked this source for review. Classified by ' . ( 'rule' === $classified_by ? 'WordPress rule' : 'AI' ) . '. ' . $reason,
+					),
+					$this->artifact_provenance( $source_id, $result )
 				)
 			);
 
-			if ( ! is_wp_error( $kb_id ) ) {
+			if ( is_wp_error( $kb_id ) ) {
+				update_post_meta( $source_id, '_oras_ai_scan_status', 'error' );
+				update_post_meta( $source_id, '_oras_ai_last_error', $kb_id->get_error_message() );
+				return $kb_id;
+			}
+
+			$linked_kb_id = absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) );
+			if ( ! $linked_kb_id || $this->is_managed_artifact_for_source( $linked_kb_id, $source_id ) ) {
 				update_post_meta( $source_id, '_oras_ai_kb_entry_id', $kb_id );
 			}
 
+			$kb_ids = array( (int) $kb_id );
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' );
 		} else {
 			/*
@@ -784,6 +907,8 @@ final class ORAS_AI_Sources {
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'live_data' === $kind ? 'live' : 'ignored' );
 		}
 
+		update_post_meta( $source_id, '_oras_ai_extraction_version', $result->extraction_version() );
+
 		return array(
 			'source_id'     => $source_id,
 			'title'         => $source->post_title,
@@ -792,6 +917,7 @@ final class ORAS_AI_Sources {
 			'confidence'    => $confidence,
 			'classified_by' => $classified_by,
 			'kb_id'         => $kb_id,
+			'kb_ids'        => $kb_ids,
 		);
 	}
 }

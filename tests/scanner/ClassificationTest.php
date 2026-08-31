@@ -94,7 +94,7 @@ oras_ai_test('ordinary Elementor-built public page is not blanket ignored', func
 	oras_ai_assert_same(null, $result, 'An ordinary public page must remain eligible for classification regardless of Elementor rendering.');
 });
 
-oras_ai_test('valid mixed classification is retained but routed to interim review without approved fragments', function (): void {
+oras_ai_test('valid mixed classification persists only stable fragments as review artifacts', function (): void {
 	oras_ai_test_reset();
 	$classification = ORAS_AI_Source_Classification_Result::from_array(
 		oras_ai_test_mixed_classification(),
@@ -122,15 +122,17 @@ oras_ai_test('valid mixed classification is retained but routed to interim revie
 
 	oras_ai_assert_same('mixed', $result['kind'], 'Scanner must retain the Mixed classification.');
 	oras_ai_assert_same('mixed', get_post_meta($sourceId, '_oras_ai_source_kind', true), 'Source registry must retain Mixed.');
-	oras_ai_assert_same('review', get_post_meta($sourceId, '_oras_ai_scan_status', true), 'Mixed must use the interim review path before Task 2.');
-	$kbId = (int) get_post_meta($sourceId, '_oras_ai_kb_entry_id', true);
-	oras_ai_assert_true($kbId > 0, 'Interim Mixed handling should create a review record.');
-	oras_ai_assert_same('review', get_post_meta($kbId, '_oras_ai_status', true), 'Interim Mixed record must not be approved.');
+	oras_ai_assert_same('review', get_post_meta($sourceId, '_oras_ai_scan_status', true), 'Mixed source should remain in review.');
+	$artifactIds = (array) get_post_meta($sourceId, '_oras_ai_kb_entry_ids', true);
+	oras_ai_assert_same(1, count($artifactIds), 'The one stable fragment should create one artifact.');
+	$kbId = (int) $artifactIds[0];
+	oras_ai_assert_same('review', get_post_meta($kbId, '_oras_ai_status', true), 'Mixed fragment must not be auto-approved.');
 	oras_ai_assert_same(
-		'AstroBlast is an annual gathering. Tickets are $25 for the August 21, 2026 event.',
+		'AstroBlast is ORAS\'s annual astronomy gathering.',
 		get_post_meta($kbId, '_oras_ai_official_answer', true),
-		'Task 1 must not persist extracted stable fragments as final knowledge.'
+		'Mixed artifacts must contain only extracted stable knowledge.'
 	);
+	oras_ai_assert_not_contains('$25', get_post_meta($kbId, '_oras_ai_official_answer', true), 'Dynamic price leaked into durable knowledge.');
 });
 
 oras_ai_test('historical ORAS event knowledge is distinct from current deterministic event data', function (): void {

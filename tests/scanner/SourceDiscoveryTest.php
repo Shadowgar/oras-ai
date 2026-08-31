@@ -92,6 +92,7 @@ oras_ai_test('normal scan skips an unchanged completed source', function (): voi
 	$first = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
 	$sourceId = oras_ai_test_find_source_for_post($postId);
 	update_post_meta($sourceId, '_oras_ai_scan_status', 'complete');
+	update_post_meta($sourceId, '_oras_ai_extraction_version', ORAS_AI_Source_Classification_Result::EXTRACTION_VERSION);
 	$second = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
 
 	oras_ai_assert_same(array($sourceId), $first['queue'], 'New source should initially queue.');
@@ -130,13 +131,31 @@ oras_ai_test('rebuild scan requeues an unchanged terminal source', function (): 
 	oras_ai_assert_same('pending', get_post_meta($sourceId, '_oras_ai_scan_status', true), 'Rebuild should set queued source to pending.');
 });
 
-oras_ai_test('processed source stores rule version one and matching version remains skipped', function (): void {
+oras_ai_test('processed source stores current rule and extraction versions and remains skipped', function (): void {
 	oras_ai_test_reset();
 	list($sources, $sourceId) = oras_ai_test_create_processed_speaker();
 
 	oras_ai_assert_same(1, get_post_meta($sourceId, '_oras_ai_rule_version', true), 'Processed source should store rule version one.');
+	oras_ai_assert_same(1, get_post_meta($sourceId, '_oras_ai_extraction_version', true), 'Processed source should store extraction version one.');
 	$result = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
-	oras_ai_assert_same(array(), $result['queue'], 'Matching rule version should preserve unchanged-source skip behavior.');
+	oras_ai_assert_same(array(), $result['queue'], 'Matching rule and extraction versions should preserve unchanged-source skip behavior.');
+});
+
+oras_ai_test('missing or stale extraction version requeues an unchanged source', function (): void {
+	foreach (array('', 999) as $storedVersion) {
+		oras_ai_test_reset();
+		list($sources, $sourceId) = oras_ai_test_create_processed_speaker();
+		if ('' === $storedVersion) {
+			delete_post_meta($sourceId, '_oras_ai_extraction_version');
+		} else {
+			update_post_meta($sourceId, '_oras_ai_extraction_version', $storedVersion);
+		}
+
+		$result = oras_ai_invoke_private($sources, 'discover_wordpress_sources', array(false));
+
+		oras_ai_assert_same(array($sourceId), $result['queue'], 'Extraction-version mismatch should queue unchanged source.');
+		oras_ai_assert_same('pending', get_post_meta($sourceId, '_oras_ai_scan_status', true), 'Stale extraction source should become pending.');
+	}
 });
 
 oras_ai_test('missing rule version is legacy version one and does not requeue', function (): void {

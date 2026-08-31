@@ -493,23 +493,38 @@ final class ORAS_AI_Knowledge_Base {
 
 	public static function upsert_scanned_entry( $args ) {
 		$defaults = array(
-			'entry_id'       => 0,
-			'source_id'      => 0,
-			'title'          => '',
-			'content'        => '',
-			'category'       => 'General FAQ',
-			'visibility'     => 'public',
-			'status'         => 'review',
-			'source_label'   => '',
-			'source_url'     => '',
-			'internal_notes' => '',
+			'entry_id'                => 0,
+			'source_id'               => 0,
+			'title'                   => '',
+			'content'                 => '',
+			'category'                => 'General FAQ',
+			'visibility'              => 'public',
+			'status'                  => 'review',
+			'source_label'            => '',
+			'source_url'              => '',
+			'internal_notes'          => '',
+			'lookup_existing'         => true,
+			'source_wp_post_id'       => 0,
+			'source_wp_post_type'     => '',
+			'source_hash'             => '',
+			'source_modified_gmt'     => '',
+			'synced_at'               => '',
+			'rule_version'            => 0,
+			'extraction_version'      => 0,
+			'source_classification'   => '',
+			'source_confidence'       => '',
+			'historical_event'        => false,
+			'fragment_index'          => null,
+			'excluded_dynamic_claims' => array(),
+			'dynamic_fact_types'      => array(),
+			'extraction_reason'       => '',
 		);
 
 		$args = wp_parse_args( $args, $defaults );
 
 		$entry_id = absint( $args['entry_id'] );
 
-		if ( ! $entry_id && $args['source_id'] ) {
+		if ( ! $entry_id && $args['source_id'] && $args['lookup_existing'] ) {
 			$existing = get_posts(
 				array(
 					'post_type'      => self::POST_TYPE,
@@ -552,7 +567,9 @@ final class ORAS_AI_Knowledge_Base {
 		$visibility = in_array( $args['visibility'], $allowed_visibility, true ) ? $args['visibility'] : 'public';
 		$status = in_array( $args['status'], $allowed_status, true ) ? $args['status'] : 'review';
 
-		update_post_meta( $entry_id, '_oras_ai_official_answer', wp_kses_post( $args['content'] ) );
+		$official_answer = wp_kses_post( $args['content'] );
+		update_post_meta( $entry_id, '_oras_ai_official_answer', $official_answer );
+		update_post_meta( $entry_id, '_oras_ai_content_hash', hash( 'sha256', $official_answer ) );
 		update_post_meta( $entry_id, '_oras_ai_visibility', $visibility );
 		update_post_meta( $entry_id, '_oras_ai_status', $status );
 		update_post_meta( $entry_id, '_oras_ai_source', sanitize_text_field( $args['source_label'] ) );
@@ -560,6 +577,33 @@ final class ORAS_AI_Knowledge_Base {
 		update_post_meta( $entry_id, '_oras_ai_internal_notes', sanitize_textarea_field( $args['internal_notes'] ) );
 		update_post_meta( $entry_id, '_oras_ai_managed_by_scan', '1' );
 		update_post_meta( $entry_id, '_oras_ai_source_record_id', absint( $args['source_id'] ) );
+		update_post_meta( $entry_id, '_oras_ai_source_wp_post_id', absint( $args['source_wp_post_id'] ) );
+		update_post_meta( $entry_id, '_oras_ai_source_wp_post_type', sanitize_key( $args['source_wp_post_type'] ) );
+		update_post_meta( $entry_id, '_oras_ai_source_hash', sanitize_text_field( $args['source_hash'] ) );
+		update_post_meta( $entry_id, '_oras_ai_source_modified_gmt', sanitize_text_field( $args['source_modified_gmt'] ) );
+		update_post_meta( $entry_id, '_oras_ai_synced_at', sanitize_text_field( $args['synced_at'] ) );
+		update_post_meta( $entry_id, '_oras_ai_rule_version', absint( $args['rule_version'] ) );
+		update_post_meta( $entry_id, '_oras_ai_extraction_version', absint( $args['extraction_version'] ) );
+		update_post_meta( $entry_id, '_oras_ai_source_classification', sanitize_key( $args['source_classification'] ) );
+		update_post_meta( $entry_id, '_oras_ai_source_confidence', sanitize_key( $args['source_confidence'] ) );
+		update_post_meta( $entry_id, '_oras_ai_historical_event', $args['historical_event'] ? '1' : '0' );
+		update_post_meta(
+			$entry_id,
+			'_oras_ai_excluded_dynamic_claims',
+			array_values( array_map( 'sanitize_textarea_field', is_array( $args['excluded_dynamic_claims'] ) ? $args['excluded_dynamic_claims'] : array() ) )
+		);
+		update_post_meta(
+			$entry_id,
+			'_oras_ai_dynamic_fact_types',
+			array_values( array_map( 'sanitize_key', is_array( $args['dynamic_fact_types'] ) ? $args['dynamic_fact_types'] : array() ) )
+		);
+		update_post_meta( $entry_id, '_oras_ai_extraction_reason', sanitize_textarea_field( $args['extraction_reason'] ) );
+
+		if ( null === $args['fragment_index'] ) {
+			delete_post_meta( $entry_id, '_oras_ai_fragment_index' );
+		} else {
+			update_post_meta( $entry_id, '_oras_ai_fragment_index', absint( $args['fragment_index'] ) );
+		}
 
 		if ( 'approved' === $status ) {
 			update_post_meta( $entry_id, '_oras_ai_last_reviewed', current_time( 'Y-m-d' ) );
