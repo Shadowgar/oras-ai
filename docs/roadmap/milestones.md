@@ -15,12 +15,15 @@
 - [x] RB Traceability links validate.
 
 ## M1 — Plugin foundation stabilized
-- [ ] RB v0.2.1 source under Git with reproducible versioning.
-- [ ] RB Retained prototype behavior has regression coverage.
-- [ ] RB Module boundaries implemented.
-- [ ] RB Secret/config baseline implemented.
-- [ ] RB Admin kill switch.
-- [ ] RB PHP/JS lint and automated tests.
+**Status:** COMPLETE — 2026-08-31
+
+**Evidence:** [M1 plugin foundation closure verification](../evidence/m1-plugin-foundation/verification.md)
+- [x] RB v0.2.1 source under Git with reproducible versioning.
+- [x] RB Retained prototype behavior has regression coverage.
+- [x] RB Module boundaries implemented.
+- [x] RB Secret/config baseline implemented.
+- [x] RB Admin kill switch.
+- [x] RB PHP/JS lint and automated tests.
 
 ## M2 — Knowledge platform qualified
 - [ ] RB Rule-first ingestion.
