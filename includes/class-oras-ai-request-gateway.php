@@ -69,6 +69,23 @@ final class ORAS_AI_Request_Gateway {
 		);
 	}
 
+	/**
+	 * Apply domain classification only after request authorization succeeds.
+	 *
+	 * @param array  $request Request fields from the authenticated transport.
+	 * @param object $guard Server-configured request-domain guard.
+	 * @return ORAS_AI_Guarded_Request|WP_Error
+	 */
+	public function authorize_and_guard( array $request, $guard ) {
+		$authorized = $this->authorize( $request );
+		if ( is_wp_error( $authorized ) ) {
+			return $authorized;
+		}
+
+		$domain_result = $guard->classify( $authorized->question() );
+		return new ORAS_AI_Guarded_Request( $authorized, $domain_result );
+	}
+
 	public function handle_ajax_request() {
 		$result = $this->authorize( $_POST );
 
