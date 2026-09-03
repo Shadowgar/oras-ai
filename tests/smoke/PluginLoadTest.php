@@ -11,6 +11,10 @@ oras_ai_test('plugin load registers baseline classes and hooks', function (): vo
 	oras_ai_assert_true(class_exists('ORAS_AI_Access_Guard'), 'Member AI access guard should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Audit_Log'), 'Configuration audit log should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Config'), 'Configuration class should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_Cost_Config'), 'Cost configuration class should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_Usage_Ledger'), 'Usage ledger class should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_Execution_Controls'), 'Execution-control class should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_Cost_Admin'), 'Cost admin class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Knowledge_Base'), 'Knowledge Base class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_OpenAI'), 'OpenAI class should load.');
 	oras_ai_assert_true(interface_exists('ORAS_AI_Source_Classifier_Interface'), 'Source classifier contract should load.');
@@ -21,6 +25,7 @@ oras_ai_test('plugin load registers baseline classes and hooks', function (): vo
 	oras_ai_assert_true(oras_ai_hook_registered('admin_menu'), 'Admin menu hook should be registered.');
 	oras_ai_assert_true(oras_ai_hook_registered('admin_enqueue_scripts'), 'Admin asset hook should be registered.');
 	oras_ai_assert_true(oras_ai_hook_registered('admin_init'), 'Admin upgrade hook should be registered.');
+	oras_ai_assert_true(oras_ai_hook_registered('admin_post_oras_ai_save_cost_controls'), 'Cost settings save hook should be registered.');
 	oras_ai_assert_true(oras_ai_hook_registered('init'), 'Init hooks should be registered.');
 	oras_ai_assert_true(
 		oras_ai_hook_registered('wp_ajax_oras_ai_discover_sources'),

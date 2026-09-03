@@ -444,6 +444,16 @@ function update_option($name, $value, $autoload = null): bool {
 	return true;
 }
 
+function add_option($name, $value = '', $deprecated = '', $autoload = 'yes'): bool {
+	if (array_key_exists((string) $name, $GLOBALS['oras_ai_test_options'])) {
+		return false;
+	}
+
+	$GLOBALS['oras_ai_test_options'][(string) $name] = $value;
+	$GLOBALS['oras_ai_test_option_autoload'][(string) $name] = $autoload;
+	return true;
+}
+
 function delete_option($name): bool {
 	unset($GLOBALS['oras_ai_test_options'][(string) $name]);
 	unset($GLOBALS['oras_ai_test_option_autoload'][(string) $name]);

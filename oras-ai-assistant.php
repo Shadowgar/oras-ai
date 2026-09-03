@@ -17,6 +17,7 @@ define( 'ORAS_AI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ORAS_AI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-config.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-cost-config.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-audit-log.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-access-guard.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-membership-authorizer.php';
@@ -31,6 +32,10 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-guarded-request.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-capability-registry.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-url-policy.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-execution-admission.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-usage-ledger.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-execution-controls.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-cost-admin.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-knowledge-base.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-classification-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-source-classifier.php';
@@ -50,6 +55,7 @@ final class ORAS_AI_Assistant {
 
 	private $sources;
 	private $request_gateway;
+	private $cost_admin;
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ), 9 );
@@ -59,6 +65,7 @@ final class ORAS_AI_Assistant {
 		new ORAS_AI_Knowledge_Base();
 		$this->sources = new ORAS_AI_Sources();
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer() );
+		$this->cost_admin = new ORAS_AI_Cost_Admin();
 	}
 
 	public static function activate() {
@@ -111,6 +118,15 @@ final class ORAS_AI_Assistant {
 			'manage_options',
 			'oras-ai-review',
 			array( $this->sources, 'render_review_page' )
+		);
+
+		add_submenu_page(
+			'oras-ai-assistant',
+			__( 'Usage & Cost Controls', 'oras-ai-assistant' ),
+			__( 'Usage & Cost', 'oras-ai-assistant' ),
+			'manage_options',
+			'oras-ai-cost',
+			array( $this->cost_admin, 'render_page' )
 		);
 
 		add_submenu_page(

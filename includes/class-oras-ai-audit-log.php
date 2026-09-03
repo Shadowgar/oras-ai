@@ -42,6 +42,43 @@ final class ORAS_AI_Audit_Log {
 		return self::record( self::CONFIG_OPENAI_API_KEY, $action, null, null );
 	}
 
+	public static function log_cost_setting_changed( $setting, $old_state, $new_state ) {
+		$allowed = array(
+			'daily_quota',
+			'monthly_quota',
+			'burst_per_minute',
+			'max_input_characters',
+			'max_output_tokens',
+			'execution_timeout_seconds',
+			'warning_microdollars',
+			'hard_stop_microdollars',
+		);
+		$setting = sanitize_key( $setting );
+		if ( ! in_array( $setting, $allowed, true ) ) {
+			return false;
+		}
+
+		return self::record(
+			'config.cost.' . $setting,
+			'changed',
+			sanitize_text_field( (string) $old_state ),
+			sanitize_text_field( (string) $new_state )
+		);
+	}
+
+	public static function log_model_pricing_changed( $model, $old_pricing, $new_pricing ) {
+		if ( ! in_array( $model, ORAS_AI_Config::allowed_openai_models(), true ) ) {
+			return false;
+		}
+
+		return self::record(
+			'config.model_pricing.' . $model,
+			'changed',
+			self::audit_state( $old_pricing ),
+			self::audit_state( $new_pricing )
+		);
+	}
+
 	public static function recent_events( $limit = self::RECENT_EVENTS ) {
 		$events = get_option( self::OPTION_EVENTS, array() );
 
@@ -72,5 +109,13 @@ final class ORAS_AI_Audit_Log {
 			array_slice( $events, 0, self::MAX_EVENTS ),
 			false
 		);
+	}
+
+	private static function audit_state( $state ) {
+		if ( null === $state ) {
+			return 'not configured';
+		}
+
+		return sanitize_text_field( wp_json_encode( $state ) );
 	}
 }
