@@ -19,6 +19,10 @@ define( 'ORAS_AI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-config.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-audit-log.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-access-guard.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-membership-authorizer.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-pmpro-membership-authorizer.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-authorized-request.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-knowledge-base.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-classification-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-source-classifier.php';
@@ -37,6 +41,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-wordpress-retriever.ph
 final class ORAS_AI_Assistant {
 
 	private $sources;
+	private $request_gateway;
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ), 9 );
@@ -45,6 +50,7 @@ final class ORAS_AI_Assistant {
 
 		new ORAS_AI_Knowledge_Base();
 		$this->sources = new ORAS_AI_Sources();
+		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer() );
 	}
 
 	public static function activate() {

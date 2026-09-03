@@ -92,6 +92,7 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_capabilities'] = array();
 	$GLOBALS['oras_ai_test_default_capability'] = true;
 	$GLOBALS['oras_ai_test_nonce_valid'] = true;
+	$GLOBALS['oras_ai_test_nonce_verifications'] = array();
 	$GLOBALS['oras_ai_test_ajax_nonce_checks'] = array();
 	$GLOBALS['oras_ai_test_admin_nonce_checks'] = array();
 	$GLOBALS['oras_ai_test_remote_responses'] = array();
@@ -513,6 +514,7 @@ function get_userdata($user_id) {
 }
 
 function wp_verify_nonce($nonce, $action): bool {
+	$GLOBALS['oras_ai_test_nonce_verifications'][] = array($nonce, $action);
 	return (bool) $GLOBALS['oras_ai_test_nonce_valid'];
 }
 
