@@ -85,6 +85,15 @@ final class ORAS_AI_Assistant {
 
 		add_submenu_page(
 			'oras-ai-assistant',
+			__( 'Needs Review', 'oras-ai-assistant' ),
+			__( 'Needs Review', 'oras-ai-assistant' ),
+			'manage_options',
+			'oras-ai-review',
+			array( $this->sources, 'render_review_page' )
+		);
+
+		add_submenu_page(
+			'oras-ai-assistant',
 			__( 'AI Settings', 'oras-ai-assistant' ),
 			__( 'AI Settings', 'oras-ai-assistant' ),
 			'manage_options',
@@ -143,6 +152,9 @@ final class ORAS_AI_Assistant {
 					<p>
 						<a class="button button-primary" href="<?php echo esc_url( admin_url( 'edit.php?post_type=' . ORAS_AI_Knowledge_Base::POST_TYPE ) ); ?>">
 							<?php esc_html_e( 'Open Knowledge Base', 'oras-ai-assistant' ); ?>
+						</a>
+						<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=oras-ai-review' ) ); ?>">
+							<?php esc_html_e( 'Needs Review', 'oras-ai-assistant' ); ?>
 						</a>
 						<a class="button" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=' . ORAS_AI_Knowledge_Base::POST_TYPE ) ); ?>">
 							<?php esc_html_e( 'Add Manual Entry', 'oras-ai-assistant' ); ?>

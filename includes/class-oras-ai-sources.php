@@ -5,7 +5,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class ORAS_AI_Sources {
 
-	const POST_TYPE = 'oras_ai_source';
+	const POST_TYPE     = 'oras_ai_source';
+	const META_EXCLUDED = '_oras_ai_excluded';
 	private $source_classifier;
 	private $classification_rules;
 
@@ -16,6 +17,8 @@ final class ORAS_AI_Sources {
 		add_action( 'init', array( $this, 'register_source_type' ) );
 
 		add_action( 'admin_post_oras_ai_save_settings', array( $this, 'save_settings' ) );
+		add_action( 'admin_post_oras_ai_source_action', array( $this, 'handle_source_action' ) );
+		add_action( 'admin_post_oras_ai_review_action', array( $this, 'handle_review_action' ) );
 
 		add_action( 'wp_ajax_oras_ai_discover_sources', array( $this, 'ajax_discover_sources' ) );
 		add_action( 'wp_ajax_oras_ai_process_source', array( $this, 'ajax_process_source' ) );
@@ -43,6 +46,80 @@ final class ORAS_AI_Sources {
 	public static function count_sources() {
 		$counts = wp_count_posts( self::POST_TYPE );
 		return $counts && isset( $counts->publish ) ? (int) $counts->publish : 0;
+	}
+
+	public static function is_source_excluded( $source_id ) {
+		return '1' === get_post_meta( absint( $source_id ), self::META_EXCLUDED, true );
+	}
+
+	public function handle_source_action() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change ORAS AI sources.', 'oras-ai-assistant' ) );
+		}
+
+		$source_id = isset( $_POST['source_id'] ) ? absint( $_POST['source_id'] ) : 0;
+		if ( ! $source_id || self::POST_TYPE !== get_post_type( $source_id ) ) {
+			wp_die( esc_html__( 'Invalid knowledge source.', 'oras-ai-assistant' ) );
+		}
+
+		check_admin_referer( 'oras_ai_source_action_' . $source_id, 'oras_ai_source_action_nonce' );
+
+		$action = isset( $_POST['source_action'] ) ? sanitize_key( wp_unslash( $_POST['source_action'] ) ) : '';
+		if ( ! in_array( $action, array( 'exclude', 'unexclude' ), true ) ) {
+			wp_die( esc_html__( 'Invalid source action.', 'oras-ai-assistant' ) );
+		}
+
+		if ( 'exclude' === $action ) {
+			update_post_meta( $source_id, self::META_EXCLUDED, '1' );
+			update_post_meta( $source_id, '_oras_ai_scan_status', 'excluded' );
+			$this->retire_managed_artifacts( $source_id );
+		} else {
+			delete_post_meta( $source_id, self::META_EXCLUDED );
+			update_post_meta( $source_id, '_oras_ai_scan_status', 'pending' );
+		}
+
+		wp_safe_redirect( admin_url( 'admin.php?page=oras-ai-sources' ) );
+		exit;
+	}
+
+	public function handle_review_action() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to review ORAS AI knowledge.', 'oras-ai-assistant' ) );
+		}
+
+		$source_id   = isset( $_POST['source_id'] ) ? absint( $_POST['source_id'] ) : 0;
+		$artifact_id = isset( $_POST['artifact_id'] ) ? absint( $_POST['artifact_id'] ) : 0;
+		if (
+			! $source_id || self::POST_TYPE !== get_post_type( $source_id ) ||
+			! $artifact_id || ORAS_AI_Knowledge_Base::POST_TYPE !== get_post_type( $artifact_id )
+		) {
+			wp_die( esc_html__( 'Invalid review item.', 'oras-ai-assistant' ) );
+		}
+
+		check_admin_referer( 'oras_ai_review_artifact_' . $artifact_id, 'oras_ai_review_action_nonce' );
+
+		$action = isset( $_POST['review_action'] ) ? sanitize_key( wp_unslash( $_POST['review_action'] ) ) : '';
+		if ( ! in_array( $action, array( 'approve', 'retire' ), true ) ) {
+			wp_die( esc_html__( 'Invalid review action.', 'oras-ai-assistant' ) );
+		}
+
+		if ( ! $this->is_managed_artifact_for_source( $artifact_id, $source_id ) ) {
+			wp_die( esc_html__( 'Only linked scanner-managed knowledge can use this review action.', 'oras-ai-assistant' ) );
+		}
+
+		if ( 'review' !== ORAS_AI_Knowledge_Base::lifecycle_status( $artifact_id ) ) {
+			wp_die( esc_html__( 'This knowledge artifact is no longer awaiting review.', 'oras-ai-assistant' ) );
+		}
+
+		update_post_meta( $artifact_id, '_oras_ai_status', 'approve' === $action ? 'approved' : 'retired' );
+		if ( 'approve' === $action ) {
+			update_post_meta( $artifact_id, '_oras_ai_last_reviewed', current_time( 'Y-m-d' ) );
+		}
+
+		$this->refresh_source_review_status( $source_id );
+
+		wp_safe_redirect( admin_url( 'admin.php?page=oras-ai-review' ) );
+		exit;
 	}
 
 	public function render_settings_page() {
@@ -273,20 +350,25 @@ final class ORAS_AI_Sources {
 		);
 
 		$stats = array(
-			'total'   => count( $sources ),
-			'static'  => 0,
-			'live'    => 0,
-			'review'  => 0,
-			'ignored' => 0,
-			'pending' => 0,
-			'error'   => 0,
+			'total'    => count( $sources ),
+			'static'   => 0,
+			'live'     => 0,
+			'review'   => 0,
+			'ignored'  => 0,
+			'excluded' => 0,
+			'pending'  => 0,
+			'error'    => 0,
 		);
 
 		foreach ( $sources as $source ) {
 			$kind = get_post_meta( $source->ID, '_oras_ai_source_kind', true );
 			$status = get_post_meta( $source->ID, '_oras_ai_scan_status', true );
 
-			if ( 'static_knowledge' === $kind ) {
+			if ( self::is_source_excluded( $source->ID ) ) {
+				$stats['excluded']++;
+			} elseif ( 'error' === $status ) {
+				$stats['error']++;
+			} elseif ( 'static_knowledge' === $kind ) {
 				$stats['static']++;
 			} elseif ( 'live_data' === $kind ) {
 				$stats['live']++;
@@ -294,8 +376,6 @@ final class ORAS_AI_Sources {
 				$stats['review']++;
 			} elseif ( 'ignore' === $kind ) {
 				$stats['ignored']++;
-			} elseif ( 'error' === $status ) {
-				$stats['error']++;
 			} else {
 				$stats['pending']++;
 			}
@@ -325,6 +405,7 @@ final class ORAS_AI_Sources {
 				<div><strong><?php echo esc_html( $stats['live'] ); ?></strong><span><?php esc_html_e( 'Live Data', 'oras-ai-assistant' ); ?></span></div>
 				<div><strong><?php echo esc_html( $stats['review'] ); ?></strong><span><?php esc_html_e( 'Review', 'oras-ai-assistant' ); ?></span></div>
 				<div><strong><?php echo esc_html( $stats['ignored'] ); ?></strong><span><?php esc_html_e( 'Ignored', 'oras-ai-assistant' ); ?></span></div>
+				<div><strong><?php echo esc_html( $stats['excluded'] ); ?></strong><span><?php esc_html_e( 'Excluded', 'oras-ai-assistant' ); ?></span></div>
 				<div><strong><?php echo esc_html( $stats['pending'] ); ?></strong><span><?php esc_html_e( 'Pending', 'oras-ai-assistant' ); ?></span></div>
 			</div>
 
@@ -358,11 +439,12 @@ final class ORAS_AI_Sources {
 						<th><?php esc_html_e( 'Confidence', 'oras-ai-assistant' ); ?></th>
 						<th><?php esc_html_e( 'Knowledge Entry', 'oras-ai-assistant' ); ?></th>
 						<th><?php esc_html_e( 'Last Analyzed', 'oras-ai-assistant' ); ?></th>
+						<th><?php esc_html_e( 'Actions', 'oras-ai-assistant' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 				<?php if ( empty( $sources ) ) : ?>
-					<tr><td colspan="7"><?php esc_html_e( 'No sources have been discovered yet.', 'oras-ai-assistant' ); ?></td></tr>
+					<tr><td colspan="8"><?php esc_html_e( 'No sources have been discovered yet.', 'oras-ai-assistant' ); ?></td></tr>
 				<?php else : ?>
 					<?php foreach ( $sources as $source ) :
 						$url        = get_post_meta( $source->ID, '_oras_ai_source_url', true );
@@ -375,12 +457,17 @@ final class ORAS_AI_Sources {
 						$artifact_ids  = $this->linked_artifact_ids( $source->ID );
 						$analyzed      = get_post_meta( $source->ID, '_oras_ai_last_analyzed', true );
 						$error         = get_post_meta( $source->ID, '_oras_ai_last_error', true );
+						$excluded      = self::is_source_excluded( $source->ID );
+						$problem_count = absint( get_post_meta( $source->ID, '_oras_ai_problem_count', true ) );
+						$problem_kind  = get_post_meta( $source->ID, '_oras_ai_last_problem_kind', true );
 						?>
 						<tr>
 							<td>
 								<strong><?php echo esc_html( $source->post_title ); ?></strong>
+								<?php if ( $excluded ) : ?><br><strong><?php esc_html_e( 'Excluded by administrator', 'oras-ai-assistant' ); ?></strong><?php endif; ?>
 								<?php if ( $url ) : ?><br><a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Open source', 'oras-ai-assistant' ); ?></a><?php endif; ?>
 								<?php if ( $error ) : ?><div class="oras-ai-source-error"><?php echo esc_html( $error ); ?></div><?php endif; ?>
+								<?php if ( $problem_count ) : ?><div class="oras-ai-source-reason"><?php echo esc_html( $this->problem_summary( $problem_count, $problem_kind ) ); ?></div><?php endif; ?>
 							</td>
 							<td><?php echo esc_html( $wp_type ?: '—' ); ?></td>
 							<td>
@@ -405,6 +492,7 @@ final class ORAS_AI_Sources {
 								<?php endif; ?>
 							</td>
 							<td><?php echo esc_html( $analyzed ?: '—' ); ?></td>
+							<td><?php $this->render_source_action_form( $source->ID, $excluded ); ?></td>
 						</tr>
 					<?php endforeach; ?>
 				<?php endif; ?>
@@ -412,6 +500,168 @@ final class ORAS_AI_Sources {
 			</table>
 		</div>
 		<?php
+	}
+
+	public function render_review_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$all_sources = get_posts(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 500,
+				'orderby'        => 'title',
+				'order'          => 'ASC',
+			)
+		);
+		$sources = array();
+		foreach ( $all_sources as $source ) {
+			if ( $this->source_needs_review_attention( $source->ID ) ) {
+				$sources[] = $source;
+			}
+		}
+		?>
+		<div class="wrap oras-ai-wrap">
+			<h1><?php esc_html_e( 'Needs Review', 'oras-ai-assistant' ); ?></h1>
+			<p class="oras-ai-lead"><?php esc_html_e( 'Review uncertain scanner results with their source, provenance, ownership, and repeated-problem context before approving or retiring scanner-managed knowledge.', 'oras-ai-assistant' ); ?></p>
+
+			<?php if ( empty( $sources ) ) : ?>
+				<p><?php esc_html_e( 'No sources currently need review.', 'oras-ai-assistant' ); ?></p>
+			<?php else : ?>
+				<table class="widefat striped oras-ai-source-table">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Source', 'oras-ai-assistant' ); ?></th>
+							<th><?php esc_html_e( 'Classification', 'oras-ai-assistant' ); ?></th>
+							<th><?php esc_html_e( 'Provenance / freshness', 'oras-ai-assistant' ); ?></th>
+							<th><?php esc_html_e( 'Knowledge / disposition', 'oras-ai-assistant' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+					<?php foreach ( $sources as $source ) :
+						$source_id      = (int) $source->ID;
+						$url            = get_post_meta( $source_id, '_oras_ai_source_url', true );
+						$kind           = get_post_meta( $source_id, '_oras_ai_source_kind', true );
+						$category       = get_post_meta( $source_id, '_oras_ai_source_category', true );
+						$confidence     = get_post_meta( $source_id, '_oras_ai_source_confidence', true );
+						$reason         = get_post_meta( $source_id, '_oras_ai_source_reason', true );
+						$status         = get_post_meta( $source_id, '_oras_ai_scan_status', true );
+						$source_hash    = get_post_meta( $source_id, '_oras_ai_source_hash', true );
+						$modified       = get_post_meta( $source_id, '_oras_ai_wp_modified_gmt', true );
+						$analyzed       = get_post_meta( $source_id, '_oras_ai_last_analyzed', true );
+						$problem_count  = absint( get_post_meta( $source_id, '_oras_ai_problem_count', true ) );
+						$problem_kind   = get_post_meta( $source_id, '_oras_ai_last_problem_kind', true );
+						$problem_detail = get_post_meta( $source_id, '_oras_ai_last_problem', true );
+						$problem_at     = get_post_meta( $source_id, '_oras_ai_last_problem_at', true );
+						$artifact_ids   = $this->linked_artifact_ids( $source_id );
+						?>
+						<tr>
+							<td>
+								<strong><?php echo esc_html( $source->post_title ); ?></strong><br>
+								<?php echo esc_html( $this->source_status_label( $status ) ); ?>
+								<?php if ( $url ) : ?><br><a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $url ); ?></a><?php endif; ?>
+								<?php if ( $problem_count ) : ?><br><strong><?php echo esc_html( $this->problem_summary( $problem_count, $problem_kind ) ); ?></strong><?php endif; ?>
+								<?php if ( $problem_detail ) : ?><br><?php echo esc_html( $problem_detail ); ?><?php endif; ?>
+								<?php if ( $problem_at ) : ?><br><span class="description"><?php echo esc_html( $problem_at ); ?></span><?php endif; ?>
+							</td>
+							<td>
+								<?php echo esc_html( $this->kind_label( $kind ) ); ?><br>
+								<?php echo esc_html( $category ?: '—' ); ?> · <?php echo esc_html( $confidence ? ucfirst( $confidence ) : '—' ); ?>
+								<?php if ( $reason ) : ?><br><?php echo esc_html( $reason ); ?><?php endif; ?>
+							</td>
+							<td>
+								<?php esc_html_e( 'Hash:', 'oras-ai-assistant' ); ?> <?php echo esc_html( $source_hash ?: '—' ); ?><br>
+								<?php esc_html_e( 'Source modified:', 'oras-ai-assistant' ); ?> <?php echo esc_html( $modified ?: '—' ); ?><br>
+								<?php esc_html_e( 'Last analyzed:', 'oras-ai-assistant' ); ?> <?php echo esc_html( $analyzed ?: '—' ); ?>
+							</td>
+							<td>
+							<?php if ( empty( $artifact_ids ) ) : ?>
+								—
+							<?php else : ?>
+								<?php foreach ( $artifact_ids as $artifact_id ) : ?>
+									<a href="<?php echo esc_url( get_edit_post_link( $artifact_id ) ); ?>"><?php echo esc_html( 'KB-' . str_pad( (string) $artifact_id, 5, '0', STR_PAD_LEFT ) ); ?></a><br>
+									<?php echo esc_html( $this->artifact_admin_label( $artifact_id ) ); ?>
+									<?php if ( ORAS_AI_Knowledge_Base::is_scanner_managed( $artifact_id ) && 'review' === ORAS_AI_Knowledge_Base::lifecycle_status( $artifact_id ) ) : ?>
+										<?php $this->render_review_action_form( $source_id, $artifact_id, 'approve', __( 'Approve', 'oras-ai-assistant' ) ); ?>
+										<?php $this->render_review_action_form( $source_id, $artifact_id, 'retire', __( 'Retire', 'oras-ai-assistant' ) ); ?>
+									<?php endif; ?>
+									<br>
+								<?php endforeach; ?>
+							<?php endif; ?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	private function render_source_action_form( $source_id, $excluded ) {
+		$action = $excluded ? 'unexclude' : 'exclude';
+		$label  = $excluded ? __( 'Include source', 'oras-ai-assistant' ) : __( 'Exclude source', 'oras-ai-assistant' );
+		?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="oras_ai_source_action">
+			<input type="hidden" name="source_id" value="<?php echo esc_attr( $source_id ); ?>">
+			<input type="hidden" name="source_action" value="<?php echo esc_attr( $action ); ?>">
+			<?php wp_nonce_field( 'oras_ai_source_action_' . $source_id, 'oras_ai_source_action_nonce' ); ?>
+			<button type="submit" class="button"><?php echo esc_html( $label ); ?></button>
+		</form>
+		<?php
+	}
+
+	private function render_review_action_form( $source_id, $artifact_id, $action, $label ) {
+		?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block">
+			<input type="hidden" name="action" value="oras_ai_review_action">
+			<input type="hidden" name="source_id" value="<?php echo esc_attr( $source_id ); ?>">
+			<input type="hidden" name="artifact_id" value="<?php echo esc_attr( $artifact_id ); ?>">
+			<input type="hidden" name="review_action" value="<?php echo esc_attr( $action ); ?>">
+			<?php wp_nonce_field( 'oras_ai_review_artifact_' . $artifact_id, 'oras_ai_review_action_nonce' ); ?>
+			<button type="submit" class="button button-small"><?php echo esc_html( $label ); ?></button>
+		</form>
+		<?php
+	}
+
+	private function source_needs_review_attention( $source_id ) {
+		$status = get_post_meta( $source_id, '_oras_ai_scan_status', true );
+		if ( in_array( $status, array( 'review', 'error', 'missing' ), true ) ) {
+			return true;
+		}
+
+		foreach ( $this->linked_artifact_ids( $source_id ) as $artifact_id ) {
+			if ( 'review' === ORAS_AI_Knowledge_Base::lifecycle_status( $artifact_id ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function source_status_label( $status ) {
+		$labels = array(
+			'review'  => __( 'Needs Review', 'oras-ai-assistant' ),
+			'error'   => __( 'Processing Error', 'oras-ai-assistant' ),
+			'missing' => __( 'Missing Source', 'oras-ai-assistant' ),
+		);
+
+		return isset( $labels[ $status ] ) ? $labels[ $status ] : ucfirst( (string) $status );
+	}
+
+	private function problem_summary( $count, $kind ) {
+		$format = 1 === (int) $count
+			? __( '%1$d %2$s occurrence', 'oras-ai-assistant' )
+			: __( '%1$d %2$s occurrences', 'oras-ai-assistant' );
+
+		return sprintf(
+			$format,
+			$count,
+			'error' === $kind ? __( 'error', 'oras-ai-assistant' ) : __( 'review', 'oras-ai-assistant' )
+		);
 	}
 
 	private function kind_label( $kind ) {
@@ -505,6 +755,13 @@ final class ORAS_AI_Sources {
 				continue;
 			}
 
+			$source_id = $this->find_source_by_wp_post_id( $post->ID );
+			if ( $source_id && self::is_source_excluded( $source_id ) ) {
+				$discovered[] = $source_id;
+				update_post_meta( $source_id, '_oras_ai_scan_status', 'excluded' );
+				continue;
+			}
+
 			$content = $this->extract_post_content( $post );
 
 			if ( '' === trim( $content ) ) {
@@ -513,8 +770,6 @@ final class ORAS_AI_Sources {
 
 			$url  = get_permalink( $post );
 			$hash = hash( 'sha256', $post->post_title . '|' . $url . '|' . $content );
-
-			$source_id = $this->find_source_by_wp_post_id( $post->ID );
 
 			if ( ! $source_id ) {
 				$source_id = wp_insert_post(
@@ -773,6 +1028,27 @@ final class ORAS_AI_Sources {
 		}
 	}
 
+	private function refresh_source_review_status( $source_id ) {
+		foreach ( $this->managed_artifact_ids( $source_id ) as $artifact_id ) {
+			if ( 'review' === ORAS_AI_Knowledge_Base::lifecycle_status( $artifact_id ) ) {
+				update_post_meta( $source_id, '_oras_ai_scan_status', 'review' );
+				return;
+			}
+		}
+
+		if ( 'review' === get_post_meta( $source_id, '_oras_ai_scan_status', true ) ) {
+			update_post_meta( $source_id, '_oras_ai_scan_status', 'complete' );
+		}
+	}
+
+	private function record_processing_problem( $source_id, $kind, $detail ) {
+		$count = absint( get_post_meta( $source_id, '_oras_ai_problem_count', true ) ) + 1;
+		update_post_meta( $source_id, '_oras_ai_problem_count', $count );
+		update_post_meta( $source_id, '_oras_ai_last_problem_kind', 'error' === $kind ? 'error' : 'review' );
+		update_post_meta( $source_id, '_oras_ai_last_problem', sanitize_textarea_field( $detail ) );
+		update_post_meta( $source_id, '_oras_ai_last_problem_at', current_time( 'mysql' ) );
+	}
+
 	private function artifact_provenance( $source_id, $result, $fragment_index = null ) {
 		return array(
 			'source_wp_post_id'       => get_post_meta( $source_id, '_oras_ai_wp_post_id', true ),
@@ -840,6 +1116,20 @@ final class ORAS_AI_Sources {
 			return new WP_Error( 'oras_ai_source_missing', __( 'Source record not found.', 'oras-ai-assistant' ) );
 		}
 
+		if ( self::is_source_excluded( $source_id ) ) {
+			update_post_meta( $source_id, '_oras_ai_scan_status', 'excluded' );
+			return array(
+				'source_id'     => $source_id,
+				'title'         => $source->post_title,
+				'kind'          => 'excluded',
+				'category'      => get_post_meta( $source_id, '_oras_ai_source_category', true ),
+				'confidence'    => get_post_meta( $source_id, '_oras_ai_source_confidence', true ),
+				'classified_by' => 'admin',
+				'kb_id'         => absint( get_post_meta( $source_id, '_oras_ai_kb_entry_id', true ) ),
+				'kb_ids'        => $this->managed_artifact_ids( $source_id ),
+			);
+		}
+
 		$url       = get_post_meta( $source_id, '_oras_ai_source_url', true );
 		$post_type = get_post_meta( $source_id, '_oras_ai_wp_post_type', true );
 		$content   = trim( (string) $source->post_content );
@@ -857,6 +1147,7 @@ final class ORAS_AI_Sources {
 			if ( is_wp_error( $result ) ) {
 				update_post_meta( $source_id, '_oras_ai_scan_status', 'error' );
 				update_post_meta( $source_id, '_oras_ai_last_error', $result->get_error_message() );
+				$this->record_processing_problem( $source_id, 'error', $result->get_error_message() );
 				return $result;
 			}
 		}
@@ -868,6 +1159,7 @@ final class ORAS_AI_Sources {
 			);
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'error' );
 			update_post_meta( $source_id, '_oras_ai_last_error', $error->get_error_message() );
+			$this->record_processing_problem( $source_id, 'error', $error->get_error_message() );
 			return $error;
 		}
 
@@ -916,6 +1208,7 @@ final class ORAS_AI_Sources {
 			if ( is_wp_error( $kb_id ) ) {
 				update_post_meta( $source_id, '_oras_ai_scan_status', 'error' );
 				update_post_meta( $source_id, '_oras_ai_last_error', $kb_id->get_error_message() );
+				$this->record_processing_problem( $source_id, 'error', $kb_id->get_error_message() );
 				return $kb_id;
 			}
 
@@ -924,17 +1217,22 @@ final class ORAS_AI_Sources {
 			delete_post_meta( $source_id, '_oras_ai_kb_entry_ids' );
 			$kb_ids = array( (int) $kb_id );
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' === $knowledge_status ? 'review' : 'complete' );
+			if ( 'review' === $knowledge_status ) {
+				$this->record_processing_problem( $source_id, 'review', $reason );
+			}
 		} elseif ( 'mixed' === $kind ) {
 			$kb_ids = $this->sync_mixed_artifacts( $source, $result, $url );
 
 			if ( is_wp_error( $kb_ids ) ) {
 				update_post_meta( $source_id, '_oras_ai_scan_status', 'error' );
 				update_post_meta( $source_id, '_oras_ai_last_error', $kb_ids->get_error_message() );
+				$this->record_processing_problem( $source_id, 'error', $kb_ids->get_error_message() );
 				return $kb_ids;
 			}
 
 			$kb_id = $kb_ids[0];
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' );
+			$this->record_processing_problem( $source_id, 'review', $reason );
 		} elseif ( 'review' === $kind || $result->requires_review() ) {
 			$kb_id = ORAS_AI_Knowledge_Base::upsert_scanned_entry(
 				array_merge(
@@ -957,6 +1255,7 @@ final class ORAS_AI_Sources {
 			if ( is_wp_error( $kb_id ) ) {
 				update_post_meta( $source_id, '_oras_ai_scan_status', 'error' );
 				update_post_meta( $source_id, '_oras_ai_last_error', $kb_id->get_error_message() );
+				$this->record_processing_problem( $source_id, 'error', $kb_id->get_error_message() );
 				return $kb_id;
 			}
 
@@ -965,6 +1264,7 @@ final class ORAS_AI_Sources {
 			delete_post_meta( $source_id, '_oras_ai_kb_entry_ids' );
 			$kb_ids = array( (int) $kb_id );
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'review' );
+			$this->record_processing_problem( $source_id, 'review', $reason );
 		} else {
 			/*
 			 * Rebuild cleanup: if this source previously created a scanner-managed
