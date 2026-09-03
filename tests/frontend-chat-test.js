@@ -59,6 +59,14 @@ const statusStrings = {
 	no_evidence: 'No evidence',
 };
 assert.strictEqual(api.statusMessage({ status: 'failure', error_code: 'oras_ai_sensitive_input' }, statusStrings).text, 'Sensitive input blocked');
+assert.deepStrictEqual([
+	api.statusMessage({ status: 'success' }, statusStrings).text,
+	api.statusMessage({ status: 'refusal' }, statusStrings).text,
+	api.statusMessage({ status: 'no_evidence' }, statusStrings).text,
+	api.statusMessage({ status: 'failure', error_code: 'daily_quota' }, statusStrings).text,
+	api.statusMessage({ status: 'failure', error_code: 'provider_unavailable' }, statusStrings).text,
+	api.statusMessage({ status: 'failure', error_code: 'unexpected' }, statusStrings).text,
+], ['', 'Out of scope', 'No evidence', 'Request limit reached', 'Unavailable', 'Request failed']);
 
 const message = new FakeNode('div');
 api.renderMessage(message, { role: 'assistant', content: '<script>alert(1)</script>' }, fakeDocument);
@@ -92,5 +100,5 @@ setImmediate(() => {
 	assert(sent.options.body.includes('conversation_id=12'));
 	assert(!sent.options.body.includes('user_id'));
 	assert(!sent.options.body.includes('apiKey'));
-	console.log('12 frontend chat assertions passed.');
+	console.log('13 frontend chat assertions passed.');
 });

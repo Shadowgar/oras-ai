@@ -4,9 +4,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Renders the shared member chat component and its plugin-owned frontend entry point.
+ * Renders the shared chat component and its plugin-owned frontend/admin entry points.
  */
 final class ORAS_AI_Chat_UI {
+	const ADMIN_PAGE = 'oras-ai-test-console';
 
 	private $request_gateway;
 	private static $instance = 0;
@@ -15,6 +16,7 @@ final class ORAS_AI_Chat_UI {
 		$this->request_gateway = $request_gateway;
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'wp_footer', array( $this, 'output_sitewide' ) );
 		add_shortcode( 'oras_ai_chat', array( $this, 'render_shortcode' ) );
 	}
@@ -24,6 +26,19 @@ final class ORAS_AI_Chat_UI {
 			return;
 		}
 
+		$this->enqueue_chat_assets();
+	}
+
+	public function enqueue_admin_assets() {
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( ! is_admin() || ! current_user_can( 'manage_options' ) || self::ADMIN_PAGE !== $page ) {
+			return;
+		}
+
+		$this->enqueue_chat_assets();
+	}
+
+	private function enqueue_chat_assets() {
 		wp_enqueue_style(
 			'oras-ai-chat',
 			ORAS_AI_PLUGIN_URL . 'assets/chat.css',
@@ -65,6 +80,19 @@ final class ORAS_AI_Chat_UI {
 				),
 			)
 		);
+	}
+
+	public function render_admin_console() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		?>
+		<div class="wrap oras-ai-wrap">
+			<h1><?php esc_html_e( 'ORAS AI — Test Console', 'oras-ai-assistant' ); ?></h1>
+			<p><?php esc_html_e( 'This console tests the normal assistant path using your administrator account and the currently configured model.', 'oras-ai-assistant' ); ?></p>
+			<?php echo $this->render_component( 'page' ); ?>
+		</div>
+		<?php
 	}
 
 	public function render_sitewide() {

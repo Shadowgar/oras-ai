@@ -110,6 +110,7 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_scheduled_events'] = array();
 	$GLOBALS['oras_ai_test_deleted_posts'] = array();
 	$GLOBALS['oras_ai_test_shortcodes'] = array();
+	$GLOBALS['oras_ai_test_submenu_pages'] = array();
 	$GLOBALS['oras_ai_test_is_admin'] = true;
 	$GLOBALS['oras_ai_test_current_user_id'] = 7;
 	$GLOBALS['oras_ai_test_users'] = array(
@@ -709,7 +710,11 @@ function is_admin(): bool {
 
 function flush_rewrite_rules($hard = true): void {}
 function add_menu_page(...$args): string { return 'toplevel_page_oras-ai-assistant'; }
-function add_submenu_page(...$args): string { return 'oras-ai_page'; }
+function add_submenu_page(...$args): string {
+	$GLOBALS['oras_ai_test_submenu_pages'][] = $args;
+	$slug = isset($args[4]) ? sanitize_key((string) $args[4]) : 'oras-ai';
+	return 'oras-ai-assistant_page_' . $slug;
+}
 function add_meta_box(...$args): void {}
 function remove_meta_box(...$args): void {}
 function wp_dropdown_categories($args = array()): void {}

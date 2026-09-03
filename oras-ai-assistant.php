@@ -157,6 +157,15 @@ final class ORAS_AI_Assistant {
 
 		add_submenu_page(
 			'oras-ai-assistant',
+			__( 'ORAS AI — Test Console', 'oras-ai-assistant' ),
+			__( 'Test Console', 'oras-ai-assistant' ),
+			'manage_options',
+			ORAS_AI_Chat_UI::ADMIN_PAGE,
+			array( $this->chat_ui, 'render_admin_console' )
+		);
+
+		add_submenu_page(
+			'oras-ai-assistant',
 			__( 'AI Settings', 'oras-ai-assistant' ),
 			__( 'AI Settings', 'oras-ai-assistant' ),
 			'manage_options',
