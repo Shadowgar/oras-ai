@@ -8,7 +8,7 @@
 6. Add retrieval abstraction and source-linked evidence packets.
 7. Add member authorization and domain guard.
 8. Add usage ledger and rate limits.
-9. Add member chat for stable ORAS knowledge/general astronomy.
+9. Add the shared member chat for stable ORAS knowledge/general astronomy: a dedicated `[oras_ai_chat]` page and plugin-owned site-wide **Support** overlay/panel using the same transport, authorization, renderer, and backend.
 10. Add The Events Calendar live connector.
 11. Add WooCommerce live connector.
 12. Add PMPro member context.

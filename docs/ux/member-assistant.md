@@ -4,7 +4,16 @@
 
 Only authenticated eligible members see the production AI entry point.
 
-Initial preferred surface: a dedicated member page. A floating member-only widget may be added after the dedicated interface is qualified.
+ORAS AI provides both of these M4 surfaces, owned and rendered by the WordPress plugin:
+
+- a site-wide, member-only floating launcher labeled **Support**;
+- a dedicated member chat page rendered by the `[oras_ai_chat]` shortcode.
+
+Clicking **Support** opens the chat in an overlay/panel without navigating away. The floating panel and dedicated page use the same underlying chat component, conversation transport, authentication, request gateway, response renderer, and backend. The plugin must not require theme `functions.php` changes.
+
+The launcher appears only for eligible authenticated members under the existing authorization boundary. Administrators may receive it according to the existing administrator rules; anonymous and ineligible users do not.
+
+On refresh or navigation between ORAS.org pages, the member's current/latest conversation is restored. **New Chat** starts a fresh conversation. Multiple conversations may exist internally, but M4 does not require a conversation-history/sidebar browser. Desktop uses an overlay panel; mobile may use a near/full-screen panel. Both remain the same component.
 
 Suggested scope copy:
 
@@ -34,7 +43,7 @@ Conversation context may carry forward, but authorization and domain approval ar
 
 ## Sources
 
-Source links should be close to the claims/actions they support rather than dumped into a large generic bibliography.
+Sources are rendered directly beneath the corresponding assistant answer. They use only the server-provided source title and canonical URL. The client must not create model-generated or inferred source links.
 
 ## Errors
 

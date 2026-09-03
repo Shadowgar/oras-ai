@@ -53,7 +53,11 @@
 
 ## M4 — Member chat UX qualified
 - [ ] RB Dedicated member chat.
+- [ ] RB Dedicated page exposes the shared chat through `[oras_ai_chat]`.
+- [ ] RB Site-wide eligible-member **Support** launcher opens the plugin-owned overlay/panel.
+- [ ] RB Dedicated page and floating panel share one chat component, transport, authorization, renderer, and backend.
 - [ ] RB Member-only availability.
+- [ ] RB Refresh/navigation restores the current/latest conversation and **New Chat** starts a fresh one.
 - [ ] RB Progress/error UX.
 - [ ] RB Source/action rendering.
 - [ ] RB Accessibility tests.
