@@ -27,6 +27,12 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openai-source-classifi
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-classification-rules.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-scan-runs.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-sources.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-retrieval-request.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-evidence.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-evidence-packet.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-retriever.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-precedence.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-wordpress-retriever.php';
 
 final class ORAS_AI_Assistant {
 
