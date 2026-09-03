@@ -39,14 +39,17 @@
 - [x] RB Scanner tests pass.
 
 ## M3 — Retrieval, security, and cost boundary proven
-- [ ] RB Source-linked retrieval.
-- [ ] RB Fact-level source precedence.
-- [ ] RB Authentication/member authorization.
-- [ ] RB Domain guard.
-- [ ] RB Prompt-injection tests.
-- [ ] RB Quota/burst/input/output limits.
-- [ ] RB Usage/audit baseline.
-- [ ] RB No-evidence ORAS question does not hallucinate.
+**Status:** COMPLETE — 2026-09-03
+
+**Evidence:** [M3 retrieval, security, and cost closure verification](../evidence/m3-retrieval-security-cost/verification.md)
+- [x] RB Source-linked retrieval.
+- [x] RB Fact-level source precedence.
+- [x] RB Authentication/member authorization.
+- [x] RB Domain guard.
+- [x] RB Prompt-injection tests.
+- [x] RB Quota/burst/input/output limits.
+- [x] RB Usage/audit baseline.
+- [x] RB No-evidence ORAS question does not hallucinate.
 
 ## M4 — Member chat UX qualified
 - [ ] RB Dedicated member chat.

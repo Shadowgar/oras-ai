@@ -21,8 +21,13 @@
 | NFR-PRIV-* | ADR-0017 | M4 | AT-PRIV |
 | NFR-A11Y-* | ADR-0018 | M4 | AT-A11Y |
 | NFR-MNT-* | ADR-0001, ADR-0002 | M1 | AT-ARCH |
+| NFR-REL-004 | ADR-0009 | M2 active-artifact eligibility foundation; M3 retrieval enforcement | AT-KB, AT-RET |
+| NFR-REL-005 | ADR-0013, ADR-0016 | M3 | AT-SEC, AT-COST |
+| NFR-PERF-003 | ADR-0009, ADR-0016 | M3 | AT-RET, AT-COST |
 | NFR-OBS-001, NFR-OBS-004 | ADR-0019 | M2 | AT-OBS |
 | NFR-OBS-003 | ADR-0019 | M3 | AT-OBS, AT-DOMAIN, AT-COST |
 | NFR-OBS-002 | ADR-0019 | M5 | AT-OBS, AT-LIVE |
 
 A milestone cannot be accepted when an RB requirement first required there lacks implementation, verification, and retained/reproducible evidence.
+
+For PMPro scope, M3 `AUTH-002` uses only the Boolean answer to whether the authenticated user has any active membership. Member-specific PMPro answer context remains `LIVE-003` work first required in M5.
