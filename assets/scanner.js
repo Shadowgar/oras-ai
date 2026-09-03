@@ -22,13 +22,29 @@ jQuery(function ($) {
 		setButtonsDisabled(false);
 	}
 
-	function processQueue(queue, index) {
+	function completeRun(runId) {
+		return $.post(ORAS_AI_SCAN.ajaxUrl, {
+			action: 'oras_ai_complete_scan',
+			nonce: ORAS_AI_SCAN.nonce,
+			run_id: runId
+		});
+	}
+
+	function processQueue(queue, index, runId) {
 		if (index >= queue.length) {
-			$bar.css('width', '100%');
-			$text.text(ORAS_AI_SCAN.strings.complete);
-			window.setTimeout(function () {
-				window.location.reload();
-			}, 900);
+			completeRun(runId).done(function (response) {
+				if (!response || !response.success) {
+					fail('Unable to complete the scan-run record.');
+					return;
+				}
+				$bar.css('width', '100%');
+				$text.text(ORAS_AI_SCAN.strings.complete);
+				window.setTimeout(function () {
+					window.location.reload();
+				}, 900);
+			}).fail(function () {
+				fail('HTTP error while completing the scan-run record.');
+			});
 			return;
 		}
 
@@ -40,7 +56,8 @@ jQuery(function ($) {
 		$.post(ORAS_AI_SCAN.ajaxUrl, {
 			action: 'oras_ai_process_source',
 			nonce: ORAS_AI_SCAN.nonce,
-			source_id: sourceId
+			source_id: sourceId,
+			run_id: runId
 		}).done(function (response) {
 			if (!response || !response.success) {
 				const message = response && response.data && response.data.message
@@ -53,7 +70,7 @@ jQuery(function ($) {
 			const data = response.data || {};
 			const method = data.classified_by === 'rule' ? 'WordPress rule' : 'AI';
 			log((data.title || ('Source ' + sourceId)) + ': ' + (data.kind || 'processed') + ' via ' + method);
-			processQueue(queue, index + 1);
+			processQueue(queue, index + 1, runId);
 		}).fail(function (xhr) {
 			let message = 'HTTP error while analyzing source.';
 			if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
@@ -96,6 +113,12 @@ jQuery(function ($) {
 
 			const data = response.data || {};
 			const queue = Array.isArray(data.queue) ? data.queue : [];
+			const runId = parseInt(data.run_id, 10) || 0;
+
+			if (!runId) {
+				fail('Discovery did not return a scan-run record.');
+				return;
+			}
 
 			log('Discovered ' + (data.found || 0) + ' source(s).');
 			log(queue.length + ' source(s) queued for classification.');
@@ -104,15 +127,11 @@ jQuery(function ($) {
 			}
 
 			if (!queue.length) {
-				$bar.css('width', '100%');
-				$text.text(ORAS_AI_SCAN.strings.complete);
-				window.setTimeout(function () {
-					window.location.reload();
-				}, 700);
+				processQueue(queue, 0, runId);
 				return;
 			}
 
-			processQueue(queue, 0);
+			processQueue(queue, 0, runId);
 		}).fail(function (xhr) {
 			let message = 'HTTP error while discovering sources.';
 			if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {

@@ -22,6 +22,7 @@ final class ORAS_AI_Sources {
 
 		add_action( 'wp_ajax_oras_ai_discover_sources', array( $this, 'ajax_discover_sources' ) );
 		add_action( 'wp_ajax_oras_ai_process_source', array( $this, 'ajax_process_source' ) );
+		add_action( 'wp_ajax_oras_ai_complete_scan', array( $this, 'ajax_complete_scan' ) );
 	}
 
 	public function register_source_type() {
@@ -680,14 +681,25 @@ final class ORAS_AI_Sources {
 		$this->verify_ajax();
 
 		$mode  = isset( $_POST['scan_mode'] ) ? sanitize_key( wp_unslash( $_POST['scan_mode'] ) ) : 'changed';
+		$mode  = 'rebuild' === $mode ? 'rebuild' : 'changed';
 		$force = 'rebuild' === $mode;
+		$run_id = ORAS_AI_Scan_Runs::start(
+			$mode,
+			$this->classification_rules->version(),
+			ORAS_AI_Source_Classification_Result::EXTRACTION_VERSION,
+			ORAS_AI_Config::get_openai_model()
+		);
 
 		$result = $this->discover_wordpress_sources( $force );
 
 		if ( is_wp_error( $result ) ) {
+			ORAS_AI_Scan_Runs::record_outcome( $run_id, 'error' );
+			ORAS_AI_Scan_Runs::complete( $run_id );
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 		}
 
+		ORAS_AI_Scan_Runs::record_discovery( $run_id, $result );
+		$result['run_id'] = $run_id;
 		$result['mode'] = $mode;
 		wp_send_json_success( $result );
 	}
@@ -696,14 +708,21 @@ final class ORAS_AI_Sources {
 		$this->verify_ajax();
 
 		$source_id = isset( $_POST['source_id'] ) ? absint( $_POST['source_id'] ) : 0;
+		$run_id    = isset( $_POST['run_id'] ) ? absint( $_POST['run_id'] ) : 0;
 
 		if ( ! $source_id || self::POST_TYPE !== get_post_type( $source_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Invalid knowledge source.', 'oras-ai-assistant' ) ) );
 		}
 
+		if ( ! $run_id || ! ORAS_AI_Scan_Runs::find( $run_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid scan run.', 'oras-ai-assistant' ) ) );
+		}
+
 		$result = $this->process_source( $source_id );
 
 		if ( is_wp_error( $result ) ) {
+			ORAS_AI_Scan_Runs::record_outcome( $run_id, 'error' );
+			ORAS_AI_Scan_Runs::complete( $run_id );
 			wp_send_json_error(
 				array(
 					'message'   => $result->get_error_message(),
@@ -712,7 +731,35 @@ final class ORAS_AI_Sources {
 			);
 		}
 
+		$outcomes = array(
+			'static_knowledge' => 'static',
+			'mixed'            => 'mixed',
+			'live_data'        => 'live',
+			'ignore'           => 'ignored',
+			'review'           => 'review',
+			'excluded'         => 'excluded',
+		);
+		$kind   = isset( $result['kind'] ) ? $result['kind'] : '';
+		$status = get_post_meta( $source_id, '_oras_ai_scan_status', true );
+		ORAS_AI_Scan_Runs::record_outcome(
+			$run_id,
+			isset( $outcomes[ $kind ] ) ? $outcomes[ $kind ] : 'review',
+			'review' === $status
+		);
+
 		wp_send_json_success( $result );
+	}
+
+	public function ajax_complete_scan() {
+		$this->verify_ajax();
+
+		$run_id = isset( $_POST['run_id'] ) ? absint( $_POST['run_id'] ) : 0;
+		if ( ! $run_id || ! ORAS_AI_Scan_Runs::find( $run_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid scan run.', 'oras-ai-assistant' ) ) );
+		}
+
+		ORAS_AI_Scan_Runs::complete( $run_id );
+		wp_send_json_success( array( 'run_id' => $run_id ) );
 	}
 
 	private function verify_ajax() {
@@ -749,6 +796,7 @@ final class ORAS_AI_Sources {
 
 		$queue      = array();
 		$discovered = array();
+		$excluded   = 0;
 
 		foreach ( $posts as $post ) {
 			if ( ORAS_AI_Knowledge_Base::POST_TYPE === $post->post_type || self::POST_TYPE === $post->post_type ) {
@@ -758,6 +806,7 @@ final class ORAS_AI_Sources {
 			$source_id = $this->find_source_by_wp_post_id( $post->ID );
 			if ( $source_id && self::is_source_excluded( $source_id ) ) {
 				$discovered[] = $source_id;
+				$excluded++;
 				update_post_meta( $source_id, '_oras_ai_scan_status', 'excluded' );
 				continue;
 			}
@@ -818,11 +867,17 @@ final class ORAS_AI_Sources {
 			}
 		}
 
-		$this->retire_missing_sources( $discovered );
+		$missing = $this->retire_missing_sources( $discovered );
+		$queue   = array_values( array_unique( $queue ) );
 
 		return array(
-			'found' => count( $discovered ),
-			'queue' => array_values( array_unique( $queue ) ),
+			'found'      => count( $discovered ),
+			'discovered' => count( $discovered ),
+			'queue'      => $queue,
+			'unchanged'  => max( 0, count( $discovered ) - count( $queue ) - $excluded ),
+			'excluded'   => $excluded,
+			'missing'    => $missing['missing'],
+			'retired'    => $missing['retired'],
 		);
 	}
 
@@ -933,10 +988,16 @@ final class ORAS_AI_Sources {
 
 		$missing = array_diff( $all_ids, $discovered_ids );
 
+		$retired = 0;
 		foreach ( $missing as $source_id ) {
 			update_post_meta( $source_id, '_oras_ai_scan_status', 'missing' );
-			$this->retire_managed_artifacts( $source_id );
+			$retired += $this->retire_managed_artifacts( $source_id );
 		}
+
+		return array(
+			'missing' => count( $missing ),
+			'retired' => $retired,
+		);
 	}
 
 
@@ -1020,12 +1081,16 @@ final class ORAS_AI_Sources {
 
 	private function retire_managed_artifacts( $source_id, $keep_ids = array() ) {
 		$keep_ids = array_map( 'absint', $keep_ids );
+		$retired  = 0;
 
 		foreach ( $this->managed_artifact_ids( $source_id ) as $entry_id ) {
-			if ( ! in_array( $entry_id, $keep_ids, true ) ) {
+			if ( ! in_array( $entry_id, $keep_ids, true ) && 'retired' !== ORAS_AI_Knowledge_Base::lifecycle_status( $entry_id ) ) {
 				update_post_meta( $entry_id, '_oras_ai_status', 'retired' );
+				$retired++;
 			}
 		}
+
+		return $retired;
 	}
 
 	private function refresh_source_review_status( $source_id ) {

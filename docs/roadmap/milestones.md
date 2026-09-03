@@ -26,14 +26,17 @@
 - [x] RB PHP/JS lint and automated tests.
 
 ## M2 — Knowledge platform qualified
-- [ ] RB Rule-first ingestion.
-- [ ] RB Mixed-source extraction.
-- [ ] RB Provenance/hash/lifecycle.
-- [ ] RB Idempotent normal sync/rebuild.
-- [ ] RB Retired entries excluded from active counts/retrieval.
-- [ ] RB Manual entries protected.
-- [ ] RB Review queue usable.
-- [ ] RB Scanner tests pass.
+**Status:** COMPLETE — 2026-09-03
+
+**Evidence:** [M2 knowledge platform closure verification](../evidence/m2-knowledge-platform/verification.md)
+- [x] RB Rule-first ingestion.
+- [x] RB Mixed-source extraction.
+- [x] RB Provenance/hash/lifecycle.
+- [x] RB Idempotent normal sync/rebuild.
+- [x] RB Retired entries excluded from active counts/retrieval.
+- [x] RB Manual entries protected.
+- [x] RB Review queue usable.
+- [x] RB Scanner tests pass.
 
 ## M3 — Retrieval, security, and cost boundary proven
 - [ ] RB Source-linked retrieval.
