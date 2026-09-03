@@ -288,3 +288,27 @@ oras_ai_test('unauthorized invalid-nonce and kill-switch endpoint requests never
 		}
 	}
 });
+
+oras_ai_test('NFR-PRIV-004 gateway rejects payment-card input before answer-provider dispatch without logging it', function (): void {
+	oras_ai_test_reset();
+	$GLOBALS['oras_ai_test_capabilities']['manage_options'] = false;
+	$packet = new ORAS_AI_Evidence_Packet(array(oras_ai_test_answer_evidence()));
+	list($orchestrator, $provider) = oras_ai_test_answer_fixture($packet, oras_ai_test_provider_success());
+	$gateway = new ORAS_AI_Request_Gateway(
+		new ORAS_AI_PMPro_Membership_Authorizer(static function () { return true; }),
+		$orchestrator
+	);
+	$card = '4111 1111 1111 1111';
+	$_POST = oras_ai_test_gateway_payload(array('question' => 'my card number is ' . $card));
+
+	try {
+		$gateway->handle_ajax_request();
+		throw new RuntimeException('Expected sensitive-input JSON rejection.');
+	} catch (ORAS_AI_Test_Json_Response $response) {
+		oras_ai_assert_false($response->success, 'Card input must use error transport.');
+		oras_ai_assert_same(400, $response->status, 'Sensitive-input response status changed.');
+		oras_ai_assert_same(0, count($provider->calls), 'Card input reached the answer provider.');
+		oras_ai_assert_not_contains($card, wp_json_encode($response->data), 'Sensitive response echoed the card number.');
+		oras_ai_assert_not_contains($card, serialize($GLOBALS['oras_ai_test_options']), 'Card input appeared in stored logs or options.');
+	}
+});

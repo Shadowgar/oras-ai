@@ -56,6 +56,8 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-provider-answer.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openai-answer-provider.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-answer-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-answer-orchestrator.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-sensitive-input-guard.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-conversations.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
 
 final class ORAS_AI_Assistant {
@@ -63,6 +65,7 @@ final class ORAS_AI_Assistant {
 	private $sources;
 	private $request_gateway;
 	private $cost_admin;
+	private $conversations;
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ), 9 );
@@ -71,6 +74,7 @@ final class ORAS_AI_Assistant {
 
 		new ORAS_AI_Knowledge_Base();
 		$this->sources = new ORAS_AI_Sources();
+		$this->conversations = new ORAS_AI_Conversations();
 		$ledger = new ORAS_AI_Usage_Ledger();
 		$orchestrator = new ORAS_AI_Answer_Orchestrator(
 			new ORAS_AI_Execution_Controls( $ledger ),
@@ -294,5 +298,7 @@ final class ORAS_AI_Assistant {
 }
 
 register_activation_hook( __FILE__, array( 'ORAS_AI_Assistant', 'activate' ) );
+
+register_deactivation_hook( __FILE__, array( 'ORAS_AI_Conversations', 'deactivate' ) );
 
 new ORAS_AI_Assistant();

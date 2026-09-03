@@ -7,6 +7,10 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', __DIR__ . '/wordpress/');
 }
 
+if (!defined('DAY_IN_SECONDS')) {
+	define('DAY_IN_SECONDS', 86400);
+}
+
 final class ORAS_AI_Test_Json_Response extends RuntimeException {
 	public bool $success;
 	public $data;
@@ -61,6 +65,7 @@ if (!class_exists('WP_Error')) {
 $GLOBALS['oras_ai_tests'] = array();
 $GLOBALS['oras_ai_test_hooks'] = array();
 $GLOBALS['oras_ai_test_activation_hooks'] = array();
+$GLOBALS['oras_ai_test_deactivation_hooks'] = array();
 
 function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_registered_post_types'] = array();
@@ -102,6 +107,8 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_enqueued_styles'] = array();
 	$GLOBALS['oras_ai_test_localized_scripts'] = array();
 	$GLOBALS['oras_ai_test_redirects'] = array();
+	$GLOBALS['oras_ai_test_scheduled_events'] = array();
+	$GLOBALS['oras_ai_test_deleted_posts'] = array();
 	$GLOBALS['oras_ai_test_current_user_id'] = 7;
 	$GLOBALS['oras_ai_test_users'] = array(
 		7 => (object) array('ID' => 7, 'display_name' => 'Test Administrator'),
@@ -186,6 +193,10 @@ function add_filter($hook_name, $callback, $priority = 10, $accepted_args = 1) {
 
 function register_activation_hook($file, $callback): void {
 	$GLOBALS['oras_ai_test_activation_hooks'][] = array('file' => $file, 'callback' => $callback);
+}
+
+function register_deactivation_hook($file, $callback): void {
+	$GLOBALS['oras_ai_test_deactivation_hooks'][] = array('file' => $file, 'callback' => $callback);
 }
 
 function plugin_dir_path($file): string {
@@ -342,6 +353,9 @@ function wp_insert_post($postarr, $wp_error = false) {
 		'post_title' => '',
 		'post_content' => '',
 		'post_excerpt' => '',
+		'post_author' => 0,
+		'post_parent' => 0,
+		'post_date_gmt' => '2026-08-27 00:00:00',
 		'post_modified_gmt' => '2026-08-27 00:00:00',
 		'post_name' => 'post-' . $id,
 	);
@@ -366,6 +380,19 @@ function get_post_type($post_id) {
 	return $post ? $post->post_type : false;
 }
 
+function wp_delete_post($post_id, $force_delete = false) {
+	$post_id = (int) $post_id;
+	$post = $GLOBALS['oras_ai_test_posts'][$post_id] ?? null;
+	if (!$post) {
+		return false;
+	}
+	$GLOBALS['oras_ai_test_deleted_posts'][] = $post_id;
+	unset($GLOBALS['oras_ai_test_posts'][$post_id]);
+	unset($GLOBALS['oras_ai_test_post_meta'][$post_id]);
+	unset($GLOBALS['oras_ai_test_post_terms'][$post_id]);
+	return $post;
+}
+
 function get_posts($args = array()): array {
 	$args = wp_parse_args($args, array('post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => 5));
 	$postTypes = (array) $args['post_type'];
@@ -373,6 +400,12 @@ function get_posts($args = array()): array {
 	$posts = array_values($GLOBALS['oras_ai_test_posts']);
 	$posts = array_values(array_filter($posts, static function ($post) use ($postTypes, $postStatuses, $args): bool {
 		if (!in_array($post->post_type, $postTypes, true) || !in_array($post->post_status, $postStatuses, true)) {
+			return false;
+		}
+		if (isset($args['post_parent']) && (int) $post->post_parent !== (int) $args['post_parent']) {
+			return false;
+		}
+		if (isset($args['author']) && (int) $post->post_author !== (int) $args['author']) {
 			return false;
 		}
 		if (!empty($args['meta_key'])) {
@@ -458,6 +491,38 @@ function delete_option($name): bool {
 	unset($GLOBALS['oras_ai_test_options'][(string) $name]);
 	unset($GLOBALS['oras_ai_test_option_autoload'][(string) $name]);
 	return true;
+}
+
+function wp_next_scheduled($hook, $args = array()) {
+	foreach ($GLOBALS['oras_ai_test_scheduled_events'] as $event) {
+		if ((string) $event['hook'] === (string) $hook && $event['args'] === $args) {
+			return (int) $event['timestamp'];
+		}
+	}
+	return false;
+}
+
+function wp_schedule_event($timestamp, $recurrence, $hook, $args = array(), $wp_error = false) {
+	$GLOBALS['oras_ai_test_scheduled_events'][] = array(
+		'timestamp' => (int) $timestamp,
+		'recurrence' => (string) $recurrence,
+		'hook' => (string) $hook,
+		'args' => $args,
+	);
+	return true;
+}
+
+function wp_clear_scheduled_hook($hook, $args = array(), $wp_error = false) {
+	$before = count($GLOBALS['oras_ai_test_scheduled_events']);
+	$GLOBALS['oras_ai_test_scheduled_events'] = array_values(
+		array_filter(
+			$GLOBALS['oras_ai_test_scheduled_events'],
+			static function ($event) use ($hook, $args): bool {
+				return (string) $event['hook'] !== (string) $hook || $event['args'] !== $args;
+			}
+		)
+	);
+	return $before - count($GLOBALS['oras_ai_test_scheduled_events']);
 }
 
 function is_wp_error($value): bool {

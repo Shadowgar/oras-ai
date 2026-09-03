@@ -9,10 +9,12 @@ final class ORAS_AI_Request_Gateway {
 
 	private $membership_authorizer;
 	private $answer_orchestrator;
+	private $sensitive_input_guard;
 
-	public function __construct( ORAS_AI_Membership_Authorizer_Interface $membership_authorizer, ?ORAS_AI_Answer_Orchestrator $answer_orchestrator = null ) {
+	public function __construct( ORAS_AI_Membership_Authorizer_Interface $membership_authorizer, ?ORAS_AI_Answer_Orchestrator $answer_orchestrator = null, ?ORAS_AI_Sensitive_Input_Guard $sensitive_input_guard = null ) {
 		$this->membership_authorizer = $membership_authorizer;
 		$this->answer_orchestrator   = $answer_orchestrator;
+		$this->sensitive_input_guard = $sensitive_input_guard ?: new ORAS_AI_Sensitive_Input_Guard();
 
 		add_action( 'wp_ajax_oras_ai_member_request', array( $this, 'handle_ajax_request' ) );
 	}
@@ -45,6 +47,11 @@ final class ORAS_AI_Request_Gateway {
 		$question = trim( wp_unslash( $request['question'] ) );
 		if ( '' === $question ) {
 			return $this->invalid_request();
+		}
+
+		$safe = $this->sensitive_input_guard->validate( $question );
+		if ( is_wp_error( $safe ) ) {
+			return $safe;
 		}
 
 		$is_administrator = current_user_can( 'manage_options' );
