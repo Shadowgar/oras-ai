@@ -60,6 +60,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-sensitive-input-guard.
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-conversations.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-conversation-transport.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-chat-ui.php';
 
 final class ORAS_AI_Assistant {
 
@@ -68,6 +69,7 @@ final class ORAS_AI_Assistant {
 	private $cost_admin;
 	private $conversations;
 	private $conversation_transport;
+	private $chat_ui;
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ), 9 );
@@ -88,6 +90,7 @@ final class ORAS_AI_Assistant {
 		);
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
 		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations );
+		$this->chat_ui = new ORAS_AI_Chat_UI( $this->request_gateway );
 		$this->cost_admin = new ORAS_AI_Cost_Admin();
 	}
 

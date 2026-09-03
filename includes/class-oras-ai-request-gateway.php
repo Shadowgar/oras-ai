@@ -74,6 +74,20 @@ final class ORAS_AI_Request_Gateway {
 	}
 
 	/**
+	 * Decide whether the authenticated frontend may render the member UI.
+	 *
+	 * @return bool
+	 */
+	public function member_ui_allowed() {
+		$user_id = get_current_user_id();
+		if ( $user_id <= 0 || ! ORAS_AI_Access_Guard::member_ai_execution_allowed() ) {
+			return false;
+		}
+
+		return current_user_can( 'manage_options' ) || $this->membership_authorizer->has_active_membership( $user_id );
+	}
+
+	/**
 	 * Apply domain classification only after request authorization succeeds.
 	 *
 	 * @param array  $request Request fields from the authenticated transport.

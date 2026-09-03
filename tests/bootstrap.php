@@ -109,6 +109,8 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_redirects'] = array();
 	$GLOBALS['oras_ai_test_scheduled_events'] = array();
 	$GLOBALS['oras_ai_test_deleted_posts'] = array();
+	$GLOBALS['oras_ai_test_shortcodes'] = array();
+	$GLOBALS['oras_ai_test_is_admin'] = true;
 	$GLOBALS['oras_ai_test_current_user_id'] = 7;
 	$GLOBALS['oras_ai_test_users'] = array(
 		7 => (object) array('ID' => 7, 'display_name' => 'Test Administrator'),
@@ -189,6 +191,10 @@ function add_filter($hook_name, $callback, $priority = 10, $accepted_args = 1) {
 		'accepted_args' => $accepted_args,
 	);
 	return true;
+}
+
+function add_shortcode($tag, $callback): void {
+	$GLOBALS['oras_ai_test_shortcodes'][(string) $tag] = $callback;
 }
 
 function register_activation_hook($file, $callback): void {
@@ -698,7 +704,7 @@ function wp_count_posts($type = 'post', $perm = '') {
 }
 
 function is_admin(): bool {
-	return true;
+	return (bool) $GLOBALS['oras_ai_test_is_admin'];
 }
 
 function flush_rewrite_rules($hard = true): void {}
