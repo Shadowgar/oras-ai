@@ -52,17 +52,20 @@
 - [x] RB No-evidence ORAS question does not hallucinate.
 
 ## M4 — Member chat UX qualified
-- [ ] RB Dedicated member chat.
-- [ ] RB Dedicated page exposes the shared chat through `[oras_ai_chat]`.
-- [ ] RB Site-wide eligible-member **Support** launcher opens the plugin-owned overlay/panel.
-- [ ] RB Dedicated page and floating panel share one chat component, transport, authorization, renderer, and backend.
-- [ ] RB Member-only availability.
-- [ ] RB Refresh/navigation restores the current/latest conversation and **New Chat** starts a fresh one.
-- [ ] RB Progress/error UX.
-- [ ] RB Source/action rendering.
-- [ ] RB Accessibility tests.
-- [ ] RB Privacy/retention decision implemented.
-- [ ] RB Admin test console.
+**Status:** COMPLETE — 2026-09-03
+
+**Evidence:** [M4 member chat UX closure verification](../evidence/m4-member-chat-ux/verification.md)
+- [x] RB Dedicated member chat.
+- [x] RB Dedicated page exposes the shared chat through `[oras_ai_chat]`.
+- [x] RB Site-wide eligible-member **Support** launcher opens the plugin-owned overlay/panel.
+- [x] RB Dedicated page and floating panel share one chat component, transport, authorization, renderer, and backend.
+- [x] RB Member-only availability.
+- [x] RB Refresh/navigation restores the current/latest conversation and **New Chat** starts a fresh one.
+- [x] RB Progress/error UX.
+- [x] RB Source/action rendering (M4 qualifies trusted source links; member actions remain M8).
+- [x] RB Accessibility tests.
+- [x] RB Privacy/retention decision implemented.
+- [x] RB Admin test console.
 
 At M4 the assistant may answer stable ORAS knowledge and general astronomy, but cannot claim unqualified live capabilities.
 

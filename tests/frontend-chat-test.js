@@ -3,6 +3,7 @@ const fs = require('fs');
 const vm = require('vm');
 
 const source = fs.readFileSync(__dirname + '/../assets/chat.js', 'utf8');
+const styles = fs.readFileSync(__dirname + '/../assets/chat.css', 'utf8');
 const nodes = [];
 
 class FakeNode {
@@ -13,19 +14,54 @@ class FakeNode {
 		this.textContent = '';
 		this.className = '';
 		this.href = '';
+		this.value = '';
+		this.hidden = false;
+		this.disabled = false;
+		this.listeners = {};
+		this.selectors = {};
+		this.ownerDocument = null;
 	}
 	appendChild(child) {
+		child.parentElement = this;
 		this.children.push(child);
 		return child;
+	}
+	replaceChildren(...children) {
+		this.children = [];
+		children.forEach((child) => this.appendChild(child));
 	}
 	setAttribute(name, value) {
 		this.attributes[name] = String(value);
 	}
+	getAttribute(name) {
+		return this.attributes[name] || null;
+	}
+	removeAttribute(name) {
+		delete this.attributes[name];
+	}
+	querySelector(selector) {
+		return this.selectors[selector] || null;
+	}
+	addEventListener(type, listener) {
+		this.listeners[type] = listener;
+	}
+	dispatch(type, event = {}) {
+		if (this.listeners[type]) {
+			return this.listeners[type](event);
+		}
+	}
+	focus() {
+		if (this.ownerDocument) {
+			this.ownerDocument.activeElement = this;
+		}
+	}
 }
 
 const fakeDocument = {
+	activeElement: null,
 	createElement(tagName) {
 		const node = new FakeNode(tagName);
+		node.ownerDocument = this;
 		nodes.push(node);
 		return node;
 	},
@@ -83,6 +119,8 @@ assert.strictEqual(sources.children[0].textContent, 'Sources');
 assert.strictEqual(sources.children[1].children.length, 1);
 assert.strictEqual(sources.children[1].children[0].children[0].textContent, 'Guide');
 assert.strictEqual(sources.children[1].children[0].children[0].href, 'https://oras.org/guide/');
+const emptySources = new FakeNode('div');
+assert.strictEqual(api.renderSources(emptySources, [], fakeDocument), false);
 
 let sent;
 const transport = api.createTransport(
@@ -92,13 +130,86 @@ const transport = api.createTransport(
 		return { success: true, data: { conversation_id: 12 } };
 	},
 );
-transport('send', { conversation_id: 12, question: 'What is ORAS?' });
-setImmediate(() => {
+
+(async () => {
+	await transport('send', { conversation_id: 12, question: 'What is ORAS?' });
 	assert.strictEqual(sent.url, '/admin-ajax.php');
 	assert(sent.options.body.includes('action=oras_ai_conversation'));
 	assert(sent.options.body.includes('operation=send'));
 	assert(sent.options.body.includes('conversation_id=12'));
 	assert(!sent.options.body.includes('user_id'));
 	assert(!sent.options.body.includes('apiKey'));
-	console.log('13 frontend chat assertions passed.');
+
+	const root = fakeDocument.createElement('section');
+	const messages = fakeDocument.createElement('div');
+	const status = fakeDocument.createElement('div');
+	const form = fakeDocument.createElement('form');
+	const input = fakeDocument.createElement('textarea');
+	const send = fakeDocument.createElement('button');
+	const newChat = fakeDocument.createElement('button');
+	const close = fakeDocument.createElement('button');
+	const launcher = fakeDocument.createElement('button');
+	root.hidden = true;
+	root.setAttribute('data-oras-ai-chat-mode', 'panel');
+	root.selectors = {
+		'[data-oras-ai-chat-messages]': messages,
+		'[data-oras-ai-chat-status]': status,
+		'[data-oras-ai-chat-form]': form,
+		'[data-oras-ai-chat-input]': input,
+		'[data-oras-ai-chat-send]': send,
+		'[data-oras-ai-chat-new]': newChat,
+		'[data-oras-ai-chat-close]': close,
+	};
+	const operations = [];
+	const controller = api.createController(root, {
+		strings: Object.assign({}, statusStrings, {
+			loading: 'Loading',
+			thinking: 'Thinking',
+			empty: 'Empty',
+			loaded: 'Loaded',
+			new_chat: 'New conversation started',
+		}),
+	}, {
+		launcher,
+		transport: async (operation, fields = {}) => {
+			operations.push({ operation, fields });
+			if (operation === 'current') {
+				return { conversation_id: 7, messages: [{ role: 'assistant', content: 'Restored answer' }] };
+			}
+			if (operation === 'new_chat') {
+				return { conversation_id: 8, messages: [] };
+			}
+			return {
+				conversation_id: 8,
+				member_message: { role: 'member', content: fields.question },
+				assistant_message: { role: 'assistant', content: 'Shared answer', sources: [] },
+				result: { status: 'success' },
+			};
+		},
+	});
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.strictEqual(operations[0].operation, 'current');
+	assert.strictEqual(controller.state().conversationId, 7);
+	controller.open();
+	assert(!root.hidden && launcher.getAttribute('aria-expanded') === 'true' && fakeDocument.activeElement === input);
+	root.dispatch('keydown', { key: 'Escape' });
+	assert(root.hidden && launcher.getAttribute('aria-expanded') === 'false' && fakeDocument.activeElement === launcher);
+	await controller.newChat();
+	assert.strictEqual(operations[1].operation, 'new_chat');
+	assert.strictEqual(controller.state().conversationId, 8);
+	assert.strictEqual(status.textContent, 'New conversation started');
+	input.value = 'What is Mars?';
+	const firstSend = controller.submit();
+	const secondSend = controller.submit();
+	await Promise.all([firstSend, secondSend]);
+	assert.strictEqual(operations.filter((item) => item.operation === 'send').length, 1);
+	assert.strictEqual(JSON.stringify(operations[2].fields), JSON.stringify({ conversation_id: 8, question: 'What is Mars?' }));
+	assert.strictEqual(messages.children.length, 2);
+	assert.strictEqual(status.textContent, '');
+	assert(styles.includes('@media (max-width: 600px)') && styles.includes('.oras-ai-chat--panel') && styles.includes('max-height: none'));
+
+	console.log('26 frontend chat assertions passed.');
+})().catch((error) => {
+	console.error(error);
+	process.exitCode = 1;
 });
