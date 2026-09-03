@@ -4,10 +4,11 @@
 - **Status:** COMPLETE
 - **Verification date:** 2026-09-03
 - **Branch:** `m3/retrieval-security-cost`
-- **Implementation HEAD:** `233c11728af8247b0c91a4a4e261c2ecfea77893`
+- **M3 closure commit:** `5137eef54a7f9ddff281a499631fe245936c13ae`
+- **Commit message:** `Qualify M3 retrieval security and cost boundary`
 - **Plugin version:** `0.2.1`
 
-The exact implementation HEAD above identifies the qualified M3 production and test state. These closure-documentation changes remain uncommitted for owner review.
+The exact closure commit above is the reproducible M3 milestone identifier.
 
 ## Implementation commits
 
