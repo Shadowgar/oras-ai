@@ -219,6 +219,27 @@ final class ORAS_AI_Usage_Ledger {
 		return ! is_wp_error( $result ) && (bool) $result;
 	}
 
+	/**
+	 * Conservatively account the full reservation when dispatch occurred but
+	 * normalized provider usage is unavailable.
+	 *
+	 * @param string $reservation_id Reservation identifier.
+	 * @return array|WP_Error
+	 */
+	public function settle_reserved_maximum( $reservation_id ) {
+		$record = $this->reservation( $reservation_id );
+		if ( ! is_array( $record ) ) {
+			return $this->invalid_reservation();
+		}
+
+		return $this->reconcile(
+			$reservation_id,
+			(string) $record['model'],
+			(int) $record['estimated_input_tokens'],
+			(int) $record['maximum_output_tokens']
+		);
+	}
+
 	public function reservation( $reservation_id ) {
 		$state = $this->state();
 		return isset( $state['reservations'][ $reservation_id ] )

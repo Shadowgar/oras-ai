@@ -233,3 +233,58 @@ oras_ai_test('Task 2 gateway has no retrieval model domain quota or connector de
 		oras_ai_assert_not_contains($forbidden, $source, 'Task 2 gateway crossed a later milestone boundary.');
 	}
 });
+
+oras_ai_test('Task 5 authenticated endpoint returns structured backend answer without chat UI', function (): void {
+	oras_ai_test_reset();
+	$GLOBALS['oras_ai_test_capabilities']['manage_options'] = false;
+	$checked = array();
+	$packet = new ORAS_AI_Evidence_Packet(array(oras_ai_test_answer_evidence()));
+	list($orchestrator, $provider) = oras_ai_test_answer_fixture($packet, oras_ai_test_provider_success('Grounded endpoint answer.'));
+	$authorizer = new ORAS_AI_PMPro_Membership_Authorizer(static function () use (&$checked) { $checked[] = get_current_user_id(); return true; });
+	$gateway = new ORAS_AI_Request_Gateway($authorizer, $orchestrator);
+	$_POST = oras_ai_test_gateway_payload(array('question' => 'How does ORAS observatory access work?'));
+
+	try {
+		$gateway->handle_ajax_request();
+		throw new RuntimeException('Expected JSON interception.');
+	} catch (ORAS_AI_Test_Json_Response $response) {
+		oras_ai_assert_true($response->success, 'Handled answer should use successful JSON transport.');
+		oras_ai_assert_same(200, $response->status, 'Answer endpoint status changed.');
+		oras_ai_assert_same('success', $response->data['status'], 'Structured answer status missing.');
+		oras_ai_assert_same('Grounded endpoint answer.', $response->data['answer'], 'Structured answer text missing.');
+		oras_ai_assert_same(1, count($provider->calls), 'Authorized endpoint should call provider once.');
+		oras_ai_assert_false(array_key_exists('html', $response->data), 'Task 5 endpoint must not return rendered chat HTML.');
+	}
+});
+
+oras_ai_test('unauthorized invalid-nonce and kill-switch endpoint requests never call answer provider', function (): void {
+	$cases = array('anonymous', 'bad_nonce', 'kill_switch');
+	foreach ($cases as $case) {
+		oras_ai_test_reset();
+		$GLOBALS['oras_ai_test_capabilities']['manage_options'] = false;
+		$packet = new ORAS_AI_Evidence_Packet(array(oras_ai_test_answer_evidence()));
+		list($orchestrator, $provider) = oras_ai_test_answer_fixture($packet, oras_ai_test_provider_success());
+		$checked = array();
+		$gateway = oras_ai_test_gateway_with_eligibility(true, $checked);
+		$gateway = new ORAS_AI_Request_Gateway(
+			new ORAS_AI_PMPro_Membership_Authorizer(static function () { return true; }),
+			$orchestrator
+		);
+		$_POST = oras_ai_test_gateway_payload();
+		if ('anonymous' === $case) {
+			$GLOBALS['oras_ai_test_current_user_id'] = 0;
+		} elseif ('bad_nonce' === $case) {
+			$GLOBALS['oras_ai_test_nonce_valid'] = false;
+		} else {
+			ORAS_AI_Config::set_member_ai_enabled(false);
+		}
+
+		try {
+			$gateway->handle_ajax_request();
+			throw new RuntimeException('Expected denied JSON interception.');
+		} catch (ORAS_AI_Test_Json_Response $response) {
+			oras_ai_assert_false($response->success, 'Denied endpoint request must return error transport.');
+			oras_ai_assert_same(0, count($provider->calls), $case . ' request reached answer provider.');
+		}
+	}
+});

@@ -8,9 +8,11 @@ final class ORAS_AI_Request_Gateway {
 	const NONCE_ACTION = 'oras_ai_member_request';
 
 	private $membership_authorizer;
+	private $answer_orchestrator;
 
-	public function __construct( ORAS_AI_Membership_Authorizer_Interface $membership_authorizer ) {
+	public function __construct( ORAS_AI_Membership_Authorizer_Interface $membership_authorizer, ?ORAS_AI_Answer_Orchestrator $answer_orchestrator = null ) {
 		$this->membership_authorizer = $membership_authorizer;
+		$this->answer_orchestrator   = $answer_orchestrator;
 
 		add_action( 'wp_ajax_oras_ai_member_request', array( $this, 'handle_ajax_request' ) );
 	}
@@ -87,15 +89,20 @@ final class ORAS_AI_Request_Gateway {
 	}
 
 	public function handle_ajax_request() {
-		$result = $this->authorize( $_POST );
+		$authorized = $this->authorize( $_POST );
 
-		if ( is_wp_error( $result ) ) {
-			$data   = $result->get_error_data();
+		if ( is_wp_error( $authorized ) ) {
+			$data   = $authorized->get_error_data();
 			$status = is_array( $data ) && isset( $data['status'] ) ? (int) $data['status'] : 403;
 			wp_send_json_error(
-				array( 'message' => $result->get_error_message() ),
+				array( 'message' => $authorized->get_error_message() ),
 				$status
 			);
+		}
+
+		if ( $this->answer_orchestrator ) {
+			$result = $this->answer_orchestrator->answer( $authorized );
+			wp_send_json_success( $result->to_array(), 200 );
 		}
 
 		wp_send_json_success( array( 'authorized' => true ), 200 );

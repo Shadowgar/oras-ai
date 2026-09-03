@@ -31,7 +31,6 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-domain-guard.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-guarded-request.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-capability-registry.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-url-policy.php';
-require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-execution-admission.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-usage-ledger.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-execution-controls.php';
@@ -50,6 +49,14 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-evidence-packet.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-retriever.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-precedence.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-wordpress-retriever.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-grounded-context.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-grounded-context-assembler.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-answer-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-provider-answer.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openai-answer-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-answer-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-answer-orchestrator.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
 
 final class ORAS_AI_Assistant {
 
@@ -64,7 +71,16 @@ final class ORAS_AI_Assistant {
 
 		new ORAS_AI_Knowledge_Base();
 		$this->sources = new ORAS_AI_Sources();
-		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer() );
+		$ledger = new ORAS_AI_Usage_Ledger();
+		$orchestrator = new ORAS_AI_Answer_Orchestrator(
+			new ORAS_AI_Execution_Controls( $ledger ),
+			$ledger,
+			new ORAS_AI_Domain_Guard(),
+			new ORAS_AI_WordPress_Retriever(),
+			new ORAS_AI_Grounded_Context_Assembler( new ORAS_AI_Source_Precedence() ),
+			new ORAS_AI_OpenAI_Answer_Provider()
+		);
+		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
 		$this->cost_admin = new ORAS_AI_Cost_Admin();
 	}
 

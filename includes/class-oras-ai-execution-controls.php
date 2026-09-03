@@ -16,7 +16,7 @@ final class ORAS_AI_Execution_Controls {
 		$this->configuration = null === $configuration ? ORAS_AI_Cost_Config::get() : $configuration;
 	}
 
-	public function admit( ORAS_AI_Authorized_Request $request, $model ) {
+	public function admit( ORAS_AI_Authorized_Request $request, $model, $estimated_provider_input_tokens = null ) {
 		if ( ! in_array( $model, ORAS_AI_Config::allowed_openai_models(), true ) ) {
 			$this->ledger->record_rejection( $request->user_id(), 'missing_model_price' );
 			return new ORAS_AI_Execution_Admission( false, 'missing_model_price' );
@@ -28,10 +28,14 @@ final class ORAS_AI_Execution_Controls {
 			return new ORAS_AI_Execution_Admission( false, 'input_too_large' );
 		}
 
+		$estimated_input_tokens = null === $estimated_provider_input_tokens
+			? strlen( $request->question() )
+			: max( strlen( $request->question() ), (int) $estimated_provider_input_tokens );
+
 		return $this->ledger->reserve(
 			$request->user_id(),
 			$model,
-			max( 1, strlen( $request->question() ) ),
+			max( 1, $estimated_input_tokens ),
 			$this->configuration
 		);
 	}
