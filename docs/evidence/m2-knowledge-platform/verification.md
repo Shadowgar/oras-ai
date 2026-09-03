@@ -4,10 +4,11 @@
 - **Status:** COMPLETE
 - **Verification date:** 2026-09-03
 - **Branch:** `m2/knowledge-platform`
-- **Task 5 base HEAD:** `bb7365cd099c81734e6dff01911630e24de28090`
+- **M2 closure commit:** `c5fc7fe48a9d4332fbf0728dba6b8666e15a29e8`
+- **Commit message:** `Qualify M2 knowledge platform`
 - **Plugin version:** `0.2.1`
 
-Task 5 closure changes remain uncommitted for owner review. The exact base HEAD above identifies the owner-approved Task 4 state; the eventual owner-approved Task 5 commit will become the reproducible M2 milestone identifier.
+The exact closure commit above is the reproducible M2 milestone identifier.
 
 ## Implementation commits
 
