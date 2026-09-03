@@ -26,18 +26,9 @@ final class ORAS_AI_Request_Gateway {
 	 * @return ORAS_AI_Authorized_Request|WP_Error
 	 */
 	public function authorize( array $request ) {
-		$user_id = get_current_user_id();
-		if ( $user_id <= 0 ) {
-			return $this->denied();
-		}
-
-		$nonce = $request['nonce'] ?? '';
-		if (
-			( ! is_string( $nonce ) && ! is_int( $nonce ) )
-			|| '' === trim( (string) $nonce )
-			|| ! wp_verify_nonce( (string) $nonce, self::NONCE_ACTION )
-		) {
-			return $this->denied();
+		$user_id = $this->authenticated_user( $request );
+		if ( is_wp_error( $user_id ) ) {
+			return $user_id;
 		}
 
 		if ( ! isset( $request['question'] ) || ! is_string( $request['question'] ) ) {
@@ -54,28 +45,32 @@ final class ORAS_AI_Request_Gateway {
 			return $safe;
 		}
 
-		$is_administrator = current_user_can( 'manage_options' );
-		if (
-			! $is_administrator
-			&& ! $this->membership_authorizer->has_active_membership( $user_id )
-		) {
-			return $this->denied();
+		$authorization = $this->authorize_authenticated_user( $user_id );
+		if ( is_wp_error( $authorization ) ) {
+			return $authorization;
 		}
-
-		if ( ! ORAS_AI_Access_Guard::member_ai_execution_allowed() ) {
-			return $this->denied();
-		}
-
-		$allowed_visibilities = $is_administrator
-			? array( 'public', 'members', 'admin' )
-			: array( 'public', 'members' );
 
 		return new ORAS_AI_Authorized_Request(
 			$user_id,
 			$question,
-			$allowed_visibilities,
-			$is_administrator
+			$authorization['allowed_visibilities'],
+			$authorization['is_administrator']
 		);
+	}
+
+	/**
+	 * Authorize an authenticated operation that has no member question yet.
+	 *
+	 * @param array $request Request fields from the authenticated transport.
+	 * @return array|WP_Error
+	 */
+	public function authorize_member( array $request ) {
+		$user_id = $this->authenticated_user( $request );
+		if ( is_wp_error( $user_id ) ) {
+			return $user_id;
+		}
+
+		return $this->authorize_authenticated_user( $user_id );
 	}
 
 	/**
@@ -128,6 +123,46 @@ final class ORAS_AI_Request_Gateway {
 			'oras_ai_invalid_request',
 			__( 'Invalid request.', 'oras-ai-assistant' ),
 			array( 'status' => 400 )
+		);
+	}
+
+	private function authenticated_user( array $request ) {
+		$user_id = get_current_user_id();
+		if ( $user_id <= 0 ) {
+			return $this->denied();
+		}
+
+		$nonce = $request['nonce'] ?? '';
+		if (
+			( ! is_string( $nonce ) && ! is_int( $nonce ) )
+			|| '' === trim( (string) $nonce )
+			|| ! wp_verify_nonce( (string) $nonce, self::NONCE_ACTION )
+		) {
+			return $this->denied();
+		}
+
+		return (int) $user_id;
+	}
+
+	private function authorize_authenticated_user( $user_id ) {
+		$is_administrator = current_user_can( 'manage_options' );
+		if (
+			! $is_administrator
+			&& ! $this->membership_authorizer->has_active_membership( $user_id )
+		) {
+			return $this->denied();
+		}
+
+		if ( ! ORAS_AI_Access_Guard::member_ai_execution_allowed() ) {
+			return $this->denied();
+		}
+
+		return array(
+			'user_id'              => (int) $user_id,
+			'is_administrator'     => $is_administrator,
+			'allowed_visibilities' => $is_administrator
+				? array( 'public', 'members', 'admin' )
+				: array( 'public', 'members' ),
 		);
 	}
 }

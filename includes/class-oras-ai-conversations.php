@@ -20,6 +20,7 @@ final class ORAS_AI_Conversations {
 	const META_CREATED_AT = '_oras_ai_created_at_utc';
 	const META_UPDATED_AT = '_oras_ai_updated_at_utc';
 	const META_ROLE       = '_oras_ai_message_role';
+	const META_SOURCES    = '_oras_ai_message_sources';
 
 	private $sensitive_input_guard;
 	private $clock;
@@ -101,6 +102,80 @@ final class ORAS_AI_Conversations {
 			return $conversation;
 		}
 
+		return $this->conversation_fields( $conversation );
+	}
+
+	public function current_conversation() {
+		$this->prune_expired();
+		$user_id = get_current_user_id();
+		if ( $user_id <= 0 ) {
+			return $this->denied();
+		}
+
+		$conversations = get_posts(
+			array(
+				'post_type'      => self::CONVERSATION_POST_TYPE,
+				'post_status'    => 'private',
+				'author'         => $user_id,
+				'posts_per_page' => -1,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
+			)
+		);
+		if ( empty( $conversations ) ) {
+			return null;
+		}
+
+		usort(
+			$conversations,
+			static function ( $left, $right ) {
+				$left_updated  = (int) get_post_meta( $left->ID, self::META_UPDATED_AT, true );
+				$right_updated = (int) get_post_meta( $right->ID, self::META_UPDATED_AT, true );
+				if ( $left_updated === $right_updated ) {
+					return (int) $right->ID <=> (int) $left->ID;
+				}
+				return $right_updated <=> $left_updated;
+			}
+		);
+
+		return $this->conversation_fields( $conversations[0] );
+	}
+
+	public function normalize_source_references( array $sources ) {
+		$normalized = array();
+		foreach ( $sources as $source ) {
+			if ( ! is_array( $source ) ) {
+				continue;
+			}
+
+			$title = sanitize_text_field( (string) ( $source['source_title'] ?? $source['title'] ?? '' ) );
+			$url   = esc_url_raw( (string) ( $source['canonical_url'] ?? '' ) );
+			$parts  = wp_parse_url( $url );
+			if ( '' === $title || ! is_array( $parts ) || ! in_array( strtolower( (string) ( $parts['scheme'] ?? '' ) ), array( 'http', 'https' ), true ) || '' === (string) ( $parts['host'] ?? '' ) ) {
+				continue;
+			}
+
+			$reference = array(
+				'source_title'  => $title,
+				'canonical_url' => $url,
+			);
+			foreach ( array( 'artifact_id', 'source_id' ) as $identifier ) {
+				if ( isset( $source[ $identifier ] ) && absint( $source[ $identifier ] ) > 0 ) {
+					$reference[ $identifier ] = absint( $source[ $identifier ] );
+				}
+			}
+			$key = $reference['source_title'] . '|' . $reference['canonical_url'];
+			$normalized[ $key ] = $reference;
+		}
+
+		return array_values( $normalized );
+	}
+
+	public function get_retention_days() {
+		return self::RETENTION_DAYS;
+	}
+
+	private function conversation_fields( $conversation ) {
 		return array(
 			'id'              => (int) $conversation->ID,
 			'user_id'         => (int) $conversation->post_author,
@@ -111,14 +186,14 @@ final class ORAS_AI_Conversations {
 		);
 	}
 
-	public function append_message( $conversation_id, $role, $content ) {
+	public function append_message( $conversation_id, $role, $content, array $sources = array() ) {
 		$this->prune_expired();
 		$conversation = $this->owned_conversation( $conversation_id );
 		if ( is_wp_error( $conversation ) ) {
 			return $conversation;
 		}
 
-		if ( ! is_string( $role ) || ! in_array( $role, array( 'member', 'assistant' ), true ) || ! is_string( $content ) ) {
+		if ( ! is_string( $role ) || ! in_array( $role, array( 'member', 'assistant' ), true ) || ! is_string( $content ) || ( 'member' === $role && ! empty( $sources ) ) ) {
 			return $this->invalid_message();
 		}
 
@@ -156,6 +231,10 @@ final class ORAS_AI_Conversations {
 		$message_id = (int) $message_id;
 		update_post_meta( $message_id, self::META_ROLE, $role );
 		update_post_meta( $message_id, self::META_CREATED_AT, $now );
+		$normalized_sources = 'assistant' === $role ? $this->normalize_source_references( $sources ) : array();
+		if ( ! empty( $normalized_sources ) ) {
+			update_post_meta( $message_id, self::META_SOURCES, $normalized_sources );
+		}
 		update_post_meta( $conversation->ID, self::META_UPDATED_AT, $now );
 		wp_update_post(
 			array(
@@ -192,13 +271,18 @@ final class ORAS_AI_Conversations {
 			if ( (int) $post->post_author !== (int) $conversation->post_author || ! in_array( $role, array( 'member', 'assistant' ), true ) ) {
 				continue;
 			}
-			$messages[] = array(
+			$message = array(
 				'id'              => (int) $post->ID,
 				'conversation_id' => (int) $conversation->ID,
 				'role'            => $role,
 				'content'         => (string) $post->post_content,
 				'created_at_utc'  => (int) get_post_meta( $post->ID, self::META_CREATED_AT, true ),
 			);
+			$sources = get_post_meta( $post->ID, self::META_SOURCES, true );
+			if ( is_array( $sources ) && ! empty( $sources ) ) {
+				$message['sources'] = $this->normalize_source_references( $sources );
+			}
+			$messages[] = $message;
 		}
 
 		return $messages;

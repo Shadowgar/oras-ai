@@ -59,6 +59,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-answer-orchestrator.ph
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-sensitive-input-guard.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-conversations.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-conversation-transport.php';
 
 final class ORAS_AI_Assistant {
 
@@ -66,6 +67,7 @@ final class ORAS_AI_Assistant {
 	private $request_gateway;
 	private $cost_admin;
 	private $conversations;
+	private $conversation_transport;
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ), 9 );
@@ -85,6 +87,7 @@ final class ORAS_AI_Assistant {
 			new ORAS_AI_OpenAI_Answer_Provider()
 		);
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
+		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations );
 		$this->cost_admin = new ORAS_AI_Cost_Admin();
 	}
 
