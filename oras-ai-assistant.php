@@ -51,6 +51,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-fact.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-live-connector.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-events-calendar-connector.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-woocommerce-connector.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-service.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-retriever.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-precedence.php';
@@ -88,7 +89,10 @@ final class ORAS_AI_Assistant {
 		$ledger = new ORAS_AI_Usage_Ledger();
 		$site_host = (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST );
 		$live_service = new ORAS_AI_Live_Service(
-			array( new ORAS_AI_Events_Calendar_Connector() ),
+			array(
+				new ORAS_AI_Events_Calendar_Connector(),
+				new ORAS_AI_WooCommerce_Connector(),
+			),
 			new ORAS_AI_URL_Policy( array( $site_host ) )
 		);
 		$orchestrator = new ORAS_AI_Answer_Orchestrator(

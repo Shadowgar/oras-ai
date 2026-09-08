@@ -206,6 +206,12 @@ final class ORAS_AI_Answer_Orchestrator {
 			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
 		}
 		if (
+			preg_match( '/\bobserver\s+pass(?:es)?\b/', $question )
+			&& preg_match( '/\b(how much|cost|stock|in stock|buy|purchase|purchasable|where)\b/', $question )
+		) {
+			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
+		}
+		if (
 			preg_match( '/\b(astro\s*blast|public\s+night)\b/', $question )
 			&& preg_match( '/\b(when|where|start|starts|end|ends|time|venue|location)\b/', $question )
 		) {
