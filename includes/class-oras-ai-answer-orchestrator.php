@@ -217,6 +217,13 @@ final class ORAS_AI_Answer_Orchestrator {
 		) {
 			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
 		}
+		if (
+			preg_match( '/\b(member|membership)\b/', $question )
+			&& preg_match( '/\b(my|mine|me|am i|do i|have i|i have)\b/', $question )
+			&& preg_match( '/\b(status|active|inactive|level|tier|am i|do i)\b/', $question )
+		) {
+			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
+		}
 
 		return ORAS_AI_Retrieval_Request::INTENT_GENERAL;
 	}
@@ -232,7 +239,7 @@ final class ORAS_AI_Answer_Orchestrator {
 	private function requires_live_oras( $question ) {
 		$question = strtolower( (string) $question );
 		return (bool) preg_match(
-			'/\b(price|cost|availability|available|inventory|register|registration|ticket|upcoming event|event date|event time|current schedule|next astroblast|next public night|member status|order status|support ticket status)\b/',
+			'/\b(price|cost|availability|available|inventory|register|registration|ticket|upcoming event|event date|event time|current schedule|next astroblast|next public night|member status|membership status|membership level|membership tier|active member|order status|support ticket status)\b/',
 			$question
 		);
 	}

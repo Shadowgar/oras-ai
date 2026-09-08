@@ -50,7 +50,8 @@ final class ORAS_AI_Live_Service {
 			}
 
 			foreach ( $result->facts() as $fact ) {
-				if ( ! $this->url_policy->allows( $fact->field( 'canonical_url' ) ) ) {
+				$canonical_url = (string) $fact->field( 'canonical_url' );
+				if ( '' !== $canonical_url && ! $this->url_policy->allows( $canonical_url ) ) {
 					return ORAS_AI_Live_Result::unknown( 'unsafe_canonical_url' );
 				}
 				$facts[] = $fact;

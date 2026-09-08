@@ -52,6 +52,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-live-connector.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-events-calendar-connector.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-woocommerce-connector.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-pmpro-context-connector.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-service.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-retriever.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-precedence.php';
@@ -92,6 +93,7 @@ final class ORAS_AI_Assistant {
 			array(
 				new ORAS_AI_Events_Calendar_Connector(),
 				new ORAS_AI_WooCommerce_Connector(),
+				new ORAS_AI_PMPro_Context_Connector(),
 			),
 			new ORAS_AI_URL_Policy( array( $site_host ) )
 		);

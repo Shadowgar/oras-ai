@@ -65,11 +65,15 @@ final class ORAS_AI_Grounded_Context {
 	public function source_references() {
 		$references = array();
 		foreach ( $this->evidence_packet->items() as $item ) {
+			$canonical_url = esc_url_raw( (string) $item->field( 'canonical_url' ) );
+			if ( '' === $canonical_url ) {
+				continue;
+			}
 			$reference = array(
 				'artifact_id'         => max( 0, (int) $item->field( 'artifact_id' ) ),
 				'source_id'           => max( 0, (int) $item->field( 'source_record_id' ) ),
 				'source_title'        => sanitize_text_field( (string) $item->field( 'source_title' ) ),
-				'canonical_url'       => esc_url_raw( (string) $item->field( 'canonical_url' ) ),
+				'canonical_url'       => $canonical_url,
 				'authority_class'     => sanitize_key( (string) $item->field( 'authority_class' ) ),
 				'source_modified_gmt' => sanitize_text_field( (string) $item->field( 'source_modified_gmt' ) ),
 				'synced_at'           => sanitize_text_field( (string) $item->field( 'synced_at' ) ),

@@ -194,6 +194,26 @@ function add_filter($hook_name, $callback, $priority = 10, $accepted_args = 1) {
 	return true;
 }
 
+function remove_filter($hook_name, $callback, $priority = 10): bool {
+	$hookName = (string) $hook_name;
+	$removed = false;
+	$GLOBALS['oras_ai_test_hooks'][$hookName] = array_values(
+		array_filter(
+			$GLOBALS['oras_ai_test_hooks'][$hookName] ?? array(),
+			static function ($registered) use ($callback, $priority, &$removed): bool {
+				$matches = 'filter' === ($registered['type'] ?? '')
+					&& (int) $priority === (int) ($registered['priority'] ?? 10)
+					&& $callback === ($registered['callback'] ?? null);
+				if ($matches) {
+					$removed = true;
+				}
+				return !$matches;
+			}
+		)
+	);
+	return $removed;
+}
+
 function add_shortcode($tag, $callback): void {
 	$GLOBALS['oras_ai_test_shortcodes'][(string) $tag] = $callback;
 }
@@ -536,7 +556,24 @@ function is_wp_error($value): bool {
 	return $value instanceof WP_Error;
 }
 
-function apply_filters($hook_name, $value) {
+function apply_filters($hook_name, $value, ...$args) {
+	$filters = array_filter(
+		$GLOBALS['oras_ai_test_hooks'][(string) $hook_name] ?? array(),
+		static function ($registered): bool {
+			return 'filter' === ($registered['type'] ?? '');
+		}
+	);
+	usort(
+		$filters,
+		static function ($left, $right): int {
+			return (int) ($left['priority'] ?? 10) <=> (int) ($right['priority'] ?? 10);
+		}
+	);
+	foreach ($filters as $filter) {
+		$accepted = max(1, (int) ($filter['accepted_args'] ?? 1));
+		$parameters = array_slice(array_merge(array($value), $args), 0, $accepted);
+		$value = call_user_func_array($filter['callback'], $parameters);
+	}
 	return $value;
 }
 
