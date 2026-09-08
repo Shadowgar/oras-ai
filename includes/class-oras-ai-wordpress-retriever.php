@@ -165,6 +165,7 @@ final class ORAS_AI_WordPress_Retriever implements ORAS_AI_Retriever_Interface {
 				'synced_at'             => (string) get_post_meta( $artifact_id, '_oras_ai_synced_at', true ),
 				'historical_event'      => $is_historical,
 				'fact_key'              => $request->fact_key(),
+				'fact_keys'             => '' === $request->fact_key() ? array() : array( $request->fact_key() ),
 				'content_role'          => 'untrusted_evidence',
 			)
 		);

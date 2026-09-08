@@ -42,7 +42,11 @@ final class ORAS_AI_Source_Precedence {
 						return false;
 					}
 
-					if ( (string) $candidate->field( 'fact_key' ) !== (string) $fact_key ) {
+					$fact_keys = (array) $candidate->field( 'fact_keys' );
+					if ( empty( $fact_keys ) && '' !== (string) $candidate->field( 'fact_key' ) ) {
+						$fact_keys[] = (string) $candidate->field( 'fact_key' );
+					}
+					if ( ! in_array( (string) $fact_key, $fact_keys, true ) ) {
 						return false;
 					}
 

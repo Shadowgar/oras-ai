@@ -37,12 +37,10 @@ final class ORAS_AI_Grounded_Context {
 		$evidence = array_map(
 			static function ( ORAS_AI_Evidence $item ) {
 				return array(
-					'source_title'        => sanitize_text_field( (string) $item->field( 'source_title' ) ),
-					'authority_class'     => sanitize_key( (string) $item->field( 'authority_class' ) ),
-					'source_modified_gmt' => sanitize_text_field( (string) $item->field( 'source_modified_gmt' ) ),
-					'synced_at'           => sanitize_text_field( (string) $item->field( 'synced_at' ) ),
-					'relevant_text'       => trim( wp_strip_all_tags( (string) $item->field( 'relevant_text' ), true ) ),
-					'content_role'        => 'untrusted_evidence',
+					'source_title'    => sanitize_text_field( (string) $item->field( 'source_title' ) ),
+					'authority_class' => sanitize_key( (string) $item->field( 'authority_class' ) ),
+					'relevant_text'   => trim( wp_strip_all_tags( (string) $item->field( 'relevant_text' ), true ) ),
+					'content_role'    => 'untrusted_evidence',
 				);
 			},
 			$this->evidence_packet->items()

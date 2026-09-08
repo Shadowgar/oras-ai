@@ -23,6 +23,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-access-guard.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-membership-authorizer.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-pmpro-membership-authorizer.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-authorized-request.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-request.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-domain-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-domain-classifier.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openai-domain-classifier.php';
@@ -46,6 +47,11 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-sources.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-retrieval-request.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-evidence.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-evidence-packet.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-fact.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-live-connector.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-events-calendar-connector.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-service.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-retriever.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-precedence.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-wordpress-retriever.php';
@@ -80,13 +86,19 @@ final class ORAS_AI_Assistant {
 		$this->sources = new ORAS_AI_Sources();
 		$this->conversations = new ORAS_AI_Conversations();
 		$ledger = new ORAS_AI_Usage_Ledger();
+		$site_host = (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+		$live_service = new ORAS_AI_Live_Service(
+			array( new ORAS_AI_Events_Calendar_Connector() ),
+			new ORAS_AI_URL_Policy( array( $site_host ) )
+		);
 		$orchestrator = new ORAS_AI_Answer_Orchestrator(
 			new ORAS_AI_Execution_Controls( $ledger ),
 			$ledger,
 			new ORAS_AI_Domain_Guard(),
 			new ORAS_AI_WordPress_Retriever(),
 			new ORAS_AI_Grounded_Context_Assembler( new ORAS_AI_Source_Precedence() ),
-			new ORAS_AI_OpenAI_Answer_Provider()
+			new ORAS_AI_OpenAI_Answer_Provider(),
+			$live_service
 		);
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
 		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations );

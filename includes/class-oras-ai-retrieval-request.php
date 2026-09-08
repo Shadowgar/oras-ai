@@ -15,6 +15,7 @@ final class ORAS_AI_Retrieval_Request {
 	private $intent;
 	private $category;
 	private $fact_key;
+	private $fact_keys;
 	private $top_k;
 	private $text_budget;
 
@@ -24,6 +25,7 @@ final class ORAS_AI_Retrieval_Request {
 		$this->intent               = $args['intent'];
 		$this->category             = $args['category'];
 		$this->fact_key             = $args['fact_key'];
+		$this->fact_keys            = $args['fact_keys'];
 		$this->top_k                = $args['top_k'];
 		$this->text_budget          = $args['text_budget'];
 	}
@@ -60,13 +62,23 @@ final class ORAS_AI_Retrieval_Request {
 			$intent = self::INTENT_GENERAL;
 		}
 
+		$fact_keys = ORAS_AI_Live_Request::normalize_fact_keys( (array) ( $args['fact_keys'] ?? array() ) );
+		$fact_key  = '';
+		if ( empty( $fact_keys ) ) {
+			$fact_key = ORAS_AI_Live_Request::normalize_fact_key( $args['fact_key'] ?? '' );
+			if ( '' !== $fact_key ) {
+				$fact_keys[] = $fact_key;
+			}
+		}
+
 		return new self(
 			array(
 				'query'                => sanitize_text_field( $args['query'] ?? '' ),
 				'allowed_visibilities' => $visibilities,
 				'intent'               => $intent,
 				'category'             => sanitize_text_field( $args['category'] ?? '' ),
-				'fact_key'             => sanitize_key( $args['fact_key'] ?? '' ),
+				'fact_key'             => $fact_key,
+				'fact_keys'            => $fact_keys,
 				'top_k'                => isset( $args['top_k'] ) ? (int) $args['top_k'] : 5,
 				'text_budget'          => isset( $args['text_budget'] ) ? (int) $args['text_budget'] : 6000,
 			)
@@ -91,6 +103,10 @@ final class ORAS_AI_Retrieval_Request {
 
 	public function fact_key() {
 		return $this->fact_key;
+	}
+
+	public function fact_keys() {
+		return $this->fact_keys;
 	}
 
 	public function top_k() {

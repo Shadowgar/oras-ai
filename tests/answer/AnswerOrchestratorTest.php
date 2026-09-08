@@ -80,7 +80,8 @@ function oras_ai_test_answer_config(array $overrides = array()): array {
 function oras_ai_test_answer_fixture(
 	ORAS_AI_Evidence_Packet $packet,
 	callable $providerCallback,
-	array $configOverrides = array()
+	array $configOverrides = array(),
+	$liveService = null
 ): array {
 	$now = strtotime('2026-09-03 12:00:00 UTC');
 	$ledger = new ORAS_AI_Usage_Ledger(static function () use (&$now): int { return $now; });
@@ -94,7 +95,8 @@ function oras_ai_test_answer_fixture(
 		new ORAS_AI_Domain_Guard(),
 		$retriever,
 		new ORAS_AI_Grounded_Context_Assembler(new ORAS_AI_Source_Precedence()),
-		$provider
+		$provider,
+		$liveService
 	);
 
 	return array($orchestrator, $provider, $retriever, $ledger, &$now, $config);
@@ -105,6 +107,32 @@ function oras_ai_test_provider_success(string $answer = 'Grounded answer.', int 
 		return ORAS_AI_Provider_Answer::success($answer, 'gpt-5.6-luna', $inputTokens, $outputTokens);
 	};
 }
+
+oras_ai_test('current intent terms are bounded to live/current subjects and do not reclassify stable ORAS questions', function (): void {
+	oras_ai_test_reset();
+	list($stableOrchestrator, $stableProvider, $stableRetriever) = oras_ai_test_answer_fixture(
+		new ORAS_AI_Evidence_Packet(array(oras_ai_test_answer_evidence())),
+		oras_ai_test_provider_success()
+	);
+	$stableOrchestrator->answer(oras_ai_test_authorized_request(201, 'When was ORAS founded?'));
+	oras_ai_assert_same(
+		ORAS_AI_Retrieval_Request::INTENT_GENERAL,
+		$stableRetriever->requests[0]->intent(),
+		'A generic question word incorrectly changed a stable ORAS request to current intent.'
+	);
+
+	oras_ai_test_reset();
+	list($eventOrchestrator, $eventProvider, $eventRetriever) = oras_ai_test_answer_fixture(
+		new ORAS_AI_Evidence_Packet(array(oras_ai_test_answer_evidence())),
+		oras_ai_test_provider_success()
+	);
+	$eventOrchestrator->answer(oras_ai_test_authorized_request(201, 'What time does AstroBlast start?'));
+	oras_ai_assert_same(
+		ORAS_AI_Retrieval_Request::INTENT_CURRENT,
+		$eventRetriever->requests[0]->intent(),
+		'A bounded named-event question did not receive current intent.'
+	);
+});
 
 oras_ai_test('AT-RET-001 supported ORAS request sends admitted evidence and returns server sources', function (): void {
 	oras_ai_test_reset();

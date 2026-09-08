@@ -30,19 +30,35 @@ final class ORAS_AI_Grounded_Context_Assembler {
 
 		$groups = array();
 		foreach ( $eligible as $index => $item ) {
-			$fact_key = sanitize_key( (string) $item->field( 'fact_key' ) );
-			$key      = '' === $fact_key ? 'item_' . $index : 'fact_' . $fact_key;
-			$groups[ $key ][] = $item;
+			$fact_keys = ORAS_AI_Live_Request::normalize_fact_keys( (array) $item->field( 'fact_keys' ) );
+			if ( empty( $fact_keys ) ) {
+				$legacy_key = ORAS_AI_Live_Request::normalize_fact_key( $item->field( 'fact_key' ) );
+				$fact_keys  = '' === $legacy_key ? array() : array( $legacy_key );
+			}
+
+			if ( empty( $fact_keys ) ) {
+				$groups[ 'item_' . $index ][] = $item;
+				continue;
+			}
+
+			foreach ( $fact_keys as $fact_key ) {
+				$groups[ 'fact_' . $fact_key ][] = $item;
+			}
 		}
 
 		$selected = array();
+		$selected_ids = array();
 		$total    = 0;
-		foreach ( $groups as $group ) {
-			$fact_key = sanitize_key( (string) $group[0]->field( 'fact_key' ) );
+		foreach ( $groups as $group_key => $group ) {
+			$fact_key = 0 === strpos( $group_key, 'fact_' ) ? substr( $group_key, 5 ) : '';
 			$item     = '' === $fact_key
 				? $group[0]
 				: $this->precedence->select_for_fact( $group, $fact_key, $intent );
 			if ( ! $item ) {
+				continue;
+			}
+			$item_id = spl_object_hash( $item );
+			if ( isset( $selected_ids[ $item_id ] ) ) {
 				continue;
 			}
 
@@ -51,6 +67,7 @@ final class ORAS_AI_Grounded_Context_Assembler {
 				continue;
 			}
 			$selected[] = $item;
+			$selected_ids[ $item_id ] = true;
 			$total     += $length;
 		}
 

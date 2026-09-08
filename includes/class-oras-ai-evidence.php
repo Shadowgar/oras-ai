@@ -37,6 +37,7 @@ final class ORAS_AI_Evidence {
 			'synced_at'             => '',
 			'historical_event'      => false,
 			'fact_key'              => '',
+			'fact_keys'             => array(),
 			'content_role'          => 'untrusted_evidence',
 		);
 
@@ -45,6 +46,11 @@ final class ORAS_AI_Evidence {
 		$fields['source_record_id']     = (int) $fields['source_record_id'];
 		$fields['source_wp_object_id']  = (int) $fields['source_wp_object_id'];
 		$fields['historical_event']     = (bool) $fields['historical_event'];
+		$fields['fact_key']             = ORAS_AI_Live_Request::normalize_fact_key( $fields['fact_key'] );
+		$fields['fact_keys']            = ORAS_AI_Live_Request::normalize_fact_keys( (array) $fields['fact_keys'] );
+		if ( empty( $fields['fact_keys'] ) && '' !== $fields['fact_key'] ) {
+			$fields['fact_keys'][] = $fields['fact_key'];
+		}
 		$fields['content_role']         = 'untrusted_evidence';
 
 		return new self( $fields );

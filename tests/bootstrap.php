@@ -653,6 +653,10 @@ function admin_url($path = '', $scheme = 'admin'): string {
 	return 'https://example.test/wp-admin/' . ltrim((string) $path, '/');
 }
 
+function home_url($path = '', $scheme = null): string {
+	return 'https://example.test/' . ltrim((string) $path, '/');
+}
+
 function wp_safe_redirect($location, $status = 302, $x_redirect_by = 'WordPress'): bool {
 	$GLOBALS['oras_ai_test_redirects'][] = $location;
 	throw new ORAS_AI_Test_Redirect_Exception((string) $location);

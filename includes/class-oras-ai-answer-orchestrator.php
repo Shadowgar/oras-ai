@@ -17,6 +17,7 @@ final class ORAS_AI_Answer_Orchestrator {
 	private $retriever;
 	private $context_assembler;
 	private $answer_provider;
+	private $live_service;
 
 	public function __construct(
 		ORAS_AI_Execution_Controls $controls,
@@ -24,7 +25,8 @@ final class ORAS_AI_Answer_Orchestrator {
 		ORAS_AI_Domain_Guard $domain_guard,
 		ORAS_AI_Retriever_Interface $retriever,
 		ORAS_AI_Grounded_Context_Assembler $context_assembler,
-		ORAS_AI_Answer_Provider_Interface $answer_provider
+		ORAS_AI_Answer_Provider_Interface $answer_provider,
+		$live_service = null
 	) {
 		$this->controls          = $controls;
 		$this->ledger            = $ledger;
@@ -32,6 +34,7 @@ final class ORAS_AI_Answer_Orchestrator {
 		$this->retriever         = $retriever;
 		$this->context_assembler = $context_assembler;
 		$this->answer_provider   = $answer_provider;
+		$this->live_service      = $live_service instanceof ORAS_AI_Live_Service ? $live_service : null;
 	}
 
 	public function answer( ORAS_AI_Authorized_Request $request ) {
@@ -59,6 +62,22 @@ final class ORAS_AI_Answer_Orchestrator {
 		}
 
 		$intent = $this->intent_for( $request->question() );
+		$live_result = null;
+		$live_packet = new ORAS_AI_Evidence_Packet();
+		if (
+			null !== $this->live_service
+			&& in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ORAS, ORAS_AI_Domain_Result::CROSSOVER ), true )
+		) {
+			$live_result = $this->live_service->query( ORAS_AI_Live_Request::from_authorized_request( $request, $intent ) );
+			if ( $live_result instanceof ORAS_AI_Live_Result ) {
+				if ( ! $live_result->successful() ) {
+					$this->ledger->release( $reservation_id );
+					return ORAS_AI_Answer_Result::no_evidence( self::NO_EVIDENCE_MESSAGE, 'live_data_unavailable' );
+				}
+				$live_packet = $this->live_service->evidence_packet( $live_result );
+			}
+		}
+
 		$packet = new ORAS_AI_Evidence_Packet();
 		if ( in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ORAS, ORAS_AI_Domain_Result::CROSSOVER ), true ) ) {
 			$packet = $this->retriever->retrieve(
@@ -67,7 +86,7 @@ final class ORAS_AI_Answer_Orchestrator {
 						'query'                => $request->question(),
 						'allowed_visibilities' => $request->allowed_visibilities(),
 						'intent'               => $intent,
-						'fact_key'             => hash( 'sha256', strtolower( trim( $request->question() ) ) ),
+						'fact_keys'            => $live_result instanceof ORAS_AI_Live_Result ? $live_result->fact_keys() : array(),
 						'top_k'                => ORAS_AI_WordPress_Retriever::MAX_TOP_K,
 						'text_budget'          => ORAS_AI_Grounded_Context_Assembler::MAX_EVIDENCE_CHARACTERS,
 					)
@@ -77,6 +96,8 @@ final class ORAS_AI_Answer_Orchestrator {
 				$this->ledger->release( $reservation_id );
 				return ORAS_AI_Answer_Result::failure( 'retrieval_failed' );
 			}
+
+			$packet = new ORAS_AI_Evidence_Packet( array_merge( $packet->items(), $live_packet->items() ) );
 		}
 
 		$scope = $this->scope_for( $domain->outcome(), ! $packet->is_empty() );
@@ -181,7 +202,13 @@ final class ORAS_AI_Answer_Orchestrator {
 		if ( preg_match( '/\b(past|previous|prior|historical|history|formerly|last year|20[0-9]{2})\b/', $question ) ) {
 			return ORAS_AI_Retrieval_Request::INTENT_HISTORICAL;
 		}
-		if ( preg_match( '/\b(current|currently|now|today|tonight|tomorrow|upcoming|latest|price|availability|available|schedule|registration)\b/', $question ) ) {
+		if ( preg_match( '/\b(current|currently|now|today|tonight|tomorrow|upcoming|latest|next|price|availability|available|schedule|registration)\b/', $question ) ) {
+			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
+		}
+		if (
+			preg_match( '/\b(astro\s*blast|public\s+night)\b/', $question )
+			&& preg_match( '/\b(when|where|start|starts|end|ends|time|venue|location)\b/', $question )
+		) {
 			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
 		}
 
@@ -199,7 +226,7 @@ final class ORAS_AI_Answer_Orchestrator {
 	private function requires_live_oras( $question ) {
 		$question = strtolower( (string) $question );
 		return (bool) preg_match(
-			'/\b(price|cost|availability|available|inventory|register|registration|ticket|upcoming event|event date|event time|current schedule|member status|order status|support ticket status)\b/',
+			'/\b(price|cost|availability|available|inventory|register|registration|ticket|upcoming event|event date|event time|current schedule|next astroblast|next public night|member status|order status|support ticket status)\b/',
 			$question
 		);
 	}
