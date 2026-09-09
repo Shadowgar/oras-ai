@@ -12,6 +12,8 @@ final class ORAS_AI_Grounded_Context {
 	const GENERAL_ASTRONOMY        = 'general_astronomy';
 	const CROSSOVER_GROUNDED       = 'crossover_grounded';
 	const CROSSOVER_ASTRONOMY_ONLY = 'crossover_astronomy_only';
+	const CURRENT_ASTRONOMY        = 'current_astronomy';
+	const CROSSOVER_CURRENT        = 'crossover_current';
 
 	private $system_policy;
 	private $member_question;

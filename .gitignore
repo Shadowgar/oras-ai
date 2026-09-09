@@ -6,4 +6,5 @@
 .env.*
 Thumbs.db
 .DS_Store
+vendor/
 "@ | Set-Content .gitignore

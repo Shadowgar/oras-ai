@@ -22,7 +22,8 @@ final class ORAS_AI_Domain_Guard {
 		}
 
 		$has_oras      = $this->contains_any( $question, $this->oras_phrases() );
-		$has_astronomy = $this->contains_any( $question, $this->astronomy_phrases() );
+		$has_astronomy = $this->contains_any( $question, $this->astronomy_phrases() )
+			|| (bool) preg_match( '/\b(?:m|ngc|ic)\s*\d+[a-z]?\b/i', $question );
 		$has_weather   = $this->contains_any( $question, array( 'weather', 'forecast', 'cloudy', 'clouds', 'seeing', 'transparency' ) );
 
 		if ( $has_weather && ( $has_oras || $has_astronomy ) ) {
@@ -159,6 +160,8 @@ final class ORAS_AI_Domain_Guard {
 			'milky way',
 			'black hole',
 			'deep sky',
+			'messier',
+			'orion nebula',
 			'right ascension',
 			'declination',
 			'light year',

@@ -1,0 +1,14 @@
+{
+  "name": "oras/oras-ai-assistant",
+  "description": "ORAS AI Assistant WordPress plugin",
+  "type": "wordpress-plugin",
+  "license": "GPL-3.0-or-later",
+  "require": {
+    "php": ">=8.0",
+    "tuxonice/suncalc-php": "1.0.1"
+  },
+  "config": {
+    "allow-plugins": false,
+    "sort-packages": true
+  }
+}

@@ -5,8 +5,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class ORAS_AI_M6_Provider_Admin {
 	const NONCE_ACTION = 'oras_ai_save_m6_provider_settings';
+	private $observability;
 
-	public function __construct() {
+	public function __construct( ?ORAS_AI_Astronomy_Observability $observability = null ) {
+		$this->observability = $observability ?: new ORAS_AI_Astronomy_Observability();
 		add_action( 'admin_post_oras_ai_save_m6_provider_settings', array( $this, 'save_settings' ) );
 	}
 
@@ -54,6 +56,14 @@ final class ORAS_AI_M6_Provider_Admin {
 					</table>
 					<?php submit_button( __( 'Save Provider Settings', 'oras-ai-assistant' ) ); ?>
 				</form>
+			</div>
+			<div class="oras-ai-panel">
+				<h2><?php esc_html_e( 'Astronomy provider health', 'oras-ai-assistant' ); ?></h2>
+				<table class="widefat striped"><thead><tr><th><?php esc_html_e( 'Provider', 'oras-ai-assistant' ); ?></th><th><?php esc_html_e( 'State', 'oras-ai-assistant' ); ?></th><th><?php esc_html_e( 'Failures', 'oras-ai-assistant' ); ?></th><th><?php esc_html_e( 'Last bounded reason', 'oras-ai-assistant' ); ?></th></tr></thead><tbody>
+				<?php foreach ( $this->observability->snapshot() as $provider_id => $health ) : ?>
+					<tr><td><?php echo esc_html( $provider_id ); ?></td><td><?php echo esc_html( $health['operational_state'] ); ?></td><td><?php echo esc_html( number_format_i18n( $health['failure_count'] ) ); ?></td><td><?php echo esc_html( $health['last_failure_reason'] ); ?></td></tr>
+				<?php endforeach; ?>
+				</tbody></table>
 			</div>
 		</div>
 		<?php

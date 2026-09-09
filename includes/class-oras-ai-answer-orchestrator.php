@@ -18,6 +18,7 @@ final class ORAS_AI_Answer_Orchestrator {
 	private $context_assembler;
 	private $answer_provider;
 	private $live_service;
+	private $astronomy_service;
 
 	public function __construct(
 		ORAS_AI_Execution_Controls $controls,
@@ -26,7 +27,8 @@ final class ORAS_AI_Answer_Orchestrator {
 		ORAS_AI_Retriever_Interface $retriever,
 		ORAS_AI_Grounded_Context_Assembler $context_assembler,
 		ORAS_AI_Answer_Provider_Interface $answer_provider,
-		$live_service = null
+		$live_service = null,
+		$astronomy_service = null
 	) {
 		$this->controls          = $controls;
 		$this->ledger            = $ledger;
@@ -35,6 +37,7 @@ final class ORAS_AI_Answer_Orchestrator {
 		$this->context_assembler = $context_assembler;
 		$this->answer_provider   = $answer_provider;
 		$this->live_service      = $live_service instanceof ORAS_AI_Live_Service ? $live_service : null;
+		$this->astronomy_service = $astronomy_service instanceof ORAS_AI_Current_Astronomy_Service ? $astronomy_service : null;
 	}
 
 	public function answer( ORAS_AI_Authorized_Request $request ) {
@@ -56,12 +59,23 @@ final class ORAS_AI_Answer_Orchestrator {
 			return ORAS_AI_Answer_Result::refusal( $domain->refusal_message(), $domain->refusal_code() );
 		}
 
-		if ( ORAS_AI_Domain_Result::ASTRONOMY === $domain->outcome() && $this->requires_current_astronomy( $request->question() ) ) {
-			$this->ledger->release( $reservation_id );
-			return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
-		}
-
 		$intent = $this->intent_for( $request->question() );
+		$current_astronomy = null;
+		$current_astronomy_packet = new ORAS_AI_Evidence_Packet();
+		$requires_current_astronomy = $this->requires_current_astronomy( $request->question() )
+			&& in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ASTRONOMY, ORAS_AI_Domain_Result::CROSSOVER ), true );
+		if ( $requires_current_astronomy ) {
+			if ( null === $this->astronomy_service ) {
+				$this->ledger->release( $reservation_id );
+				return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
+			}
+			$current_astronomy = $this->astronomy_service->query( $request );
+			if ( ! $current_astronomy instanceof ORAS_AI_Current_Astronomy_Query_Result || ! $current_astronomy->matched() || ! $current_astronomy->has_facts() ) {
+				$this->ledger->release( $reservation_id );
+				return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
+			}
+			$current_astronomy_packet = $current_astronomy->evidence_packet();
+		}
 		$live_result = null;
 		$live_packet = new ORAS_AI_Evidence_Packet();
 		if (
@@ -78,7 +92,7 @@ final class ORAS_AI_Answer_Orchestrator {
 			}
 		}
 
-		$packet = new ORAS_AI_Evidence_Packet();
+		$packet = $current_astronomy_packet;
 		if ( in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ORAS, ORAS_AI_Domain_Result::CROSSOVER ), true ) ) {
 			$packet = $this->retriever->retrieve(
 				ORAS_AI_Retrieval_Request::from_trusted_context(
@@ -99,10 +113,10 @@ final class ORAS_AI_Answer_Orchestrator {
 				return ORAS_AI_Answer_Result::failure( 'retrieval_failed' );
 			}
 
-			$packet = new ORAS_AI_Evidence_Packet( array_merge( $packet->items(), $live_packet->items() ) );
+			$packet = new ORAS_AI_Evidence_Packet( array_merge( $packet->items(), $live_packet->items(), $current_astronomy_packet->items() ) );
 		}
 
-		$scope = $this->scope_for( $domain->outcome(), ! $packet->is_empty() );
+		$scope = $this->scope_for( $domain->outcome(), ! $packet->is_empty(), $requires_current_astronomy );
 		$context = $this->context_assembler->assemble( $guarded, $packet, $intent, $scope );
 		if ( is_wp_error( $context ) ) {
 			$this->ledger->release( $reservation_id );
@@ -118,10 +132,6 @@ final class ORAS_AI_Answer_Orchestrator {
 		}
 
 		if ( ORAS_AI_Domain_Result::CROSSOVER === $domain->outcome() ) {
-			if ( $this->requires_current_astronomy( $request->question() ) ) {
-				$this->ledger->release( $reservation_id );
-				return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
-			}
 			if ( $this->requires_live_oras( $request->question() ) && ! $this->has_live_oras_evidence( $context ) ) {
 				$context = $this->context_assembler->assemble(
 					$guarded,
@@ -183,11 +193,14 @@ final class ORAS_AI_Answer_Orchestrator {
 		);
 	}
 
-	private function scope_for( $domain, $has_evidence ) {
+	private function scope_for( $domain, $has_evidence, $current_astronomy = false ) {
 		if ( ORAS_AI_Domain_Result::ASTRONOMY === $domain ) {
-			return ORAS_AI_Grounded_Context::GENERAL_ASTRONOMY;
+			return $current_astronomy ? ORAS_AI_Grounded_Context::CURRENT_ASTRONOMY : ORAS_AI_Grounded_Context::GENERAL_ASTRONOMY;
 		}
 		if ( ORAS_AI_Domain_Result::CROSSOVER === $domain ) {
+			if ( $current_astronomy ) {
+				return ORAS_AI_Grounded_Context::CROSSOVER_CURRENT;
+			}
 			return $has_evidence
 				? ORAS_AI_Grounded_Context::CROSSOVER_GROUNDED
 				: ORAS_AI_Grounded_Context::CROSSOVER_ASTRONOMY_ONLY;

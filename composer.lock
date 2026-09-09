@@ -1,0 +1,81 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "74f622247c848f72c620781ab56d6d5c",
+    "packages": [
+        {
+            "name": "tuxonice/suncalc-php",
+            "version": "v1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tuxonice/suncalc-php.git",
+                "reference": "8b8ca60f8af20d38c00121615beab999ca5dcd55"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tuxonice/suncalc-php/zipball/8b8ca60f8af20d38c00121615beab999ca5dcd55",
+                "reference": "8b8ca60f8af20d38c00121615beab999ca5dcd55",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^1.9",
+                "phpunit/phpunit": "^9",
+                "squizlabs/php_codesniffer": "^3.7",
+                "symfony/var-dumper": "^6.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Tlab\\SunCalc\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "David Gray and Greg Seth",
+                    "email": "david@auroras.live"
+                },
+                {
+                    "name": "Helder Correia",
+                    "email": "tuxboy@tlab.pt"
+                }
+            ],
+            "description": "Sun and moon calculations for PHP",
+            "keywords": [
+                "astronomy",
+                "lunar",
+                "moon",
+                "solar",
+                "sun",
+                "suncalc",
+                "sunrise",
+                "sunset"
+            ],
+            "support": {
+                "issues": "https://github.com/tuxonice/suncalc-php/issues",
+                "source": "https://github.com/tuxonice/suncalc-php/tree/v1.0.1"
+            },
+            "time": "2025-12-15T11:47:18+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=8.0"
+    },
+    "platform-dev": [],
+    "plugin-api-version": "2.6.0"
+}

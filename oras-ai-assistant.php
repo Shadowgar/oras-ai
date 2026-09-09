@@ -3,6 +3,7 @@
  * Plugin Name: ORAS AI Assistant
  * Description: ORAS knowledge base, website knowledge scanner, and foundation for a members-only AI assistant.
  * Version: 0.2.1
+ * Requires PHP: 8.0
  * Author: Oil Region Astronomical Society
  * Text Domain: oras-ai-assistant
  * License: GPL-3.0-or-later
@@ -17,6 +18,10 @@ define( 'ORAS_AI_VERSION', '0.2.1' );
 define( 'ORAS_AI_PLUGIN_FILE', __FILE__ );
 define( 'ORAS_AI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ORAS_AI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+if ( file_exists( ORAS_AI_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
+	require_once ORAS_AI_PLUGIN_DIR . 'vendor/autoload.php';
+}
 
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-config.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-cost-config.php';
@@ -35,6 +40,17 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-astronomy-fact.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-weather-snapshot.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-observing-score-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-astronomy-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-planet-targets.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-local-sun-moon-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-astronomy-api-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-horizontal-position-calculator.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-resolved-target.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-target-resolution.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openngc-target-resolver.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-openngc-astronomy-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-astronomy-query-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-astronomy-observability.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-astronomy-service.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-weather-provider.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-request.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-domain-result.php';
@@ -120,6 +136,22 @@ final class ORAS_AI_Assistant {
 			new ORAS_AI_URL_Policy( array( $site_host ) ),
 			$connector_observability
 		);
+		$astronomy_clock    = new ORAS_AI_System_Clock();
+		$astronomy_resolver = new ORAS_AI_OpenNGC_Target_Resolver();
+		$astronomy_observability = new ORAS_AI_Astronomy_Observability();
+		$astronomy_service  = new ORAS_AI_Current_Astronomy_Service(
+			new ORAS_AI_Local_Sun_Moon_Provider( $astronomy_clock ),
+			new ORAS_AI_OpenNGC_Astronomy_Provider( $astronomy_resolver, new ORAS_AI_Horizontal_Position_Calculator(), $astronomy_clock ),
+			new ORAS_AI_Astronomy_API_Provider(
+				ORAS_AI_Config::get_astronomyapi_application_id(),
+				ORAS_AI_Config::get_astronomyapi_application_secret(),
+				null,
+				$astronomy_clock
+			),
+			$astronomy_resolver,
+			$astronomy_clock,
+			$astronomy_observability
+		);
 		$orchestrator = new ORAS_AI_Answer_Orchestrator(
 			new ORAS_AI_Execution_Controls( $ledger ),
 			$ledger,
@@ -127,14 +159,15 @@ final class ORAS_AI_Assistant {
 			new ORAS_AI_WordPress_Retriever(),
 			new ORAS_AI_Grounded_Context_Assembler( new ORAS_AI_Source_Precedence(), new ORAS_AI_Live_Conflict_Observer() ),
 			new ORAS_AI_OpenAI_Answer_Provider(),
-			$live_service
+			$live_service,
+			$astronomy_service
 		);
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
 		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations );
 		$this->chat_ui = new ORAS_AI_Chat_UI( $this->request_gateway );
 		$this->cost_admin = new ORAS_AI_Cost_Admin();
 		$this->connector_health_admin = new ORAS_AI_Connector_Health_Admin( $connector_observability, $connectors );
-		$this->m6_provider_admin = new ORAS_AI_M6_Provider_Admin();
+		$this->m6_provider_admin = new ORAS_AI_M6_Provider_Admin( $astronomy_observability );
 	}
 
 	public static function activate() {

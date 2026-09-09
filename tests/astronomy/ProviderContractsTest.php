@@ -23,6 +23,13 @@ oras_ai_test('M6 provider interfaces are independent of approved vendor implemen
 	oras_ai_assert_true(interface_exists('ORAS_AI_Weather_Provider_Interface'), 'Weather provider contract missing.');
 });
 
+oras_ai_test('M6 current astronomy service remains vendor independent', function (): void {
+	$source = (string) file_get_contents(dirname(__DIR__, 2) . '/includes/class-oras-ai-current-astronomy-service.php');
+	foreach (array('Astronomy_API_Provider', 'api.astronomyapi.com', 'SunCalc', 'NGC.csv', 'wp_remote_') as $forbidden) {
+		oras_ai_assert_not_contains($forbidden, $source, 'Vendor implementation leaked into current astronomy orchestration.');
+	}
+});
+
 oras_ai_test('M6 current-data result exposes only bounded states and normalized values', function (): void {
 	$instant = new DateTimeImmutable('2026-09-09T12:00:00+00:00');
 	$fact = new ORAS_AI_Astronomy_Fact('local_sun_moon', 'moon_state', 'waxing_gibbous', '', $instant, $instant, 'moon');

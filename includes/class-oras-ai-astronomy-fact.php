@@ -14,6 +14,9 @@ final class ORAS_AI_Astronomy_Fact implements ORAS_AI_Current_Data_Value_Interfa
 	private $calculated_at;
 	private $valid_at;
 	private $target_identity;
+	private $fact_key;
+	private $provider_version;
+	private $site_identity;
 
 	public function __construct(
 		$provider_id,
@@ -22,7 +25,10 @@ final class ORAS_AI_Astronomy_Fact implements ORAS_AI_Current_Data_Value_Interfa
 		$unit,
 		DateTimeImmutable $calculated_at,
 		DateTimeImmutable $valid_at,
-		$target_identity = ''
+		$target_identity = '',
+		$fact_key = '',
+		$provider_version = '',
+		$site_identity = 'oras_observatory'
 	) {
 		$provider_id = ORAS_AI_Current_Data_Result::normalize_provider_id( $provider_id );
 		$astronomy_types = array(
@@ -33,6 +39,9 @@ final class ORAS_AI_Astronomy_Fact implements ORAS_AI_Current_Data_Value_Interfa
 			ORAS_AI_Current_Data_Request::TARGET_POSITION,
 		);
 		$target_identity = ORAS_AI_Current_Data_Request::normalize_target_identity( $target_identity );
+		$fact_key = ORAS_AI_Current_Data_Request::normalize_target_identity( $fact_key );
+		$provider_version = sanitize_text_field( $provider_version );
+		$site_identity = ORAS_AI_Current_Data_Request::normalize_target_identity( $site_identity );
 		if (
 			'' === $provider_id
 			|| ! in_array( $fact_type, $astronomy_types, true )
@@ -40,6 +49,8 @@ final class ORAS_AI_Astronomy_Fact implements ORAS_AI_Current_Data_Value_Interfa
 			|| ( is_float( $value ) && ! is_finite( $value ) )
 			|| ! is_string( $unit )
 			|| strlen( $unit ) > 40
+			|| strlen( $provider_version ) > 80
+			|| '' === $site_identity
 			|| ( in_array( $fact_type, array( ORAS_AI_Current_Data_Request::PLANET_POSITION, ORAS_AI_Current_Data_Request::TARGET_POSITION ), true ) && '' === $target_identity )
 		) {
 			throw new InvalidArgumentException( 'Invalid astronomy fact.' );
@@ -53,6 +64,9 @@ final class ORAS_AI_Astronomy_Fact implements ORAS_AI_Current_Data_Value_Interfa
 		$this->calculated_at = $calculated_at->setTimezone( $utc );
 		$this->valid_at      = $valid_at->setTimezone( $utc );
 		$this->target_identity = $target_identity;
+		$this->fact_key        = $fact_key;
+		$this->provider_version = $provider_version;
+		$this->site_identity    = $site_identity;
 	}
 
 	public function provider_id() {
@@ -72,6 +86,9 @@ final class ORAS_AI_Astronomy_Fact implements ORAS_AI_Current_Data_Value_Interfa
 			'calculated_at'   => $this->calculated_at->format( DATE_ATOM ),
 			'valid_at'        => $this->valid_at->format( DATE_ATOM ),
 			'target_identity' => $this->target_identity,
+			'fact_key'        => $this->fact_key,
+			'provider_version'=> $this->provider_version,
+			'site_identity'   => $this->site_identity,
 			'authority_class' => $this->authority_class(),
 		);
 	}
