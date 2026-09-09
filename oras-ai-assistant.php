@@ -5,6 +5,8 @@
  * Version: 0.2.1
  * Author: Oil Region Astronomical Society
  * Text Domain: oras-ai-assistant
+ * License: GPL-3.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,6 +25,17 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-access-guard.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-membership-authorizer.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-pmpro-membership-authorizer.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-authorized-request.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-clock.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-system-clock.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-observing-site.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-data-request.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-current-data-value.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-data-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-astronomy-fact.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-weather-snapshot.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-observing-score-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-astronomy-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-weather-provider.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-request.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-domain-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-domain-classifier.php';
@@ -73,6 +86,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-conversation-transport.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-chat-ui.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-connector-health-admin.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-m6-provider-admin.php';
 
 final class ORAS_AI_Assistant {
 
@@ -80,6 +94,7 @@ final class ORAS_AI_Assistant {
 	private $request_gateway;
 	private $cost_admin;
 	private $connector_health_admin;
+	private $m6_provider_admin;
 	private $conversations;
 	private $conversation_transport;
 	private $chat_ui;
@@ -119,6 +134,7 @@ final class ORAS_AI_Assistant {
 		$this->chat_ui = new ORAS_AI_Chat_UI( $this->request_gateway );
 		$this->cost_admin = new ORAS_AI_Cost_Admin();
 		$this->connector_health_admin = new ORAS_AI_Connector_Health_Admin( $connector_observability, $connectors );
+		$this->m6_provider_admin = new ORAS_AI_M6_Provider_Admin();
 	}
 
 	public static function activate() {
@@ -189,6 +205,15 @@ final class ORAS_AI_Assistant {
 			'manage_options',
 			'oras-ai-connector-health',
 			array( $this->connector_health_admin, 'render_page' )
+		);
+
+		add_submenu_page(
+			'oras-ai-assistant',
+			__( 'Astronomy & Weather Providers', 'oras-ai-assistant' ),
+			__( 'Astronomy & Weather', 'oras-ai-assistant' ),
+			'manage_options',
+			'oras-ai-m6-providers',
+			array( $this->m6_provider_admin, 'render_page' )
 		);
 
 		add_submenu_page(

@@ -12,6 +12,8 @@ final class ORAS_AI_Audit_Log {
 	const CONFIG_OPENAI_MODEL     = 'config.openai_model';
 	const CONFIG_MEMBER_AI        = 'config.member_ai_enabled';
 	const CONFIG_OPENAI_API_KEY   = 'config.openai_api_key';
+	const CONFIG_M6_ASTRONOMYAPI  = 'config.m6.astronomyapi_credentials';
+	const CONFIG_M6_NWS_CONTACT   = 'config.m6.nws_contact';
 
 	public static function log_openai_model_changed( $old_model, $new_model ) {
 		return self::record(
@@ -77,6 +79,19 @@ final class ORAS_AI_Audit_Log {
 			self::audit_state( $old_pricing ),
 			self::audit_state( $new_pricing )
 		);
+	}
+
+	public static function log_m6_provider_config_changed( $setting, $action ) {
+		$settings = array(
+			'astronomyapi_credentials' => self::CONFIG_M6_ASTRONOMYAPI,
+			'nws_contact'              => self::CONFIG_M6_NWS_CONTACT,
+		);
+		$action = sanitize_key( $action );
+		if ( ! isset( $settings[ $setting ] ) || ! in_array( $action, array( 'set', 'replaced', 'removed' ), true ) ) {
+			return false;
+		}
+
+		return self::record( $settings[ $setting ], $action, null, null );
 	}
 
 	public static function recent_events( $limit = self::RECENT_EVENTS ) {
