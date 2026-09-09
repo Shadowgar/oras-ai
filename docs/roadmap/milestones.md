@@ -70,12 +70,17 @@
 At M4 the assistant may answer stable ORAS knowledge and general astronomy, but cannot claim unqualified live capabilities.
 
 ## M5 — Live ORAS integrations
-- [ ] RB Events Calendar connector.
-- [ ] RB WooCommerce connector.
-- [ ] RB PMPro connector.
-- [ ] RB Live/static conflict resolution.
-- [ ] RB Canonical action links.
-- [ ] RB No autonomous purchase behavior.
+
+**Status:** COMPLETE — 2026-09-08
+
+**Evidence:** [M5 closure verification](../evidence/m5-live-oras-integrations/verification.md)
+
+- [x] RB Events Calendar connector.
+- [x] RB WooCommerce connector.
+- [x] RB PMPro connector.
+- [x] RB Live/static conflict resolution.
+- [x] RB Canonical action links.
+- [x] RB No autonomous purchase behavior.
 
 ## M6 — Astronomy/weather intelligence
 - [ ] RB Astronomy provider/library selected with qualification evidence against the M0 capability contract.

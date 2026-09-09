@@ -34,6 +34,8 @@
 - **AT-LIVE-001** Next AstroBlast comes from event system.
 - **AT-LIVE-002** Observer Pass price comes from WooCommerce.
 - **AT-LIVE-003** Live timeout yields bounded uncertainty, not stale invention.
+- **AT-LIVE-004 (LIVE-003)** Authenticated self-membership context comes from PMPro/WordPress without exposing another member or raw membership records.
+- **AT-LIVE-005 (NFR-OBS-002)** Operational connector failures produce bounded per-connector counts and safe read-only administrator health detail without retaining request, member, fact, or vendor payload data.
 
 ## Astronomy
 - **AT-ASTRO-001** General definition works without live tool.

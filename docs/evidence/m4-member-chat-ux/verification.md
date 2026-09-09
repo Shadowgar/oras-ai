@@ -5,9 +5,11 @@
 - **Verification date:** 2026-09-03
 - **Branch:** `m4/member-chat-ux`
 - **Implementation HEAD:** `89c7ee9703604aac44784638d92193a93d9d8288`
+- **M4 closure commit in Git history:** `6a60da8aeea6c46501960426ee848b532eddf0a6`
+- **Closure commit message:** `Qualify M4 member chat UX`
 - **Plugin version:** `0.2.1`
 
-The exact implementation HEAD above is the reproducible committed M4 implementation identifier. This closure documentation and the additional browser-like qualification assertions remain uncommitted pending owner review.
+The implementation HEAD identifies the completed M4 production implementation before closure qualification. The later closure commit in Git history records the owner-approved M4 qualification documentation and additional browser-like assertions; the evidence file could not name that future commit when it was first authored.
 
 ## Implementation commits
 
