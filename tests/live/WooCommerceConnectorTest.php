@@ -276,7 +276,7 @@ oras_ai_test('WooCommerce facts enforce least fields trusted URL metadata and au
 	oras_ai_assert_true($result instanceof ORAS_AI_Live_Result && $result->successful(), 'Safe WooCommerce result did not enter the live service.');
 	foreach ($result->facts() as $fact) {
 		oras_ai_assert_same(
-			array('fact_key', 'source_title', 'source_wp_object_id', 'source_type', 'canonical_url', 'relevant_text', 'visibility', 'source_modified_gmt', 'retrieved_at'),
+			array('fact_key', 'source_title', 'source_wp_object_id', 'source_type', 'canonical_url', 'relevant_text', 'comparison_value', 'visibility', 'source_modified_gmt', 'retrieved_at'),
 			array_keys($fact->to_array()),
 			'WooCommerce fact escaped the existing least-field contract.'
 		);

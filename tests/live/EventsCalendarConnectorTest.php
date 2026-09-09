@@ -177,6 +177,7 @@ oras_ai_test('AT-LIVE-001 Events adapter normalizes the next event into least-fi
 		'source_type',
 		'canonical_url',
 		'relevant_text',
+		'comparison_value',
 		'visibility',
 		'source_modified_gmt',
 		'retrieved_at',

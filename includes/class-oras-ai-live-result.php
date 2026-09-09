@@ -13,8 +13,9 @@ final class ORAS_AI_Live_Result {
 	private $status;
 	private $reason;
 	private $facts;
+	private $failures;
 
-	private function __construct( $status, $reason, array $facts = array() ) {
+	private function __construct( $status, $reason, array $facts = array(), array $failures = array() ) {
 		$this->status = $status;
 		$this->reason = sanitize_key( $reason );
 		$this->facts  = array_values(
@@ -25,9 +26,37 @@ final class ORAS_AI_Live_Result {
 				}
 			)
 		);
+		$this->failures = array_slice(
+			array_values(
+				array_filter(
+					array_map(
+						static function ( $failure ) {
+							if ( ! is_array( $failure ) ) {
+								return null;
+							}
+							$connector = sanitize_key( $failure['connector'] ?? '' );
+							$reason    = sanitize_key( $failure['reason'] ?? '' );
+							$fact_keys = ORAS_AI_Live_Request::normalize_fact_keys( (array) ( $failure['fact_keys'] ?? array() ) );
+							if ( ! in_array( $connector, array( 'events_calendar', 'woocommerce', 'pmpro' ), true ) || '' === $reason || empty( $fact_keys ) ) {
+								return null;
+							}
+
+							return array(
+								'connector' => $connector,
+								'reason'    => $reason,
+								'fact_keys' => $fact_keys,
+							);
+						},
+						$failures
+					)
+				)
+		),
+			0,
+			3
+		);
 	}
 
-	public static function success( array $facts ) {
+	public static function success( array $facts, array $failures = array() ) {
 		$facts = array_values(
 			array_filter(
 				$facts,
@@ -39,7 +68,7 @@ final class ORAS_AI_Live_Result {
 
 		return empty( $facts )
 			? self::unknown( 'live_facts_missing' )
-			: new self( self::SUCCESS, '', $facts );
+			: new self( self::SUCCESS, '', $facts, $failures );
 	}
 
 	public static function unavailable( $reason ) {
@@ -64,6 +93,21 @@ final class ORAS_AI_Live_Result {
 
 	public function facts() {
 		return $this->facts;
+	}
+
+	public function failures() {
+		return $this->failures;
+	}
+
+	public function failed_fact_keys() {
+		$keys = array();
+		foreach ( $this->failures as $failure ) {
+			foreach ( $failure['fact_keys'] as $fact_key ) {
+				$keys[ $fact_key ] = $fact_key;
+			}
+		}
+
+		return array_values( $keys );
 	}
 
 	public function fact_keys() {

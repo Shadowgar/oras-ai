@@ -86,7 +86,9 @@ final class ORAS_AI_Answer_Orchestrator {
 						'query'                => $request->question(),
 						'allowed_visibilities' => $request->allowed_visibilities(),
 						'intent'               => $intent,
-						'fact_keys'            => $live_result instanceof ORAS_AI_Live_Result ? $live_result->fact_keys() : array(),
+						'fact_keys'            => $live_result instanceof ORAS_AI_Live_Result
+							? array_merge( $live_result->fact_keys(), $live_result->failed_fact_keys() )
+							: array(),
 						'top_k'                => ORAS_AI_WordPress_Retriever::MAX_TOP_K,
 						'text_budget'          => ORAS_AI_Grounded_Context_Assembler::MAX_EVIDENCE_CHARACTERS,
 					)

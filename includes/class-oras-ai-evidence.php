@@ -27,6 +27,7 @@ final class ORAS_AI_Evidence {
 			'source_title'          => '',
 			'canonical_url'         => '',
 			'relevant_text'         => '',
+			'comparison_value'      => '',
 			'category'              => '',
 			'visibility'            => '',
 			'lifecycle'             => '',
@@ -46,6 +47,7 @@ final class ORAS_AI_Evidence {
 		$fields['source_record_id']     = (int) $fields['source_record_id'];
 		$fields['source_wp_object_id']  = (int) $fields['source_wp_object_id'];
 		$fields['historical_event']     = (bool) $fields['historical_event'];
+		$fields['comparison_value']     = substr( sanitize_text_field( (string) $fields['comparison_value'] ), 0, 500 );
 		$fields['fact_key']             = ORAS_AI_Live_Request::normalize_fact_key( $fields['fact_key'] );
 		$fields['fact_keys']            = ORAS_AI_Live_Request::normalize_fact_keys( (array) $fields['fact_keys'] );
 		if ( empty( $fields['fact_keys'] ) && '' !== $fields['fact_key'] ) {

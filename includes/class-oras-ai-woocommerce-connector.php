@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Read-only least-privilege adapter for current Observer Pass product facts.
  */
-final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Live_Connector_Interface {
+final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Connector_Interface {
 
 	const CONNECTOR = 'woocommerce';
 	const SUBJECT   = 'observer-pass';
@@ -22,6 +22,34 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Live_Connector_Inte
 
 	public function supports( ORAS_AI_Live_Request $request ) {
 		return null !== $this->route( $request );
+	}
+
+	public function connector_id() {
+		return self::CONNECTOR;
+	}
+
+	public function is_available() {
+		return null !== $this->product_loader || (
+			function_exists( 'wc_get_products' )
+			&& function_exists( 'wc_get_product' )
+			&& function_exists( 'get_woocommerce_currency' )
+		);
+	}
+
+	public function required_fact_keys( ORAS_AI_Live_Request $request ) {
+		$route = $this->route( $request );
+		if ( null === $route ) {
+			return array();
+		}
+		$options = 'all' === $route['option'] ? array( 'annual', 'daily' ) : array( $route['option'] );
+		$keys    = array();
+		foreach ( $options as $option ) {
+			foreach ( $route['fields'] as $field ) {
+				$keys[] = 'product:observer-pass-' . $option . ':' . $field;
+			}
+		}
+
+		return ORAS_AI_Live_Request::normalize_fact_keys( $keys );
 	}
 
 	public function fetch( ORAS_AI_Live_Request $request ) {
@@ -248,11 +276,26 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Live_Connector_Inte
 				'source_type'         => 'variation' === $product['type'] ? 'product_variation' : 'product',
 				'canonical_url'       => $product['canonical_url'],
 				'relevant_text'       => $this->fact_text( $product, $field ),
+				'comparison_value'    => $this->comparison_value( $product, $field ),
 				'visibility'          => 'public',
 				'source_modified_gmt' => $product['modified_gmt'],
 				'retrieved_at'        => $product['retrieved_at'],
 			)
 		);
+	}
+
+	private function comparison_value( array $product, $field ) {
+		if ( 'price' === $field ) {
+			return $product['current_price'] . ' ' . $product['currency'];
+		}
+		if ( 'availability' === $field ) {
+			return $product['stock_status'] . '|' . ( $product['in_stock'] ? 'yes' : 'no' );
+		}
+		if ( 'purchasable' === $field ) {
+			return $product['purchasable'] ? 'yes' : 'no';
+		}
+
+		return '';
 	}
 
 	private function fact_text( array $product, $field ) {

@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Least-privilege adapter for current published The Events Calendar records.
  */
-final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Live_Connector_Interface {
+final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live_Connector_Interface {
 
 	const CONNECTOR = 'events_calendar';
 
@@ -20,6 +20,23 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Live_Connector_
 
 	public function supports( ORAS_AI_Live_Request $request ) {
 		return null !== $this->route( $request );
+	}
+
+	public function connector_id() {
+		return self::CONNECTOR;
+	}
+
+	public function is_available() {
+		return null !== $this->event_loader || (
+			function_exists( 'tribe_get_events' )
+			&& function_exists( 'tribe_get_event' )
+			&& function_exists( 'tribe_get_event_link' )
+		);
+	}
+
+	public function required_fact_keys( ORAS_AI_Live_Request $request ) {
+		$route = $this->route( $request );
+		return is_array( $route ) && empty( $route['reason'] ) ? $route['fact_keys'] : array();
 	}
 
 	public function fetch( ORAS_AI_Live_Request $request ) {
@@ -104,6 +121,7 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Live_Connector_
 					'source_type'         => 'tribe_events',
 					'canonical_url'       => $event['canonical_url'],
 					'relevant_text'       => $text,
+					'comparison_value'    => $event[ $field ],
 					'visibility'          => 'public',
 					'source_modified_gmt' => $event['modified_gmt'],
 					'retrieved_at'        => $event['retrieved_at'],

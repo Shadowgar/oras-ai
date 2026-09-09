@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Read-only least-privilege adapter for the authorized user's current PMPro state.
  */
-final class ORAS_AI_PMPro_Context_Connector implements ORAS_AI_Live_Connector_Interface {
+final class ORAS_AI_PMPro_Context_Connector implements ORAS_AI_Observable_Live_Connector_Interface {
 
 	const CONNECTOR = 'pmpro';
 	const SUBJECT   = 'self';
@@ -21,6 +21,19 @@ final class ORAS_AI_PMPro_Context_Connector implements ORAS_AI_Live_Connector_In
 
 	public function supports( ORAS_AI_Live_Request $request ) {
 		return null !== $this->route( $request );
+	}
+
+	public function connector_id() {
+		return self::CONNECTOR;
+	}
+
+	public function is_available() {
+		return null !== $this->levels_loader || function_exists( 'pmpro_getMembershipLevelsForUser' );
+	}
+
+	public function required_fact_keys( ORAS_AI_Live_Request $request ) {
+		$route = $this->route( $request );
+		return is_array( $route ) && empty( $route['reason'] ) ? $route['fact_keys'] : array();
 	}
 
 	public function fetch( ORAS_AI_Live_Request $request ) {
@@ -96,6 +109,7 @@ final class ORAS_AI_PMPro_Context_Connector implements ORAS_AI_Live_Connector_In
 					'source_type'         => 'pmpro_membership',
 					'canonical_url'       => '',
 					'relevant_text'       => $text,
+					'comparison_value'    => $this->comparison_value( $fact_key, $level_names ),
 					'visibility'          => 'members',
 					'source_modified_gmt' => '',
 					'retrieved_at'        => $this->now_value(),
@@ -108,6 +122,17 @@ final class ORAS_AI_PMPro_Context_Connector implements ORAS_AI_Live_Connector_In
 		}
 
 		return ORAS_AI_Live_Result::success( $facts );
+	}
+
+	private function comparison_value( $fact_key, array $level_names ) {
+		if ( 'member:self:membership-status' === $fact_key ) {
+			return empty( $level_names ) ? 'inactive' : 'active';
+		}
+		if ( 'member:self:membership-level' === $fact_key ) {
+			return empty( $level_names ) ? 'none' : $level_names[0];
+		}
+
+		return '';
 	}
 
 	private function route( ORAS_AI_Live_Request $request ) {

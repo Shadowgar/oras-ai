@@ -15,6 +15,10 @@ oras_ai_test('plugin load registers baseline classes and hooks', function (): vo
 	oras_ai_assert_true(class_exists('ORAS_AI_Usage_Ledger'), 'Usage ledger class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Execution_Controls'), 'Execution-control class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Cost_Admin'), 'Cost admin class should load.');
+	oras_ai_assert_true(interface_exists('ORAS_AI_Observable_Live_Connector_Interface'), 'Observable live connector contract should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_Connector_Observability'), 'Connector observability class should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_Live_Conflict_Observer'), 'Live conflict observer should load.');
+	oras_ai_assert_true(class_exists('ORAS_AI_Connector_Health_Admin'), 'Connector Health admin class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_Knowledge_Base'), 'Knowledge Base class should load.');
 	oras_ai_assert_true(class_exists('ORAS_AI_OpenAI'), 'OpenAI class should load.');
 	oras_ai_assert_true(interface_exists('ORAS_AI_Source_Classifier_Interface'), 'Source classifier contract should load.');

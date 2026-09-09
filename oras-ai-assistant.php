@@ -50,12 +50,15 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-evidence-packet.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-fact.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-live-connector.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-observable-live-connector.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-connector-observability.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-events-calendar-connector.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-woocommerce-connector.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-pmpro-context-connector.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-service.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-retriever.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-source-precedence.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-conflict-observer.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-wordpress-retriever.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-grounded-context.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-grounded-context-assembler.php';
@@ -69,12 +72,14 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-conversations.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-request-gateway.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-conversation-transport.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-chat-ui.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-connector-health-admin.php';
 
 final class ORAS_AI_Assistant {
 
 	private $sources;
 	private $request_gateway;
 	private $cost_admin;
+	private $connector_health_admin;
 	private $conversations;
 	private $conversation_transport;
 	private $chat_ui;
@@ -89,20 +94,23 @@ final class ORAS_AI_Assistant {
 		$this->conversations = new ORAS_AI_Conversations();
 		$ledger = new ORAS_AI_Usage_Ledger();
 		$site_host = (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+		$connectors = array(
+			new ORAS_AI_Events_Calendar_Connector(),
+			new ORAS_AI_WooCommerce_Connector(),
+			new ORAS_AI_PMPro_Context_Connector(),
+		);
+		$connector_observability = new ORAS_AI_Connector_Observability();
 		$live_service = new ORAS_AI_Live_Service(
-			array(
-				new ORAS_AI_Events_Calendar_Connector(),
-				new ORAS_AI_WooCommerce_Connector(),
-				new ORAS_AI_PMPro_Context_Connector(),
-			),
-			new ORAS_AI_URL_Policy( array( $site_host ) )
+			$connectors,
+			new ORAS_AI_URL_Policy( array( $site_host ) ),
+			$connector_observability
 		);
 		$orchestrator = new ORAS_AI_Answer_Orchestrator(
 			new ORAS_AI_Execution_Controls( $ledger ),
 			$ledger,
 			new ORAS_AI_Domain_Guard(),
 			new ORAS_AI_WordPress_Retriever(),
-			new ORAS_AI_Grounded_Context_Assembler( new ORAS_AI_Source_Precedence() ),
+			new ORAS_AI_Grounded_Context_Assembler( new ORAS_AI_Source_Precedence(), new ORAS_AI_Live_Conflict_Observer() ),
 			new ORAS_AI_OpenAI_Answer_Provider(),
 			$live_service
 		);
@@ -110,6 +118,7 @@ final class ORAS_AI_Assistant {
 		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations );
 		$this->chat_ui = new ORAS_AI_Chat_UI( $this->request_gateway );
 		$this->cost_admin = new ORAS_AI_Cost_Admin();
+		$this->connector_health_admin = new ORAS_AI_Connector_Health_Admin( $connector_observability, $connectors );
 	}
 
 	public static function activate() {
@@ -171,6 +180,15 @@ final class ORAS_AI_Assistant {
 			'manage_options',
 			'oras-ai-cost',
 			array( $this->cost_admin, 'render_page' )
+		);
+
+		add_submenu_page(
+			'oras-ai-assistant',
+			__( 'Connector Health', 'oras-ai-assistant' ),
+			__( 'Connector Health', 'oras-ai-assistant' ),
+			'manage_options',
+			'oras-ai-connector-health',
+			array( $this->connector_health_admin, 'render_page' )
 		);
 
 		add_submenu_page(

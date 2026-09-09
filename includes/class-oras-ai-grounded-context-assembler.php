@@ -9,9 +9,11 @@ final class ORAS_AI_Grounded_Context_Assembler {
 	const MAX_PROVIDER_INPUT_CHARACTERS = 16000;
 
 	private $precedence;
+	private $conflict_observer;
 
-	public function __construct( ORAS_AI_Source_Precedence $precedence ) {
-		$this->precedence = $precedence;
+	public function __construct( ORAS_AI_Source_Precedence $precedence, ?ORAS_AI_Live_Conflict_Observer $conflict_observer = null ) {
+		$this->precedence        = $precedence;
+		$this->conflict_observer = $conflict_observer;
 	}
 
 	public function assemble( ORAS_AI_Guarded_Request $guarded, ORAS_AI_Evidence_Packet $packet, $intent = ORAS_AI_Retrieval_Request::INTENT_GENERAL, $scope = '' ) {
@@ -56,6 +58,9 @@ final class ORAS_AI_Grounded_Context_Assembler {
 				: $this->precedence->select_for_fact( $group, $fact_key, $intent );
 			if ( ! $item ) {
 				continue;
+			}
+			if ( null !== $this->conflict_observer && '' !== $fact_key ) {
+				$this->conflict_observer->observe( $fact_key, $item, $group );
 			}
 			$item_id = spl_object_hash( $item );
 			if ( isset( $selected_ids[ $item_id ] ) ) {

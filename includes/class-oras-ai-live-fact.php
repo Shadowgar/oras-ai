@@ -18,6 +18,7 @@ final class ORAS_AI_Live_Fact {
 		$fact_key = ORAS_AI_Live_Request::normalize_fact_key( $fields['fact_key'] ?? '' );
 		$title    = sanitize_text_field( (string) ( $fields['source_title'] ?? '' ) );
 		$text     = trim( wp_strip_all_tags( (string) ( $fields['relevant_text'] ?? '' ), true ) );
+		$comparison_value = sanitize_text_field( (string) ( $fields['comparison_value'] ?? '' ) );
 		$visibility = sanitize_key( $fields['visibility'] ?? '' );
 
 		if (
@@ -37,6 +38,7 @@ final class ORAS_AI_Live_Fact {
 				'source_type'           => sanitize_key( $fields['source_type'] ?? '' ),
 				'canonical_url'         => trim( (string) ( $fields['canonical_url'] ?? '' ) ),
 				'relevant_text'         => substr( $text, 0, 1000 ),
+				'comparison_value'      => substr( $comparison_value, 0, 500 ),
 				'visibility'            => $visibility,
 				'source_modified_gmt'   => sanitize_text_field( (string) ( $fields['source_modified_gmt'] ?? '' ) ),
 				'retrieved_at'          => sanitize_text_field( (string) ( $fields['retrieved_at'] ?? '' ) ),
