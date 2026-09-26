@@ -82,7 +82,8 @@ function oras_ai_test_answer_fixture(
 	callable $providerCallback,
 	array $configOverrides = array(),
 	$liveService = null,
-	$astronomyService = null
+	$astronomyService = null,
+	$weatherService = null
 ): array {
 	$now = strtotime('2026-09-03 12:00:00 UTC');
 	$ledger = new ORAS_AI_Usage_Ledger(static function () use (&$now): int { return $now; });
@@ -98,7 +99,8 @@ function oras_ai_test_answer_fixture(
 		new ORAS_AI_Grounded_Context_Assembler(new ORAS_AI_Source_Precedence()),
 		$provider,
 		$liveService,
-		$astronomyService
+		$astronomyService,
+		$weatherService
 	);
 
 	return array($orchestrator, $provider, $retriever, $ledger, &$now, $config);

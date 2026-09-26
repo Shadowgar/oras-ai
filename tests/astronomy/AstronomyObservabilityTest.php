@@ -24,17 +24,33 @@ oras_ai_test('M6 astronomy observability stores only bounded provider health agg
 	oras_ai_assert_same(1, $recovered['failure_count'], 'Success erased cumulative provider failure count.');
 });
 
-oras_ai_test('M6 provider admin shows bounded astronomy health without secrets or Task 3 weather state', function (): void {
+oras_ai_test('M6 provider admin shows bounded astronomy and NWS health without secrets', function (): void {
 	oras_ai_test_reset();
 	$observer = new ORAS_AI_Astronomy_Observability();
 	$observer->record_outcome('astronomy_api', ORAS_AI_Current_Data_Result::UNAVAILABLE, 'provider_unavailable');
+	$observer->record_outcome('nws', ORAS_AI_Current_Data_Result::UNAVAILABLE, 'provider_request_failed');
 	ORAS_AI_Config::update_stored_astronomyapi_credentials('fixture-id', 'never-render-this-secret');
 	ob_start();
 	(new ORAS_AI_M6_Provider_Admin($observer))->render_page();
 	$html = (string) ob_get_clean();
 
-	oras_ai_assert_contains('Astronomy provider health', $html, 'Task 2 provider health is not visible.');
+	oras_ai_assert_contains('Astronomy and weather provider health', $html, 'M6 provider health is not visible.');
 	oras_ai_assert_contains('provider_unavailable', $html, 'Bounded astronomy failure reason is not visible.');
+	oras_ai_assert_contains('provider_request_failed', $html, 'Bounded NWS failure reason is not visible.');
 	oras_ai_assert_not_contains('never-render-this-secret', $html, 'Provider health exposed credentials.');
-	oras_ai_assert_not_contains('Weather provider health', $html, 'Task 3 weather health was pulled forward.');
+});
+
+oras_ai_test('M6 NWS observability counts only bounded operational failures', function (): void {
+	oras_ai_test_reset();
+	$observer = new ORAS_AI_Astronomy_Observability();
+	$observer->record_outcome('nws', ORAS_AI_Current_Data_Result::UNAVAILABLE, 'provider_request_failed');
+	$observer->record_outcome('nws', ORAS_AI_Current_Data_Result::UNKNOWN, 'stale_observation');
+	$observer->record_outcome('nws', ORAS_AI_Current_Data_Result::UNKNOWN, 'weather_fields_unavailable');
+	$observer->record_outcome('nws', ORAS_AI_Current_Data_Result::UNKNOWN, 'question user@example.test');
+	$state = $observer->snapshot()['nws'];
+
+	oras_ai_assert_same(1, $state['failure_count'], 'Normal freshness/null outcomes were counted as operational NWS failures.');
+	oras_ai_assert_same('provider_request_failed', $state['last_failure_reason'], 'NWS health did not retain its bounded reason.');
+	$stored = wp_json_encode(get_option(ORAS_AI_Astronomy_Observability::OPTION));
+	oras_ai_assert_not_contains('user@example.test', $stored, 'NWS health stored member or question content.');
 });

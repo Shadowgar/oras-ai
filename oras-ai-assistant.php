@@ -52,6 +52,11 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-astronomy-quer
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-astronomy-observability.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-astronomy-service.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-weather-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-nws-cache.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-nws-weather-provider.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-astronomical-night-resolver.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-weather-query-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-weather-service.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-request.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-domain-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-domain-classifier.php';
@@ -139,8 +144,9 @@ final class ORAS_AI_Assistant {
 		$astronomy_clock    = new ORAS_AI_System_Clock();
 		$astronomy_resolver = new ORAS_AI_OpenNGC_Target_Resolver();
 		$astronomy_observability = new ORAS_AI_Astronomy_Observability();
+		$local_astronomy_provider = new ORAS_AI_Local_Sun_Moon_Provider( $astronomy_clock );
 		$astronomy_service  = new ORAS_AI_Current_Astronomy_Service(
-			new ORAS_AI_Local_Sun_Moon_Provider( $astronomy_clock ),
+			$local_astronomy_provider,
 			new ORAS_AI_OpenNGC_Astronomy_Provider( $astronomy_resolver, new ORAS_AI_Horizontal_Position_Calculator(), $astronomy_clock ),
 			new ORAS_AI_Astronomy_API_Provider(
 				ORAS_AI_Config::get_astronomyapi_application_id(),
@@ -152,6 +158,16 @@ final class ORAS_AI_Assistant {
 			$astronomy_clock,
 			$astronomy_observability
 		);
+		$weather_service = new ORAS_AI_Current_Weather_Service(
+			new ORAS_AI_NWS_Weather_Provider(
+				ORAS_AI_Config::get_nws_user_agent(),
+				null,
+				$astronomy_clock
+			),
+			new ORAS_AI_Astronomical_Night_Resolver( $local_astronomy_provider, $astronomy_clock ),
+			$astronomy_clock,
+			$astronomy_observability
+		);
 		$orchestrator = new ORAS_AI_Answer_Orchestrator(
 			new ORAS_AI_Execution_Controls( $ledger ),
 			$ledger,
@@ -160,7 +176,8 @@ final class ORAS_AI_Assistant {
 			new ORAS_AI_Grounded_Context_Assembler( new ORAS_AI_Source_Precedence(), new ORAS_AI_Live_Conflict_Observer() ),
 			new ORAS_AI_OpenAI_Answer_Provider(),
 			$live_service,
-			$astronomy_service
+			$astronomy_service,
+			$weather_service
 		);
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
 		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations );

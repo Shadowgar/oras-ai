@@ -3,14 +3,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/** Bounded aggregate health for Task 2 astronomy providers only. */
+/** Bounded aggregate health for M6 astronomy and weather providers. */
 final class ORAS_AI_Astronomy_Observability {
 	const OPTION            = 'oras_ai_astronomy_provider_health';
 	const MAX_FAILURE_COUNT = 999999;
 
-	private const PROVIDERS = array( 'suncalc', 'openngc_local', 'astronomy_api' );
+	private const PROVIDERS = array( 'suncalc', 'openngc_local', 'astronomy_api', 'nws' );
 	private const OPERATIONAL_REASONS = array(
-		'provider_request_failed',
 		'provider_unavailable',
 		'malformed_provider_response',
 		'incomplete_provider_response',
@@ -18,6 +17,12 @@ final class ORAS_AI_Astronomy_Observability {
 		'calculation_unavailable',
 		'provider_failed',
 		'provider_result_malformed',
+		'provider_request_failed',
+		'provider_rate_limited',
+		'malformed_provider_units',
+		'unsafe_provider_url',
+		'point_mapping_invalid',
+		'station_mapping_invalid',
 	);
 
 	public function record_outcome( $provider_id, $status, $reason = '' ) {

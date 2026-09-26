@@ -10,6 +10,7 @@ final class ORAS_AI_Answer_Orchestrator {
 
 	const NO_EVIDENCE_MESSAGE = "I couldn't establish that from the current ORAS information.";
 	const CURRENT_DATA_MESSAGE = "I couldn't establish current astronomy data because a qualified live data provider is not available yet.";
+	const CURRENT_WEATHER_MESSAGE = "I couldn't establish current observing weather from the qualified provider.";
 
 	private $controls;
 	private $ledger;
@@ -19,6 +20,7 @@ final class ORAS_AI_Answer_Orchestrator {
 	private $answer_provider;
 	private $live_service;
 	private $astronomy_service;
+	private $weather_service;
 
 	public function __construct(
 		ORAS_AI_Execution_Controls $controls,
@@ -28,7 +30,8 @@ final class ORAS_AI_Answer_Orchestrator {
 		ORAS_AI_Grounded_Context_Assembler $context_assembler,
 		ORAS_AI_Answer_Provider_Interface $answer_provider,
 		$live_service = null,
-		$astronomy_service = null
+		$astronomy_service = null,
+		$weather_service = null
 	) {
 		$this->controls          = $controls;
 		$this->ledger            = $ledger;
@@ -38,6 +41,7 @@ final class ORAS_AI_Answer_Orchestrator {
 		$this->answer_provider   = $answer_provider;
 		$this->live_service      = $live_service instanceof ORAS_AI_Live_Service ? $live_service : null;
 		$this->astronomy_service = $astronomy_service instanceof ORAS_AI_Current_Astronomy_Service ? $astronomy_service : null;
+		$this->weather_service   = $weather_service instanceof ORAS_AI_Current_Weather_Service ? $weather_service : null;
 	}
 
 	public function answer( ORAS_AI_Authorized_Request $request ) {
@@ -62,7 +66,10 @@ final class ORAS_AI_Answer_Orchestrator {
 		$intent = $this->intent_for( $request->question() );
 		$current_astronomy = null;
 		$current_astronomy_packet = new ORAS_AI_Evidence_Packet();
+		$requires_current_weather = $this->requires_current_weather( $request->question() )
+			&& in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ASTRONOMY, ORAS_AI_Domain_Result::CROSSOVER ), true );
 		$requires_current_astronomy = $this->requires_current_astronomy( $request->question() )
+			&& $this->requires_astronomy_facts( $request->question() )
 			&& in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ASTRONOMY, ORAS_AI_Domain_Result::CROSSOVER ), true );
 		if ( $requires_current_astronomy ) {
 			if ( null === $this->astronomy_service ) {
@@ -70,11 +77,34 @@ final class ORAS_AI_Answer_Orchestrator {
 				return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
 			}
 			$current_astronomy = $this->astronomy_service->query( $request );
-			if ( ! $current_astronomy instanceof ORAS_AI_Current_Astronomy_Query_Result || ! $current_astronomy->matched() || ! $current_astronomy->has_facts() ) {
+			if ( ! $current_astronomy instanceof ORAS_AI_Current_Astronomy_Query_Result || ! $current_astronomy->matched() || ( ! $current_astronomy->has_facts() && ! $requires_current_weather ) ) {
 				$this->ledger->release( $reservation_id );
 				return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
 			}
 			$current_astronomy_packet = $current_astronomy->evidence_packet();
+		}
+		$current_weather = null;
+		$current_weather_packet = new ORAS_AI_Evidence_Packet();
+		if ( $requires_current_weather ) {
+			if ( null === $this->weather_service ) {
+				if ( ( $current_astronomy instanceof ORAS_AI_Current_Astronomy_Query_Result && $current_astronomy->has_facts() ) || ORAS_AI_Domain_Result::CROSSOVER === $domain->outcome() ) {
+					$current_weather_packet = $this->weather_failure_packet( 'provider_not_configured' );
+				} else {
+					$this->ledger->release( $reservation_id );
+					return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_WEATHER_MESSAGE, 'current_weather_unavailable' );
+				}
+			} else {
+				$current_weather = $this->weather_service->query( $request );
+				if ( ! $current_weather instanceof ORAS_AI_Current_Weather_Query_Result || ! $current_weather->matched() ) {
+					$this->ledger->release( $reservation_id );
+					return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_WEATHER_MESSAGE, 'current_weather_unavailable' );
+				}
+				$current_weather_packet = $current_weather->evidence_packet();
+				if ( ! $current_weather->has_facts() && ( ! $current_astronomy instanceof ORAS_AI_Current_Astronomy_Query_Result || ! $current_astronomy->has_facts() ) && ORAS_AI_Domain_Result::ASTRONOMY === $domain->outcome() ) {
+					$this->ledger->release( $reservation_id );
+					return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_WEATHER_MESSAGE, 'current_weather_unavailable' );
+				}
+			}
 		}
 		$live_result = null;
 		$live_packet = new ORAS_AI_Evidence_Packet();
@@ -92,7 +122,7 @@ final class ORAS_AI_Answer_Orchestrator {
 			}
 		}
 
-		$packet = $current_astronomy_packet;
+		$packet = new ORAS_AI_Evidence_Packet( array_merge( $current_astronomy_packet->items(), $current_weather_packet->items() ) );
 		if ( in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ORAS, ORAS_AI_Domain_Result::CROSSOVER ), true ) ) {
 			$packet = $this->retriever->retrieve(
 				ORAS_AI_Retrieval_Request::from_trusted_context(
@@ -113,10 +143,10 @@ final class ORAS_AI_Answer_Orchestrator {
 				return ORAS_AI_Answer_Result::failure( 'retrieval_failed' );
 			}
 
-			$packet = new ORAS_AI_Evidence_Packet( array_merge( $packet->items(), $live_packet->items(), $current_astronomy_packet->items() ) );
+			$packet = new ORAS_AI_Evidence_Packet( array_merge( $packet->items(), $live_packet->items(), $current_astronomy_packet->items(), $current_weather_packet->items() ) );
 		}
 
-		$scope = $this->scope_for( $domain->outcome(), ! $packet->is_empty(), $requires_current_astronomy );
+		$scope = $this->scope_for( $domain->outcome(), ! $packet->is_empty(), $requires_current_astronomy || $requires_current_weather );
 		$context = $this->context_assembler->assemble( $guarded, $packet, $intent, $scope );
 		if ( is_wp_error( $context ) ) {
 			$this->ledger->release( $reservation_id );
@@ -248,6 +278,38 @@ final class ORAS_AI_Answer_Orchestrator {
 		return (bool) preg_match(
 			'/\b(now|today|tonight|tomorrow|this evening|this weekend|current(?:ly)?|forecast|weather|clouds?|where is|rise|rises|set|sets|visible)\b/',
 			$question
+		);
+	}
+
+	private function requires_astronomy_facts( $question ) {
+		$question = strtolower( (string) $question );
+		return (bool) preg_match(
+			'/\b(astronomy|astronomical|sun|sunset|sunrise|moon|lunar|planet|planets|mercury|venus|mars|jupiter|saturn|uranus|neptune|where is|rise|rises|set|sets|visible|ngc\s*\d+|ic\s*\d+|m\s*\d+)\b/',
+			$question
+		);
+	}
+
+	private function requires_current_weather( $question ) {
+		$question = strtolower( (string) $question );
+		return (bool) preg_match( '/\b(weather|forecast|clouds?|cloudy|rain|snow|precipitation|temperature|wind|humidity|conditions?|seeing|transparency)\b/', $question );
+	}
+
+	private function weather_failure_packet( $reason ) {
+		return new ORAS_AI_Evidence_Packet(
+			array(
+				ORAS_AI_Evidence::from_array(
+					array(
+						'source_type'           => 'current_weather_status',
+						'source_title'          => 'National Weather Service',
+						'relevant_text'         => 'Required current weather information could not be established (' . sanitize_key( $reason ) . ').',
+						'visibility'            => 'members',
+						'lifecycle'             => 'approved',
+						'source_classification' => 'current_data',
+						'authority_class'       => ORAS_AI_Source_Precedence::CURRENT_ASTRONOMY_WEATHER,
+						'fact_keys'             => array( 'weather:forecast:interval' ),
+					)
+				),
+			)
 		);
 	}
 
