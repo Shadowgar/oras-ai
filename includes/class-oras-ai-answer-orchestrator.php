@@ -21,6 +21,7 @@ final class ORAS_AI_Answer_Orchestrator {
 	private $live_service;
 	private $astronomy_service;
 	private $weather_service;
+	private $observing_planner;
 
 	public function __construct(
 		ORAS_AI_Execution_Controls $controls,
@@ -31,7 +32,8 @@ final class ORAS_AI_Answer_Orchestrator {
 		ORAS_AI_Answer_Provider_Interface $answer_provider,
 		$live_service = null,
 		$astronomy_service = null,
-		$weather_service = null
+		$weather_service = null,
+		$observing_planner = null
 	) {
 		$this->controls          = $controls;
 		$this->ledger            = $ledger;
@@ -42,6 +44,7 @@ final class ORAS_AI_Answer_Orchestrator {
 		$this->live_service      = $live_service instanceof ORAS_AI_Live_Service ? $live_service : null;
 		$this->astronomy_service = $astronomy_service instanceof ORAS_AI_Current_Astronomy_Service ? $astronomy_service : null;
 		$this->weather_service   = $weather_service instanceof ORAS_AI_Current_Weather_Service ? $weather_service : null;
+		$this->observing_planner = $observing_planner instanceof ORAS_AI_Observing_Planner ? $observing_planner : null;
 	}
 
 	public function answer( ORAS_AI_Authorized_Request $request ) {
@@ -64,14 +67,20 @@ final class ORAS_AI_Answer_Orchestrator {
 		}
 
 		$intent = $this->intent_for( $request->question() );
+		$plan = null !== $this->observing_planner ? $this->observing_planner->query( $request ) : null;
+		$planning = $plan instanceof ORAS_AI_Observing_Plan_Result && $plan->matched();
+		if ( $planning && 'unavailable' === $plan->state() && ORAS_AI_Domain_Result::ASTRONOMY === $domain->outcome() ) {
+			$this->ledger->release( $reservation_id );
+			return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
+		}
 		$current_astronomy = null;
-		$current_astronomy_packet = new ORAS_AI_Evidence_Packet();
+		$current_astronomy_packet = $planning ? $plan->evidence_packet() : new ORAS_AI_Evidence_Packet();
 		$requires_current_weather = $this->requires_current_weather( $request->question() )
 			&& in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ASTRONOMY, ORAS_AI_Domain_Result::CROSSOVER ), true );
 		$requires_current_astronomy = $this->requires_current_astronomy( $request->question() )
 			&& $this->requires_astronomy_facts( $request->question() )
 			&& in_array( $domain->outcome(), array( ORAS_AI_Domain_Result::ASTRONOMY, ORAS_AI_Domain_Result::CROSSOVER ), true );
-		if ( $requires_current_astronomy ) {
+		if ( $requires_current_astronomy && ! $planning ) {
 			if ( null === $this->astronomy_service ) {
 				$this->ledger->release( $reservation_id );
 				return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
@@ -85,7 +94,7 @@ final class ORAS_AI_Answer_Orchestrator {
 		}
 		$current_weather = null;
 		$current_weather_packet = new ORAS_AI_Evidence_Packet();
-		if ( $requires_current_weather ) {
+		if ( $requires_current_weather && ! $planning ) {
 			if ( null === $this->weather_service ) {
 				if ( ( $current_astronomy instanceof ORAS_AI_Current_Astronomy_Query_Result && $current_astronomy->has_facts() ) || ORAS_AI_Domain_Result::CROSSOVER === $domain->outcome() ) {
 					$current_weather_packet = $this->weather_failure_packet( 'provider_not_configured' );
@@ -146,7 +155,7 @@ final class ORAS_AI_Answer_Orchestrator {
 			$packet = new ORAS_AI_Evidence_Packet( array_merge( $packet->items(), $live_packet->items(), $current_astronomy_packet->items(), $current_weather_packet->items() ) );
 		}
 
-		$scope = $this->scope_for( $domain->outcome(), ! $packet->is_empty(), $requires_current_astronomy || $requires_current_weather );
+		$scope = $this->scope_for( $domain->outcome(), ! $packet->is_empty(), $planning || $requires_current_astronomy || $requires_current_weather );
 		$context = $this->context_assembler->assemble( $guarded, $packet, $intent, $scope );
 		if ( is_wp_error( $context ) ) {
 			$this->ledger->release( $reservation_id );

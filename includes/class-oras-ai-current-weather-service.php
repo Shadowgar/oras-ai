@@ -25,10 +25,11 @@ final class ORAS_AI_Current_Weather_Service {
 	public function query(
 		ORAS_AI_Authorized_Request $authorized_request,
 		?DateTimeImmutable $requested_at = null,
-		?DateTimeImmutable $window_end = null
+		?DateTimeImmutable $window_end = null,
+		$force_forecast = false
 	) {
 		$question = strtolower( trim( wp_strip_all_tags( $authorized_request->question(), true ) ) );
-		$matched  = (bool) preg_match( '/\b(weather|forecast|clouds?|cloudy|rain|snow|precipitation|temperature|wind|humidity|conditions?|seeing|transparency)\b/', $question );
+		$matched  = $force_forecast || (bool) preg_match( '/\b(weather|forecast|clouds?|cloudy|rain|snow|precipitation|temperature|wind|humidity|conditions?|seeing|transparency)\b/', $question );
 		if ( ! $matched ) {
 			return new ORAS_AI_Current_Weather_Query_Result( false, 0, new ORAS_AI_Evidence_Packet() );
 		}
@@ -74,16 +75,18 @@ final class ORAS_AI_Current_Weather_Service {
 			$this->observability->record_outcome( $result->provider_id(), $result->status(), $result->reason() );
 		}
 		if ( ORAS_AI_Current_Data_Result::SUCCESS !== $result->status() ) {
-			return $this->failure( $result->reason(), array( $current ? 'weather:observation:current' : 'weather:forecast:interval' ) );
+			return $this->failure( $result->reason(), array( $current ? 'weather:observation:current' : 'weather:forecast:interval' ), $requested_at, $window_end );
 		}
 
 		$items = array();
+		$values = array();
 		foreach ( $result->values() as $snapshot ) {
 			if ( $snapshot instanceof ORAS_AI_Weather_Snapshot ) {
 				$items[] = $this->evidence( $snapshot );
+				$values[] = $snapshot;
 			}
 		}
-		return new ORAS_AI_Current_Weather_Query_Result( true, count( $items ), new ORAS_AI_Evidence_Packet( $items ) );
+		return new ORAS_AI_Current_Weather_Query_Result( true, count( $items ), new ORAS_AI_Evidence_Packet( $items ), $values, $requested_at, $window_end );
 	}
 
 	private function evidence( ORAS_AI_Weather_Snapshot $snapshot ) {
@@ -142,7 +145,7 @@ final class ORAS_AI_Current_Weather_Service {
 		);
 	}
 
-	private function failure( $reason, array $fact_keys ) {
+	private function failure( $reason, array $fact_keys, ?DateTimeImmutable $requested_at = null, ?DateTimeImmutable $window_end = null ) {
 		$reason = sanitize_key( $reason );
 		$item = ORAS_AI_Evidence::from_array(
 			array(
@@ -156,7 +159,7 @@ final class ORAS_AI_Current_Weather_Service {
 				'fact_keys'             => $fact_keys,
 			)
 		);
-		return new ORAS_AI_Current_Weather_Query_Result( true, 0, new ORAS_AI_Evidence_Packet( array( $item ) ) );
+		return new ORAS_AI_Current_Weather_Query_Result( true, 0, new ORAS_AI_Evidence_Packet( array( $item ) ), array(), $requested_at, $window_end );
 	}
 
 	private function night_date( $question ) {

@@ -17,13 +17,17 @@ final class ORAS_AI_Observing_Score_Result implements ORAS_AI_Current_Data_Value
 		$limiter,
 		$reason,
 		DateTimeImmutable $calculated_at,
-		DateTimeImmutable $data_at
+		DateTimeImmutable $data_at,
+		$method_version = '',
+		$threshold_profile = ''
 	) {
 		$category      = sanitize_key( $category );
 		$model_version = trim( (string) $model_version );
 		$confidence    = sanitize_key( $confidence );
 		$limiter       = sanitize_key( $limiter );
 		$reason        = sanitize_key( $reason );
+		$method_version = trim( (string) $method_version );
+		$threshold_profile = sanitize_key( $threshold_profile );
 		if (
 			! is_int( $score )
 			|| $score < 0
@@ -33,6 +37,8 @@ final class ORAS_AI_Observing_Score_Result implements ORAS_AI_Current_Data_Value
 			|| ! in_array( $confidence, array( '', 'low', 'medium', 'high' ), true )
 			|| strlen( $limiter ) > 64
 			|| strlen( $reason ) > 64
+			|| ( '' !== $method_version && ! preg_match( '/^[A-Za-z0-9._-]{1,100}$/', $method_version ) )
+			|| strlen( $threshold_profile ) > 64
 		) {
 			throw new InvalidArgumentException( 'Invalid observing score result.' );
 		}
@@ -45,6 +51,8 @@ final class ORAS_AI_Observing_Score_Result implements ORAS_AI_Current_Data_Value
 			'confidence'    => $confidence,
 			'limiter'       => $limiter,
 			'reason'        => $reason,
+			'method_version' => $method_version,
+			'threshold_profile' => $threshold_profile,
 			'calculated_at' => $calculated_at->setTimezone( $utc ),
 			'data_at'       => $data_at->setTimezone( $utc ),
 		);
@@ -66,6 +74,8 @@ final class ORAS_AI_Observing_Score_Result implements ORAS_AI_Current_Data_Value
 			'confidence'      => $this->data['confidence'],
 			'limiter'         => $this->data['limiter'],
 			'reason'          => $this->data['reason'],
+			'method_version'  => $this->data['method_version'],
+			'threshold_profile' => $this->data['threshold_profile'],
 			'calculated_at'   => $this->data['calculated_at']->format( DATE_ATOM ),
 			'data_at'         => $this->data['data_at']->format( DATE_ATOM ),
 			'authority_class' => $this->authority_class(),

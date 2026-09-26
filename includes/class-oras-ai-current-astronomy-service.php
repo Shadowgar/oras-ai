@@ -28,7 +28,7 @@ final class ORAS_AI_Current_Astronomy_Service {
 		$this->observability    = $observability;
 	}
 
-	public function query( ORAS_AI_Authorized_Request $authorized_request ) {
+	public function query( ORAS_AI_Authorized_Request $authorized_request, ?DateTimeImmutable $requested_at = null, $include_moon = false, $include_planets = false ) {
 		$question = strtolower( trim( wp_strip_all_tags( $authorized_request->question(), true ) ) );
 		$plans    = array();
 		$items    = array();
@@ -44,7 +44,7 @@ final class ORAS_AI_Current_Astronomy_Service {
 			$local_types[] = ORAS_AI_Current_Data_Request::ASTRONOMICAL_DARKNESS;
 			$matched = true;
 		}
-		if ( preg_match( '/\b(moon|lunar|moonrise|moonset)\b/', $question ) ) {
+		if ( $include_moon || preg_match( '/\b(moon|lunar|moonrise|moonset)\b/', $question ) ) {
 			$local_types[] = ORAS_AI_Current_Data_Request::MOON_STATE;
 			$matched = true;
 		}
@@ -58,11 +58,11 @@ final class ORAS_AI_Current_Astronomy_Service {
 				$planet_names[] = $body;
 			}
 		}
-		$general_planets = (bool) preg_match( '/\b(planets|planet set|solar system planets)\b/', $question );
+		$general_planets = $include_planets || (bool) preg_match( '/\b(planets|planet set|solar system planets)\b/', $question );
 		if ( $general_planets || ! empty( $planet_names ) ) {
 			$target = $general_planets || count( $planet_names ) > 1 ? 'planet:all' : 'planet:' . $planet_names[0];
 			$plans[] = array( $this->planet_provider, array( ORAS_AI_Current_Data_Request::PLANET_POSITION ), $target );
-			$unsupported_items = array_merge( $unsupported_items, $this->unsupported_window_evidence( $question, 'planet', $target ) );
+			$unsupported_items = array_merge( $unsupported_items, $this->unsupported_window_evidence( $question, 'planet', $target, $requested_at ) );
 			$matched = true;
 		}
 
@@ -70,23 +70,24 @@ final class ORAS_AI_Current_Astronomy_Service {
 		if ( ORAS_AI_Target_Resolution::RESOLVED === $target_resolution->status() ) {
 			$resolved_identity = $target_resolution->target()->identity();
 			$plans[] = array( $this->catalog_provider, array( ORAS_AI_Current_Data_Request::TARGET_POSITION ), $resolved_identity );
-			$unsupported_items = array_merge( $unsupported_items, $this->unsupported_window_evidence( $question, 'target', $resolved_identity ) );
+			$unsupported_items = array_merge( $unsupported_items, $this->unsupported_window_evidence( $question, 'target', $resolved_identity, $requested_at ) );
 			$matched = true;
 		} elseif ( preg_match( '/\b(?:m\s*\d+|ngc\s*\d+|ic\s*\d+|galaxy|nebula|deep sky)\b/', $question ) ) {
-			$items[] = $this->failure_evidence( 'Catalog target', 'target_not_resolved', array( 'astronomy:target:unknown:position' ) );
+			$items[] = $this->failure_evidence( 'Catalog target', 'target_not_resolved', array( 'astronomy:target:unknown:position' ), 'current_astronomy_status', $requested_at );
 			$matched = true;
 		}
 
 		$fact_count = 0;
+		$values = array();
 		$seen = array();
 		foreach ( $plans as $plan ) {
-			$key = implode( ',', $plan[1] ) . '|' . $plan[2] . '|' . $this->clock->now()->format( DATE_ATOM );
+			$key = implode( ',', $plan[1] ) . '|' . $plan[2] . '|' . ( $requested_at ?: $this->clock->now() )->format( DATE_ATOM );
 			if ( isset( $seen[ $key ] ) ) {
 				continue;
 			}
 			$seen[ $key ] = true;
 			try {
-				$request = ORAS_AI_Current_Data_Request::from_authorized_request( $authorized_request, $this->clock, $plan[1], null, null, $plan[2] );
+				$request = ORAS_AI_Current_Data_Request::from_authorized_request( $authorized_request, $this->clock, $plan[1], $requested_at, $requested_at, $plan[2] );
 				$result  = $plan[0]->fetch( $request );
 			} catch ( Throwable $throwable ) {
 				$result = ORAS_AI_Current_Data_Result::unavailable( $plan[0]->provider_id(), 'provider_failed' );
@@ -98,28 +99,32 @@ final class ORAS_AI_Current_Astronomy_Service {
 				$this->observability->record_outcome( $result->provider_id(), $result->status(), $result->reason() );
 			}
 			if ( ORAS_AI_Current_Data_Result::SUCCESS !== $result->status() ) {
-				$items[] = $this->failure_evidence( $this->provider_label( $result->provider_id() ), $result->reason(), $this->required_fact_keys( $plan[1], $plan[2] ) );
+				$items[] = $this->failure_evidence( $this->provider_label( $result->provider_id() ), $result->reason(), $this->required_fact_keys( $plan[1], $plan[2] ), 'current_astronomy_status', $requested_at );
 				continue;
 			}
 			foreach ( $result->values() as $fact ) {
-				$items[] = $this->fact_evidence( $fact );
-				$fact_count++;
+				if ( $fact instanceof ORAS_AI_Astronomy_Fact ) {
+					$items[] = $this->fact_evidence( $fact, $requested_at );
+					$values[] = $fact;
+					$fact_count++;
+				}
 			}
 		}
 		$items = array_merge( $items, $unsupported_items );
 
-		return new ORAS_AI_Current_Astronomy_Query_Result( $matched, $fact_count, new ORAS_AI_Evidence_Packet( $items ) );
+		return new ORAS_AI_Current_Astronomy_Query_Result( $matched, $fact_count, new ORAS_AI_Evidence_Packet( $items ), $values );
 	}
 
-	private function fact_evidence( ORAS_AI_Astronomy_Fact $fact ) {
+	private function fact_evidence( ORAS_AI_Astronomy_Fact $fact, ?DateTimeImmutable $requested_at = null ) {
 		$data = $fact->to_array();
+		$fact_key = $this->scoped_fact_key( $data['fact_key'], $requested_at );
 		return ORAS_AI_Evidence::from_array(
 			array(
 				'source_type'           => 'current_astronomy',
 				'artifact_title'        => $this->provider_label( $data['provider'] ),
 				'source_title'          => $this->provider_label( $data['provider'] ),
 				'canonical_url'         => '',
-				'relevant_text'         => $this->fact_text( $data ),
+				'relevant_text'         => $this->fact_text( $data, $requested_at ),
 				'comparison_value'      => (string) $data['value'],
 				'visibility'            => 'members',
 				'lifecycle'             => 'approved',
@@ -127,16 +132,17 @@ final class ORAS_AI_Current_Astronomy_Service {
 				'authority_class'       => ORAS_AI_Source_Precedence::CURRENT_ASTRONOMY_WEATHER,
 				'source_modified_gmt'   => $data['valid_at'],
 				'synced_at'             => $data['calculated_at'],
-				'fact_key'              => $data['fact_key'],
-				'fact_keys'             => array( $data['fact_key'] ),
+				'fact_key'              => $fact_key,
+				'fact_keys'             => array( $fact_key ),
 				'provider_version'      => $data['provider_version'],
 				'site_identity'         => $data['site_identity'],
 			)
 		);
 	}
 
-	private function failure_evidence( $provider_label, $reason, array $fact_keys, $source_type = 'current_astronomy_status' ) {
+	private function failure_evidence( $provider_label, $reason, array $fact_keys, $source_type = 'current_astronomy_status', ?DateTimeImmutable $requested_at = null ) {
 		$reason = sanitize_key( $reason );
+		$fact_keys = array_map( function ( $key ) use ( $requested_at ) { return $this->scoped_fact_key( $key, $requested_at ); }, $fact_keys );
 		return ORAS_AI_Evidence::from_array(
 			array(
 				'source_type'           => sanitize_key( $source_type ),
@@ -151,7 +157,7 @@ final class ORAS_AI_Current_Astronomy_Service {
 		);
 	}
 
-	private function unsupported_window_evidence( $question, $kind, $target ) {
+	private function unsupported_window_evidence( $question, $kind, $target, ?DateTimeImmutable $requested_at = null ) {
 		$fields = array();
 		foreach ( array( 'rise' => '/\b(?:rise|rises)\b/', 'transit' => '/\btransit\b/', 'set' => '/\b(?:set|sets)\b/' ) as $field => $pattern ) {
 			if ( preg_match( $pattern, $question ) ) {
@@ -174,7 +180,7 @@ final class ORAS_AI_Current_Astronomy_Service {
 				$identities[] = 'astronomy:target:' . $target . ':' . $field;
 			}
 		}
-		return array( $this->failure_evidence( 'Qualified astronomy provider', 'rise_transit_set_unavailable', $identities, 'rise_transit_set_unavailable' ) );
+		return array( $this->failure_evidence( 'Qualified astronomy provider', 'rise_transit_set_unavailable', $identities, 'rise_transit_set_unavailable', $requested_at ) );
 	}
 
 	private function required_fact_keys( array $types, $target ) {
@@ -204,16 +210,23 @@ final class ORAS_AI_Current_Astronomy_Service {
 		return $keys;
 	}
 
-	private function fact_text( array $data ) {
+	private function fact_text( array $data, ?DateTimeImmutable $requested_at = null ) {
 		$label = str_replace( array( 'planet:', '_' ), array( '', ' ' ), $data['target_identity'] );
 		$label = '' === $label ? 'astronomy' : ucfirst( $label );
 		$key   = $data['fact_key'];
 		$value = is_float( $data['value'] ) ? round( $data['value'], 4 ) : $data['value'];
+		$time = null !== $requested_at ? $requested_at->setTimezone( new DateTimeZone( 'UTC' ) )->format( DATE_ATOM ) : 'the requested observation time';
 		if ( substr( $key, -strlen( ':geometric_horizon' ) ) === ':geometric_horizon' ) {
-			return $label . ' is ' . $value . ' the geometric horizon at the requested observation time.';
+			return $label . ' is ' . $value . ' the geometric horizon at ' . $time . '.';
 		}
 		$field = str_replace( '_', ' ', substr( $key, strrpos( $key, ':' ) + 1 ) );
-		return $label . ' ' . $field . ' is ' . $value . ( '' !== $data['unit'] ? ' ' . $data['unit'] : '' ) . ' at the requested observation time.';
+		return $label . ' ' . $field . ' is ' . $value . ( '' !== $data['unit'] ? ' ' . $data['unit'] : '' ) . ' at ' . $time . '.';
+	}
+
+	private function scoped_fact_key( $key, ?DateTimeImmutable $requested_at ) {
+		return null === $requested_at
+			? $key
+			: $key . ':at_' . strtolower( $requested_at->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Ymd\THis' ) );
 	}
 
 	private function provider_label( $provider_id ) {

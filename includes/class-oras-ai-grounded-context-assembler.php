@@ -119,7 +119,7 @@ final class ORAS_AI_Grounded_Context_Assembler {
 			return $policy . 'Answer only stable general astronomy from qualified model knowledge. Do not claim current sky, ephemeris, or weather facts.';
 		}
 		if ( ORAS_AI_Grounded_Context::CURRENT_ASTRONOMY === $scope ) {
-			return $policy . 'Current astronomy and weather facts must come only from admitted current_astronomy_weather evidence. Never substitute model memory for a current value. Forecast answers must state valid-time context and forecast uncertainty or freshness from that evidence. Geometric horizon state is not a generic claim of observing visibility or suitability.';
+			return $policy . 'Current astronomy and weather facts must come only from admitted current_astronomy_weather evidence. Never substitute model memory for a current value. Forecast answers must state valid-time context and forecast uncertainty or freshness from that evidence. A target being above the geometric horizon is not a generic claim of observing visibility or suitability. Do not recalculate or alter the authoritative ORAS Observing Score or its category.';
 		}
 		if ( ORAS_AI_Grounded_Context::CROSSOVER_ASTRONOMY_ONLY === $scope ) {
 			return $policy . 'Answer only the stable general astronomy component. Do not provide or infer any ORAS-specific fact because no authoritative ORAS evidence was admitted.';
@@ -127,7 +127,7 @@ final class ORAS_AI_Grounded_Context_Assembler {
 
 		$oras = 'Every ORAS-specific factual statement must be supported by the admitted evidence. Lower-authority evidence cannot override higher-authority evidence. ';
 		if ( ORAS_AI_Grounded_Context::CROSSOVER_CURRENT === $scope ) {
-			return $policy . $oras . 'Current astronomy and weather facts must come only from admitted current_astronomy_weather evidence. Never substitute model memory for current ORAS, astronomy, or weather values. Forecast answers must state valid-time context and forecast uncertainty or freshness from that evidence. Geometric horizon state is not observing suitability.';
+			return $policy . $oras . 'Current astronomy and weather facts must come only from admitted current_astronomy_weather evidence. Never substitute model memory for current ORAS, astronomy, or weather values. Forecast answers must state valid-time context and forecast uncertainty or freshness from that evidence. A target being above the geometric horizon is not observing suitability. Do not recalculate or alter the authoritative ORAS Observing Score or its category.';
 		}
 		if ( ORAS_AI_Grounded_Context::CROSSOVER_GROUNDED === $scope ) {
 			return $policy . $oras . 'General stable astronomy explanation is allowed, but current astronomy or weather claims are not.';

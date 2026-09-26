@@ -39,6 +39,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-data-result.ph
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-astronomy-fact.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-weather-snapshot.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-observing-score-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-member-hub-score-adapter.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-astronomy-provider.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-planet-targets.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-local-sun-moon-provider.php';
@@ -57,6 +58,8 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-nws-weather-provider.p
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-astronomical-night-resolver.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-weather-query-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-current-weather-service.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-observing-plan-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-observing-planner.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-live-request.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-domain-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-domain-classifier.php';
@@ -168,6 +171,12 @@ final class ORAS_AI_Assistant {
 			$astronomy_clock,
 			$astronomy_observability
 		);
+		$observing_planner = new ORAS_AI_Observing_Planner(
+			$weather_service,
+			$astronomy_service,
+			new ORAS_AI_Member_Hub_Score_Adapter( $astronomy_clock ),
+			$astronomy_clock
+		);
 		$orchestrator = new ORAS_AI_Answer_Orchestrator(
 			new ORAS_AI_Execution_Controls( $ledger ),
 			$ledger,
@@ -177,7 +186,8 @@ final class ORAS_AI_Assistant {
 			new ORAS_AI_OpenAI_Answer_Provider(),
 			$live_service,
 			$astronomy_service,
-			$weather_service
+			$weather_service,
+			$observing_planner
 		);
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
 		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations );
