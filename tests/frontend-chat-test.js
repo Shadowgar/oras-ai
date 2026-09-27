@@ -127,6 +127,8 @@ assert(allText(supportCard).includes('Ticket #123') && !supportCard.querySelecto
 api.renderEscalation(supportCard, { status: 'uncertain' }, fakeDocument, supportStrings, 'https://example.test/contact/');
 assert(allText(supportCard).includes('will not retry automatically') && allText(supportCard).includes('Contact ORAS Support'));
 assert(!supportCard.querySelector('.oras-ai-chat__escalation-actions'));
+api.renderEscalation(supportCard, { status: 'unavailable' }, fakeDocument, supportStrings, 'https://example.test/contact/');
+assert(allText(supportCard).includes('Contact ORAS Support') && !supportCard.querySelector('.oras-ai-chat__escalation-actions'), 'Summary failure must offer manual contact without a Create button');
 for (const state of ['failed', 'cancelled', 'expired']) {
 	api.renderEscalation(supportCard, { status: state }, fakeDocument, supportStrings, 'https://example.test/contact/');
 	assert(!supportCard.querySelector('.oras-ai-chat__escalation-actions'), state + ' retained action controls');

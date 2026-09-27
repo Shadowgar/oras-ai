@@ -14,6 +14,7 @@ final class ORAS_AI_Escalation_Result {
 
 	public static function none() { return new self( 'none' ); }
 	public static function routing_unavailable() { return new self( 'routing_unavailable' ); }
+	public static function unavailable() { return new self( 'unavailable' ); }
 	public static function proposed( ORAS_AI_Escalation_Proposal $proposal ) { return new self( 'proposed', $proposal ); }
 
 	public function status() { return $this->status; }

@@ -9,10 +9,12 @@ final class ORAS_AI_Sources {
 	const META_EXCLUDED = '_oras_ai_excluded';
 	private $source_classifier;
 	private $classification_rules;
+	private $support_knowledge_candidates;
 
 	public function __construct( ?ORAS_AI_Source_Classifier_Interface $source_classifier = null, ?ORAS_AI_Source_Classification_Rules $classification_rules = null ) {
 		$this->source_classifier = $source_classifier ?: new ORAS_AI_OpenAI_Source_Classifier();
 		$this->classification_rules = $classification_rules ?: new ORAS_AI_Source_Classification_Rules();
+		$this->support_knowledge_candidates = new ORAS_AI_Support_Knowledge_Candidates();
 
 		add_action( 'init', array( $this, 'register_source_type' ) );
 
@@ -527,6 +529,26 @@ final class ORAS_AI_Sources {
 		<div class="wrap oras-ai-wrap">
 			<h1><?php esc_html_e( 'Needs Review', 'oras-ai-assistant' ); ?></h1>
 			<p class="oras-ai-lead"><?php esc_html_e( 'Review uncertain scanner results with their source, provenance, ownership, and repeated-problem context before approving or retiring scanner-managed knowledge.', 'oras-ai-assistant' ); ?></p>
+			<?php $this->support_knowledge_candidates->render_form(); ?>
+			<?php
+			$support_candidates = get_posts( array(
+				'post_type'      => ORAS_AI_Knowledge_Base::POST_TYPE,
+				'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
+				'posts_per_page' => 100,
+				'meta_key'       => '_oras_ai_support_source_type',
+				'meta_value'     => 'support_ticket',
+			) );
+			?>
+			<h2><?php esc_html_e( 'Support-derived candidates', 'oras-ai-assistant' ); ?></h2>
+			<?php if ( empty( $support_candidates ) ) : ?>
+				<p><?php esc_html_e( 'No support-derived candidates.', 'oras-ai-assistant' ); ?></p>
+			<?php else : ?>
+				<ul>
+					<?php foreach ( $support_candidates as $candidate ) : ?>
+						<li><a href="<?php echo esc_url( get_edit_post_link( $candidate->ID ) ); ?>"><?php echo esc_html( $candidate->post_title ); ?></a> — <?php echo esc_html( 'review' === ORAS_AI_Knowledge_Base::lifecycle_status( $candidate->ID ) ? __( 'Needs Review', 'oras-ai-assistant' ) : ucfirst( ORAS_AI_Knowledge_Base::lifecycle_status( $candidate->ID ) ) ); ?></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
 
 			<?php if ( empty( $sources ) ) : ?>
 				<p><?php esc_html_e( 'No sources currently need review.', 'oras-ai-assistant' ); ?></p>

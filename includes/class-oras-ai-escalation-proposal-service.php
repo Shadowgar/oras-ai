@@ -11,10 +11,12 @@ final class ORAS_AI_Escalation_Proposal_Service {
 
 	private $routing;
 	private $conversations;
+	private $summary_service;
 
-	public function __construct( ORAS_AI_Support_Routing $routing, ORAS_AI_Conversations $conversations ) {
+	public function __construct( ORAS_AI_Support_Routing $routing, ORAS_AI_Conversations $conversations, $summary_service = null ) {
 		$this->routing       = $routing;
 		$this->conversations = $conversations;
+		$this->summary_service = $summary_service ?: new ORAS_AI_Support_Summary_Service();
 	}
 
 	public function propose( ORAS_AI_Authorized_Request $request, $conversation_id, ORAS_AI_Answer_Result $answer, array $model_candidate = array() ) {
@@ -53,13 +55,14 @@ final class ORAS_AI_Escalation_Proposal_Service {
 		}
 		$topic = $route['topic'];
 		$subject = $this->plain( $model_candidate['subject'] ?? '', self::MAX_SUBJECT_BYTES );
-		$summary = $this->plain( $model_candidate['summary'] ?? '', self::MAX_SUMMARY_BYTES );
 		if ( '' === $subject ) {
 			$subject = $this->truncate( 'ORAS support: ' . $question, self::MAX_SUBJECT_BYTES );
 		}
-		if ( '' === $summary ) {
-			$summary = $this->truncate( 'Member asks for help: ' . $question, self::MAX_SUMMARY_BYTES );
+		$generated = $this->summary_service->generate( $request, $question );
+		if ( ! is_array( $generated ) || 'generated' !== ( $generated['status'] ?? '' ) || ! isset( $generated['summary'] ) ) {
+			return ORAS_AI_Escalation_Result::unavailable();
 		}
+		$summary = $generated['summary'];
 		$proposal = new ORAS_AI_Escalation_Proposal(
 			$request->user_id(), $conversation_id, $topic, $subject, $summary, $question,
 			$route['destination'], $route['route']

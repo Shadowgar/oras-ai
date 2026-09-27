@@ -1,6 +1,48 @@
 <?php
 declare(strict_types=1);
 
+oras_ai_test('SUP-004 OpenAI summary request contains only bounded question and no tools', function (): void {
+	oras_ai_test_reset();
+	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response( 200, array(
+		'output_text' => '{"summary":"The member needs clarification about renewal."}',
+		'usage' => array( 'input_tokens' => 31, 'output_tokens' => 12 ),
+	) );
+	$provider = new ORAS_AI_OpenAI_Answer_Provider(
+		static function (): string { return 'stored-answer-key'; },
+		static function (): string { return 'gpt-5.6-luna'; }
+	);
+	$result = $provider->summarize_support_question( 'What are the ORAS renewal rules?', 160, 10 );
+	oras_ai_assert_true( $result->successful(), 'Summary provider failed.' );
+	$call = $GLOBALS['oras_ai_test_remote_calls'][0];
+	$payload = json_decode( $call['args']['body'], true );
+	oras_ai_assert_same( 'gpt-5.6-luna', $payload['model'], 'Configured model was bypassed.' );
+	oras_ai_assert_same( 160, $payload['max_output_tokens'], 'Output bound was bypassed.' );
+	oras_ai_assert_same( 10, $call['args']['timeout'], 'Timeout bound was bypassed.' );
+	oras_ai_assert_false( isset( $payload['tools'] ), 'Summary request exposed tools.' );
+	oras_ai_assert_same( 'json_schema', $payload['text']['format']['type'] ?? '', 'Summary output lacked structured schema.' );
+	oras_ai_assert_same( false, $payload['text']['format']['schema']['additionalProperties'] ?? null, 'Summary schema allowed untrusted fields.' );
+	oras_ai_assert_same( array( 'summary' ), $payload['text']['format']['schema']['required'] ?? array(), 'Summary schema required other fields.' );
+	oras_ai_assert_same( array( 'system', 'user' ), array_column( $payload['input'], 'role' ), 'Summary included other context.' );
+	oras_ai_assert_same( 'What are the ORAS renewal rules?', $payload['input'][1]['content'], 'Question input changed.' );
+	oras_ai_assert_not_contains( 'mailbox_id', wp_json_encode( $payload ), 'Provider IDs leaked into summary request.' );
+});
+
+oras_ai_test('SUP-004 OpenAI summary rejects HTML and malformed provider output', function (): void {
+	foreach ( array(
+		oras_ai_test_http_response( 200, array( 'output_text' => '{"summary":"<b>HTML summary</b>"}', 'usage' => array( 'input_tokens' => 31, 'output_tokens' => 12 ) ) ),
+		oras_ai_test_http_response( 200, array( 'output_text' => '{"summary":""}', 'usage' => array( 'input_tokens' => 31, 'output_tokens' => 12 ) ) ),
+		oras_ai_test_http_response( 200, array( 'output_text' => '{"summary":"Valid.","mailbox_id":999}', 'usage' => array( 'input_tokens' => 31, 'output_tokens' => 12 ) ) ),
+		oras_ai_test_http_response( 200, array( 'output_text' => 'plain text outside schema', 'usage' => array( 'input_tokens' => 31, 'output_tokens' => 12 ) ) ),
+		new WP_Error( 'timeout', 'private detail' ),
+	) as $response ) {
+		oras_ai_test_reset();
+		$GLOBALS['oras_ai_test_remote_responses'][] = $response;
+		$provider = new ORAS_AI_OpenAI_Answer_Provider( static function (): string { return 'stored-answer-key'; } );
+		$result = $provider->summarize_support_question( 'What are the ORAS renewal rules?', 160, 10 );
+		oras_ai_assert_false( $result->successful(), 'Malformed summary accepted.' );
+	}
+});
+
 function oras_ai_test_provider_context(): ORAS_AI_Grounded_Context {
 	$request = oras_ai_test_authorized_request(301, 'How does ORAS observatory access work?');
 	$guarded = new ORAS_AI_Guarded_Request($request, ORAS_AI_Domain_Result::from_outcome(ORAS_AI_Domain_Result::ORAS));

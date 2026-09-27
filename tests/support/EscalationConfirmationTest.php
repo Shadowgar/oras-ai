@@ -251,7 +251,7 @@ oras_ai_test('M7 Task 3 chat send persists a preview without provider writes', f
 	$gateway = new ORAS_AI_Request_Gateway(new ORAS_AI_PMPro_Membership_Authorizer(static function () { return true; }), $orchestrator);
 	$pending = new ORAS_AI_Pending_Escalations();
 	$confirmation = new ORAS_AI_Escalation_Confirmation_Service($pending, $routing, $conversations, $adapter);
-	$transport = new ORAS_AI_Conversation_Transport($gateway, $orchestrator, $conversations, new ORAS_AI_Escalation_Proposal_Service($routing, $conversations), $confirmation);
+	$transport = new ORAS_AI_Conversation_Transport($gateway, $orchestrator, $conversations, new ORAS_AI_Escalation_Proposal_Service($routing, $conversations, new ORAS_AI_Test_Support_Summary_Service()), $confirmation);
 	$current = $transport->dispatch(oras_ai_test_transport_request('new_chat'));
 	$sent = $transport->dispatch(oras_ai_test_transport_request('send', array('conversation_id' => $current['conversation_id'], 'question' => 'What are ORAS membership rules?')));
 	oras_ai_assert_same('awaiting_confirmation', $sent['result']['escalation']['status'], 'Send did not persist proposal.');

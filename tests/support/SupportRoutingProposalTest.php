@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+final class ORAS_AI_Test_Support_Summary_Service {
+	public array $calls = array();
+	public array $result = array( 'status' => 'generated', 'summary' => 'The member seeks help with an ORAS support matter.' );
+	public function generate( $request, $question ): array {
+		$this->calls[] = $question;
+		return $this->result;
+	}
+}
+
 final class ORAS_AI_Test_Read_Only_Support_Adapter {
 	public string $state = 'available';
 	public array $mailboxes = array(1 => true, 4 => true);
@@ -46,7 +55,7 @@ function oras_ai_test_support_service(?ORAS_AI_Test_Read_Only_Support_Adapter $a
 	oras_ai_assert_true($routing->save(oras_ai_test_support_config()), 'Test routing fixture failed to save.');
 	$store = new ORAS_AI_Conversations();
 	$conversation_id = $store->create_conversation();
-	return array(new ORAS_AI_Escalation_Proposal_Service($routing, $store), $routing, $adapter, $conversation_id);
+	return array(new ORAS_AI_Escalation_Proposal_Service($routing, $store, new ORAS_AI_Test_Support_Summary_Service()), $routing, $adapter, $conversation_id);
 }
 
 function oras_ai_test_support_request(string $question): ORAS_AI_Authorized_Request {
@@ -247,6 +256,7 @@ oras_ai_test('M7 Task 2 candidate fields are allowlisted sanitized and cannot ch
 	$preview = $proposal->proposal()->to_member_array();
 	oras_ai_assert_same('Membership help', $preview['subject'], 'Subject HTML survived.');
 	oras_ai_assert_not_contains('<', $preview['summary'], 'Summary HTML survived.');
+	oras_ai_assert_same('The member seeks help with an ORAS support matter.', $preview['summary'], 'Untrusted optional suggestion replaced the AI summary.');
 	oras_ai_assert_same(array('topic', 'category', 'subject', 'summary', 'original_question', 'original_question_included', 'destination'), array_keys($preview), 'Member payload exposed internal fields.');
 	oras_ai_assert_not_contains('999', wp_json_encode($preview), 'Model mailbox ID reached preview.');
 	oras_ai_assert_same(1, $proposal->proposal()->provider_route()->mailbox_id(), 'Model mailbox ID bypassed server route.');
@@ -326,7 +336,7 @@ oras_ai_test('M7 Task 2 authenticated chat result exposes only a bounded ephemer
 	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success('Answer.'));
 	$store = new ORAS_AI_Conversations();
 	$gateway = new ORAS_AI_Request_Gateway(new ORAS_AI_PMPro_Membership_Authorizer(static function () { return true; }), $orchestrator);
-	$transport = new ORAS_AI_Conversation_Transport($gateway, $orchestrator, $store, new ORAS_AI_Escalation_Proposal_Service($routing, $store));
+	$transport = new ORAS_AI_Conversation_Transport($gateway, $orchestrator, $store, new ORAS_AI_Escalation_Proposal_Service($routing, $store, new ORAS_AI_Test_Support_Summary_Service()));
 	$current = $transport->dispatch(oras_ai_test_transport_request('new_chat'));
 	$response = $transport->dispatch(oras_ai_test_transport_request('send', array(
 		'conversation_id' => $current['conversation_id'],
@@ -350,7 +360,7 @@ oras_ai_test('M7 Task 2 unavailable routing is structured while ordinary answer 
 	list($orchestrator) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success('Answer.'));
 	$store = new ORAS_AI_Conversations();
 	$gateway = new ORAS_AI_Request_Gateway(new ORAS_AI_PMPro_Membership_Authorizer(static function () { return true; }), $orchestrator);
-	$transport = new ORAS_AI_Conversation_Transport($gateway, $orchestrator, $store, new ORAS_AI_Escalation_Proposal_Service($routing, $store));
+	$transport = new ORAS_AI_Conversation_Transport($gateway, $orchestrator, $store, new ORAS_AI_Escalation_Proposal_Service($routing, $store, new ORAS_AI_Test_Support_Summary_Service()));
 	$current = $transport->dispatch(oras_ai_test_transport_request('new_chat'));
 	$support = $transport->dispatch(oras_ai_test_transport_request('send', array('conversation_id' => $current['conversation_id'], 'question' => 'What are ORAS membership rules?')));
 	oras_ai_assert_same('routing_unavailable', $support['result']['escalation']['status'], 'Provider absence was not structured.');

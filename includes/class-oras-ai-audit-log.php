@@ -106,6 +106,14 @@ final class ORAS_AI_Audit_Log {
 		return self::record( 'support.escalation.' . $topic, $action, null, null, 'route_unavailable' === $action ? 'unavailable' : 'success' );
 	}
 
+	public static function log_support_knowledge_candidate( $action, $ticket_id, $candidate_id = 0 ) {
+		if ( ! in_array( $action, array( 'support_knowledge_candidate_created', 'support_knowledge_candidate_existing', 'support_knowledge_candidate_rejected' ), true ) ) {
+			return false;
+		}
+		$ticket_id = absint( $ticket_id );
+		return self::record( 'support.knowledge.ticket.' . $ticket_id, $action, null, absint( $candidate_id ) ?: null, 'support_knowledge_candidate_rejected' === $action ? 'rejected' : 'success' );
+	}
+
 	public static function recent_events( $limit = self::RECENT_EVENTS ) {
 		$events = get_option( self::OPTION_EVENTS, array() );
 

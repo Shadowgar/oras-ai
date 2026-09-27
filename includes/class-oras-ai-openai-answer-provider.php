@@ -72,6 +72,64 @@ final class ORAS_AI_OpenAI_Answer_Provider implements ORAS_AI_Answer_Provider_In
 		return ORAS_AI_Provider_Answer::success( $answer, $model, $input, $output );
 	}
 
+	/** One bounded, tool-free support-summary call using the configured answer model. */
+	public function summarize_support_question( $question, $max_output_tokens, $timeout_seconds ) {
+		$api_key = trim( (string) call_user_func( $this->api_key_resolver ) );
+		$max_output_tokens = (int) $max_output_tokens;
+		$timeout_seconds = (int) $timeout_seconds;
+		if ( '' === $api_key || ! is_string( $question ) || '' === trim( $question ) || strlen( $question ) > 1000
+			|| $max_output_tokens < 1 || $max_output_tokens > 160 || $timeout_seconds < 1 || $timeout_seconds > 10 ) {
+			return ORAS_AI_Provider_Answer::failure( 'provider_unavailable', false );
+		}
+		$model = $this->model();
+		$payload = array(
+			'model' => $model,
+			'reasoning' => array( 'effort' => 'low' ),
+			'max_output_tokens' => $max_output_tokens,
+			'input' => array(
+				array( 'role' => 'system', 'content' => 'Summarize the member support issue in one concise plain-text sentence. Describe only what the member asks, reports, suggests, or needs. Do not answer the question, infer account or payment state, invent ORAS policy or staff actions, promise resolution, repeat the question verbatim, include HTML, or include provider identifiers. Return only the summary.' ),
+				array( 'role' => 'user', 'content' => $question ),
+			),
+			'text' => array( 'format' => array(
+				'type' => 'json_schema',
+				'name' => 'oras_support_summary',
+				'strict' => true,
+				'schema' => array(
+					'type' => 'object',
+					'properties' => array( 'summary' => array( 'type' => 'string' ) ),
+					'required' => array( 'summary' ),
+					'additionalProperties' => false,
+				),
+			) ),
+		);
+		$response = wp_remote_post( 'https://api.openai.com/v1/responses', array(
+			'timeout' => $timeout_seconds,
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $api_key,
+				'Content-Type' => 'application/json',
+			),
+			'body' => wp_json_encode( $payload ),
+		) );
+		if ( is_wp_error( $response ) ) {
+			return ORAS_AI_Provider_Answer::failure( 'provider_response_invalid', true );
+		}
+		$status = (int) wp_remote_retrieve_response_code( $response );
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( $status < 200 || $status >= 300 || ! is_array( $body ) ) {
+			return ORAS_AI_Provider_Answer::failure( 'provider_response_invalid', true );
+		}
+		$structured = json_decode( $this->extract_output_text( $body ), true );
+		if ( ! is_array( $structured ) || array_keys( $structured ) !== array( 'summary' ) || ! is_string( $structured['summary'] ) ) {
+			return ORAS_AI_Provider_Answer::failure( 'provider_response_invalid', true );
+		}
+		$summary = trim( $structured['summary'] );
+		if ( '' === $summary || strlen( $summary ) > 600 || str_contains( $summary, '<' ) || str_contains( $summary, '>' ) ) {
+			return ORAS_AI_Provider_Answer::failure( 'provider_response_invalid', true );
+		}
+		$usage = isset( $body['usage'] ) && is_array( $body['usage'] ) ? $body['usage'] : array();
+		return ORAS_AI_Provider_Answer::success( $summary, $model, $usage['input_tokens'] ?? null, $usage['output_tokens'] ?? null );
+	}
+
 	private function extract_output_text( array $body ) {
 		if ( isset( $body['output_text'] ) && is_string( $body['output_text'] ) ) {
 			return trim( $body['output_text'] );

@@ -100,12 +100,15 @@ closure evidence was committed at `657ed77`; this final rerun makes no new
 commit or production-release claim.
 
 ## M7 — Fluent Support escalation/feedback
-- [ ] RB Fluent Support bridge qualified against installed version.
-- [ ] RB Routing works.
-- [ ] RB Explicit confirmation.
-- [ ] RB Duplicate/error handling.
-- [ ] RB Ticket data minimization.
-- [ ] RB Knowledge-gap candidate workflow without auto-approval.
+**Status:** READY TO CLOSE — 2026-09-27, pending owner review.
+
+**Evidence:** [M7 Fluent Support qualification](../evidence/m7-fluent-support-escalation/verification.md)
+- [x] RB Fluent Support bridge qualified against disposable core/Pro 2.4.0.
+- [x] RB Routing works.
+- [x] RB Explicit confirmation, including distinct metered AI support summary in preview and ticket payload.
+- [x] RB Duplicate/error handling, with ambiguous create held uncertain and never retried automatically.
+- [x] RB Ticket data minimization.
+- [x] RB Admin-initiated resolved-ticket knowledge candidate enters Needs Review without auto-approval.
 
 ## M8 — Member-aware actions
 - [ ] RB Member-specific answers use least privilege.

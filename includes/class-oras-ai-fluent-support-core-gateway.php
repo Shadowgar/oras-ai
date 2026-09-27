@@ -63,6 +63,11 @@ final class ORAS_AI_Fluent_Support_Core_Gateway {
 		return FluentSupportApi( 'tickets' )->createTicket( $data );
 	}
 
+	/** Read one ticket by primary key; never load conversations or customer relations. */
+	public function ticket( $id ) {
+		return \FluentSupport\App\Models\Ticket::find( $id );
+	}
+
 	public function apply_tags( $ticket, array $tag_ids ) {
 		if ( ! $ticket instanceof \FluentSupport\App\Models\Ticket ) {
 			return false;

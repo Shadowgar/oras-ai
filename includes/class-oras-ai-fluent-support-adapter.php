@@ -187,6 +187,28 @@ final class ORAS_AI_Fluent_Support_Adapter {
 		return new ORAS_AI_Fluent_Support_Result( 'ticket_created', '', $ticket_id );
 	}
 
+	/** Return only eligibility, never ticket body, identity, replies, or provider model. */
+	public function resolved_ticket_reference( $ticket_id ) {
+		if ( ! self::positive_id( $ticket_id ) ) {
+			return array( 'status' => 'invalid_id' );
+		}
+		if ( 'available' !== $this->status()->status() ) {
+			return array( 'status' => 'provider_unavailable' );
+		}
+		try {
+			$ticket = $this->gateway->ticket( (int) $ticket_id );
+		} catch ( Throwable $error ) {
+			return array( 'status' => 'provider_unavailable' );
+		}
+		if ( ! is_object( $ticket ) || (int) ( $ticket->id ?? 0 ) !== (int) $ticket_id ) {
+			return array( 'status' => 'unavailable' );
+		}
+		if ( 'closed' !== ( $ticket->status ?? null ) || empty( $ticket->resolved_at ) ) {
+			return array( 'status' => 'not_resolved' );
+		}
+		return array( 'status' => 'resolved', 'id' => (int) $ticket_id );
+	}
+
 	private static function positive_id( $value ) {
 		if ( ! is_int( $value ) && ! is_string( $value ) ) {
 			return false;
