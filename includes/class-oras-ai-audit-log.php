@@ -14,6 +14,7 @@ final class ORAS_AI_Audit_Log {
 	const CONFIG_OPENAI_API_KEY   = 'config.openai_api_key';
 	const CONFIG_M6_ASTRONOMYAPI  = 'config.m6.astronomyapi_credentials';
 	const CONFIG_M6_NWS_CONTACT   = 'config.m6.nws_contact';
+	const CONFIG_M7_SUPPORT_ROUTING = 'config.m7.support_routing';
 
 	public static function log_openai_model_changed( $old_model, $new_model ) {
 		return self::record(
@@ -94,6 +95,17 @@ final class ORAS_AI_Audit_Log {
 		return self::record( $settings[ $setting ], $action, null, null );
 	}
 
+	public static function log_m7_routing_changed() {
+		return self::record( self::CONFIG_M7_SUPPORT_ROUTING, 'changed', null, null );
+	}
+
+	public static function log_support_escalation( $action, $topic ) {
+		if ( ! in_array( $action, array( 'proposed', 'route_unavailable' ), true ) || ! ORAS_AI_Support_Topic::allowed( $topic ) ) {
+			return false;
+		}
+		return self::record( 'support.escalation.' . $topic, $action, null, null, 'route_unavailable' === $action ? 'unavailable' : 'success' );
+	}
+
 	public static function recent_events( $limit = self::RECENT_EVENTS ) {
 		$events = get_option( self::OPTION_EVENTS, array() );
 
@@ -104,13 +116,13 @@ final class ORAS_AI_Audit_Log {
 		return array_slice( $events, 0, absint( $limit ) );
 	}
 
-	private static function record( $config_item, $action, $old_state, $new_state ) {
+	private static function record( $config_item, $action, $old_state, $new_state, $outcome = 'success' ) {
 		$event = array(
 			'timestamp'     => current_time( 'mysql' ),
 			'actor_user_id' => get_current_user_id(),
 			'config_item'   => $config_item,
 			'action'        => $action,
-			'outcome'       => 'success',
+			'outcome'       => $outcome,
 			'old_state'     => $old_state,
 			'new_state'     => $new_state,
 		);

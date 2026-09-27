@@ -13,11 +13,13 @@ final class ORAS_AI_Conversation_Transport {
 	private $request_gateway;
 	private $answer_orchestrator;
 	private $conversations;
+	private $escalation_service;
 
-	public function __construct( ORAS_AI_Request_Gateway $request_gateway, ORAS_AI_Answer_Orchestrator $answer_orchestrator, ORAS_AI_Conversations $conversations ) {
+	public function __construct( ORAS_AI_Request_Gateway $request_gateway, ORAS_AI_Answer_Orchestrator $answer_orchestrator, ORAS_AI_Conversations $conversations, $escalation_service = null ) {
 		$this->request_gateway     = $request_gateway;
 		$this->answer_orchestrator = $answer_orchestrator;
 		$this->conversations       = $conversations;
+		$this->escalation_service  = $escalation_service instanceof ORAS_AI_Escalation_Proposal_Service ? $escalation_service : null;
 
 		add_action( 'wp_ajax_' . self::AJAX_ACTION, array( $this, 'handle_ajax_request' ) );
 	}
@@ -128,7 +130,7 @@ final class ORAS_AI_Conversation_Transport {
 		if ( ! isset( $assistant_message['sources'] ) ) {
 			$assistant_message['sources'] = array();
 		}
-		return array(
+		$response = array(
 			'conversation_id'  => $conversation_id,
 			'member_message'   => $this->message_by_id( $conversation_id, $member_id ),
 			'assistant_message' => $assistant_message,
@@ -139,6 +141,13 @@ final class ORAS_AI_Conversation_Transport {
 				'error_code' => $result->error_code(),
 			),
 		);
+		if ( null !== $this->escalation_service ) {
+			$escalation = $this->escalation_service->propose( $authorized, $conversation_id, $result );
+			if ( 'none' !== $escalation->status() ) {
+				$response['result']['escalation'] = $escalation->to_member_array();
+			}
+		}
+		return $response;
 	}
 
 	private function conversation_response( $conversation ) {

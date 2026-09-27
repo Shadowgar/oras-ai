@@ -34,6 +34,12 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-fluent-support-result.
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-fluent-support-route.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-fluent-support-core-gateway.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-fluent-support-adapter.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-support-topic.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-support-routing.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-escalation-proposal.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-escalation-result.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-escalation-proposal-service.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-support-routing-admin.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-clock.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-system-clock.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-observing-site.php';
@@ -123,6 +129,7 @@ final class ORAS_AI_Assistant {
 	private $cost_admin;
 	private $connector_health_admin;
 	private $m6_provider_admin;
+	private $support_routing_admin;
 	private $conversations;
 	private $conversation_transport;
 	private $chat_ui;
@@ -194,11 +201,14 @@ final class ORAS_AI_Assistant {
 			$observing_planner
 		);
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
-		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations );
+		$support_routing = new ORAS_AI_Support_Routing();
+		$escalation_service = new ORAS_AI_Escalation_Proposal_Service( $support_routing, $this->conversations );
+		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations, $escalation_service );
 		$this->chat_ui = new ORAS_AI_Chat_UI( $this->request_gateway );
 		$this->cost_admin = new ORAS_AI_Cost_Admin();
 		$this->connector_health_admin = new ORAS_AI_Connector_Health_Admin( $connector_observability, $connectors );
 		$this->m6_provider_admin = new ORAS_AI_M6_Provider_Admin( $astronomy_observability );
+		$this->support_routing_admin = new ORAS_AI_Support_Routing_Admin( $support_routing );
 	}
 
 	public static function activate() {
@@ -278,6 +288,15 @@ final class ORAS_AI_Assistant {
 			'manage_options',
 			'oras-ai-m6-providers',
 			array( $this->m6_provider_admin, 'render_page' )
+		);
+
+		add_submenu_page(
+			'oras-ai-assistant',
+			__( 'Support Routing', 'oras-ai-assistant' ),
+			__( 'Support Routing', 'oras-ai-assistant' ),
+			'manage_options',
+			'oras-ai-support-routing',
+			array( $this->support_routing_admin, 'render_page' )
 		);
 
 		add_submenu_page(
