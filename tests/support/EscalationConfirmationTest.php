@@ -257,5 +257,33 @@ oras_ai_test('M7 Task 3 chat send persists a preview without provider writes', f
 	oras_ai_assert_same('awaiting_confirmation', $sent['result']['escalation']['status'], 'Send did not persist proposal.');
 	$token = $sent['result']['escalation']['token'];
 	oras_ai_assert_same('awaiting_confirmation', $transport->dispatch(oras_ai_test_transport_request('escalation_status', array('token' => $token)))['status'], 'Persisted proposal did not reload.');
+	$loaded = $transport->dispatch(oras_ai_test_transport_request('load', array('conversation_id' => $current['conversation_id'])));
+	oras_ai_assert_same('awaiting_confirmation', $loaded['escalations'][0]['status'], 'Conversation restore omitted proposal.');
+	oras_ai_assert_same($sent['result']['escalation']['preview'], $loaded['escalations'][0]['preview'], 'Restore changed preview.');
 	oras_ai_assert_same(0, count(array_filter($adapter->calls, 'is_array')), 'Proposal created ticket.');
+});
+
+oras_ai_test('M7 Task 4 restore exposes an owner-only opaque reference and reuses stored summary', function (): void {
+	list($service, $pending, $adapter, $conversations, $conversation_id, $created) = oras_ai_confirmation_fixture();
+	$restored = $service->for_conversation($conversation_id);
+	oras_ai_assert_same(1, count($restored), 'Pending proposal missing from restore.');
+	oras_ai_assert_same('awaiting_confirmation', $restored[0]['status'], 'Pending state missing.');
+	oras_ai_assert_same('Stored summary', $restored[0]['preview']['summary'], 'Summary was regenerated.');
+	oras_ai_assert_true((bool) preg_match('/^[a-f0-9]{64}$/', $restored[0]['token']), 'Restore reference is not opaque.');
+	oras_ai_assert_same('awaiting_confirmation', $service->status($restored[0]['token'], $conversation_id)['status'], 'Restored reference did not load.');
+	oras_ai_assert_same(array(), $adapter->calls, 'Restore touched provider.');
+	oras_ai_assert_not_contains('mailbox_id', wp_json_encode($restored), 'Restore exposed routing IDs.');
+	$GLOBALS['oras_ai_test_current_user_id'] = 8;
+	oras_ai_assert_wp_error($service->for_conversation($conversation_id), 'oras_ai_escalation_denied', 'Cross-user restore succeeded.');
+	$GLOBALS['oras_ai_test_current_user_id'] = 7;
+	oras_ai_assert_same('created', $service->confirm($restored[0]['token'], $conversation_id)['status'], 'Restored reference could not confirm.');
+});
+
+oras_ai_test('M7 Task 4 restore retains terminal outcomes without replaying ticket creation', function (): void {
+	list($service, $pending, $adapter, $conversations, $conversation_id, $created) = oras_ai_confirmation_fixture();
+	$service->confirm($created['token'], $conversation_id);
+	$restored = $service->for_conversation($conversation_id);
+	oras_ai_assert_same('created', $restored[0]['status'], 'Created state did not restore.');
+	oras_ai_assert_same(123, $restored[0]['ticket_id'], 'Created ticket ID did not restore.');
+	oras_ai_assert_same(1, count(array_filter($adapter->calls, 'is_array')), 'Restore retried ticket creation.');
 });

@@ -175,7 +175,7 @@ final class ORAS_AI_Conversation_Transport {
 			return $messages;
 		}
 
-		return array(
+		$response = array(
 			'conversation_id' => (int) $conversation['id'],
 			'conversation'    => array(
 				'id'             => (int) $conversation['id'],
@@ -185,6 +185,12 @@ final class ORAS_AI_Conversation_Transport {
 			),
 			'messages'        => $messages,
 		);
+		if ( null !== $this->confirmation_service ) {
+			$escalations = $this->confirmation_service->for_conversation( (int) $conversation['id'] );
+			if ( is_wp_error( $escalations ) ) { return $escalations; }
+			$response['escalations'] = $escalations;
+		}
+		return $response;
 	}
 
 	private function message_by_id( $conversation_id, $message_id ) {

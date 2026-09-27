@@ -29,6 +29,12 @@ final class ORAS_AI_Escalation_Confirmation_Service {
 		return is_wp_error( $record ) ? $record : $this->pending->member_result( $record, $token );
 	}
 
+	public function for_conversation( $conversation_id ) {
+		$conversation = $this->conversations->get_conversation( $conversation_id );
+		if ( is_wp_error( $conversation ) || (int) $conversation['user_id'] !== get_current_user_id() ) { return $this->denied(); }
+		return $this->pending->for_conversation( $conversation_id );
+	}
+
 	public function cancel( $token, $conversation_id ) {
 		$record = $this->owned_record( $token, $conversation_id );
 		if ( is_wp_error( $record ) ) { return $record; }

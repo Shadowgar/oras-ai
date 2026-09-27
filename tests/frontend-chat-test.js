@@ -1,4 +1,8 @@
-const assert = require('assert');
+const nodeAssert = require('assert');
+let assertionCount = 0;
+function assert(...args) { assertionCount++; return nodeAssert(...args); }
+assert.strictEqual = (...args) => { assertionCount++; return nodeAssert.strictEqual(...args); };
+assert.deepStrictEqual = (...args) => { assertionCount++; return nodeAssert.deepStrictEqual(...args); };
 const fs = require('fs');
 const vm = require('vm');
 
@@ -40,7 +44,16 @@ class FakeNode {
 		delete this.attributes[name];
 	}
 	querySelector(selector) {
-		return this.selectors[selector] || null;
+		if (this.selectors[selector]) { return this.selectors[selector]; }
+		if (selector.startsWith('.')) {
+			const className = selector.slice(1);
+			for (const child of this.children) {
+				if (child.className.split(' ').includes(className)) { return child; }
+				const nested = child.querySelector(selector);
+				if (nested) { return nested; }
+			}
+		}
+		return null;
 	}
 	addEventListener(type, listener) {
 		this.listeners[type] = listener;
@@ -81,6 +94,45 @@ const context = {
 vm.runInNewContext(source, context, { filename: 'chat.js' });
 const api = context.window.ORASAIChat;
 assert(api, 'chat.js must expose its testable component API');
+assert.strictEqual(typeof api.renderEscalation, 'function', 'Task 4 support card renderer is missing');
+function allText(node) { return node.textContent + node.children.map(allText).join(' '); }
+const supportStrings = {
+	support_heading: 'Support ticket preview', support_subject: 'Subject', support_summary: 'Summary',
+	support_question: 'Original question', support_destination: 'Destination', support_category: 'Category',
+	support_disclosure: 'Chat text is deleted after 30 days; support tickets follow separate retention.',
+	support_create: 'Create Support Ticket', support_cancel: 'Cancel', support_creating: 'Creating ticket',
+	support_created: 'Ticket sent', support_failed: 'Ticket could not be created',
+	support_uncertain: 'Cannot determine whether ticket was created; will not retry automatically',
+	support_cancelled: 'Request cancelled', support_expired: 'Request expired',
+	support_contact: 'Contact ORAS Support', support_ticket_ref: 'Ticket',
+};
+const pendingEscalation = {
+	status: 'awaiting_confirmation', token: 'opaque-token',
+	preview: { category: 'Feedback', subject: '<b>Subject</b>', summary: 'Concise summary',
+		original_question: 'Original member question', destination: 'ORAS Support', mailbox_id: 999 },
+};
+const supportCard = fakeDocument.createElement('article');
+const supportActions = [];
+api.renderEscalation(supportCard, pendingEscalation, fakeDocument, supportStrings, 'https://example.test/contact/', (action) => supportActions.push(action));
+assert(allText(supportCard).includes('Concise summary') && allText(supportCard).includes('Original member question'));
+assert(allText(supportCard).includes('ORAS Support') && allText(supportCard).includes('separate retention'));
+assert(!allText(supportCard).includes('999') && !allText(supportCard).includes('mailbox_id'));
+assert.strictEqual(supportCard.querySelector('.oras-ai-chat__escalation-actions').children.length, 2);
+assert.strictEqual(supportCard.querySelector('.oras-ai-chat__escalation-actions').children[0].getAttribute('type'), 'button');
+supportCard.querySelector('.oras-ai-chat__escalation-actions').children[0].dispatch('click');
+supportCard.querySelector('.oras-ai-chat__escalation-actions').children[1].dispatch('click');
+assert.deepStrictEqual(supportActions, ['confirm_escalation', 'cancel_escalation']);
+api.renderEscalation(supportCard, { status: 'created', ticket_id: 123 }, fakeDocument, supportStrings, 'https://example.test/contact/');
+assert(allText(supportCard).includes('Ticket #123') && !supportCard.querySelector('.oras-ai-chat__escalation-actions'));
+api.renderEscalation(supportCard, { status: 'uncertain' }, fakeDocument, supportStrings, 'https://example.test/contact/');
+assert(allText(supportCard).includes('will not retry automatically') && allText(supportCard).includes('Contact ORAS Support'));
+assert(!supportCard.querySelector('.oras-ai-chat__escalation-actions'));
+for (const state of ['failed', 'cancelled', 'expired']) {
+	api.renderEscalation(supportCard, { status: state }, fakeDocument, supportStrings, 'https://example.test/contact/');
+	assert(!supportCard.querySelector('.oras-ai-chat__escalation-actions'), state + ' retained action controls');
+}
+api.renderEscalation(supportCard, { status: 'creating' }, fakeDocument, supportStrings, 'https://example.test/contact/');
+assert.strictEqual(supportCard.getAttribute('aria-busy'), 'true');
 
 const normalizedSource = api.normalizeSource({ source_title: 'Guide', canonical_url: 'https://oras.org/guide/' });
 assert.strictEqual(normalizedSource.source_title, 'Guide');
@@ -139,6 +191,9 @@ const transport = api.createTransport(
 	assert(sent.options.body.includes('conversation_id=12'));
 	assert(!sent.options.body.includes('user_id'));
 	assert(!sent.options.body.includes('apiKey'));
+	await transport('confirm_escalation', { token: 'opaque-token' });
+	assert(sent.options.body.includes('nonce=nonce') && sent.options.body.includes('operation=confirm_escalation'));
+	assert(sent.options.body.includes('token=opaque-token') && !sent.options.body.includes('mailbox_id') && !sent.options.body.includes('customer_id'));
 
 	const root = fakeDocument.createElement('section');
 	const messages = fakeDocument.createElement('div');
@@ -207,8 +262,82 @@ const transport = api.createTransport(
 	assert.strictEqual(messages.children.length, 2);
 	assert.strictEqual(status.textContent, '');
 	assert(styles.includes('@media (max-width: 600px)') && styles.includes('.oras-ai-chat--panel') && styles.includes('max-height: none'));
+	assert(styles.includes('.oras-ai-chat[hidden]') && styles.includes('display: none'), 'Hidden panel must not intercept launcher clicks');
 
-	console.log('26 frontend chat assertions passed.');
+	const supportRoot = fakeDocument.createElement('section');
+	const supportMessages = fakeDocument.createElement('div');
+	const supportStatus = fakeDocument.createElement('div');
+	const supportForm = fakeDocument.createElement('form');
+	const supportInput = fakeDocument.createElement('textarea');
+	const supportSend = fakeDocument.createElement('button');
+	const supportNew = fakeDocument.createElement('button');
+	supportRoot.setAttribute('data-oras-ai-chat-mode', 'page');
+	supportRoot.selectors = {
+		'[data-oras-ai-chat-messages]': supportMessages,
+		'[data-oras-ai-chat-status]': supportStatus,
+		'[data-oras-ai-chat-form]': supportForm,
+		'[data-oras-ai-chat-input]': supportInput,
+		'[data-oras-ai-chat-send]': supportSend,
+		'[data-oras-ai-chat-new]': supportNew,
+	};
+	let restoreData = { conversation_id: 42, messages: [], escalations: [pendingEscalation] };
+	let resolveConfirm;
+	const supportOperations = [];
+	const supportController = api.createController(supportRoot, {
+		strings: Object.assign({}, supportStrings, { loading: 'Loading', empty: 'Empty', support_ready: 'Review preview' }),
+		supportContactUrl: 'https://example.test/contact/',
+	}, {
+		transport: (operation, fields = {}) => {
+			supportOperations.push({ operation, fields });
+			if (operation === 'current') { return Promise.resolve(restoreData); }
+			if (operation === 'confirm_escalation') { return new Promise((resolve) => { resolveConfirm = resolve; }); }
+			if (operation === 'cancel_escalation') { return Promise.resolve({ status: 'cancelled' }); }
+			if (operation === 'send') {
+				return Promise.resolve({
+					conversation_id: 42,
+					member_message: { role: 'member', content: fields.question },
+					assistant_message: { role: 'assistant', content: 'I can offer support.' },
+					result: { status: 'no_evidence', escalation: pendingEscalation },
+				});
+			}
+			return Promise.resolve({ status: 'uncertain' });
+		},
+	});
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.strictEqual(supportMessages.children[0].getAttribute('data-escalation-state'), 'awaiting_confirmation');
+	const createButton = supportMessages.children[0].querySelector('.oras-ai-chat__escalation-actions').children[0];
+	const confirming = createButton.dispatch('click');
+	createButton.dispatch('click');
+	assert.strictEqual(supportOperations.filter((item) => item.operation === 'confirm_escalation').length, 1);
+	assert.strictEqual(JSON.stringify(supportOperations[1].fields), JSON.stringify({ token: 'opaque-token' }));
+	assert.strictEqual(supportMessages.children[0].getAttribute('aria-busy'), 'true');
+	assert(!supportMessages.children[0].querySelector('.oras-ai-chat__escalation-actions'));
+	resolveConfirm({ status: 'created', ticket_id: 123 });
+	await confirming;
+	assert.strictEqual(supportMessages.children[0].getAttribute('data-escalation-state'), 'created');
+	assert.strictEqual(fakeDocument.activeElement, supportMessages.children[0]);
+	restoreData = { conversation_id: 42, messages: [], escalations: [{ status: 'created', ticket_id: 123 }] };
+	await supportController.loadCurrent();
+	assert(allText(supportMessages).includes('Ticket #123'));
+	assert.strictEqual(supportOperations.filter((item) => item.operation === 'confirm_escalation').length, 1);
+	restoreData = { conversation_id: 42, messages: [], escalations: [pendingEscalation] };
+	await supportController.loadCurrent();
+	await supportMessages.children[0].querySelector('.oras-ai-chat__escalation-actions').children[1].dispatch('click');
+	assert.strictEqual(supportOperations.filter((item) => item.operation === 'cancel_escalation').length, 1);
+	assert.strictEqual(supportMessages.children[0].getAttribute('data-escalation-state'), 'cancelled');
+	assert.strictEqual(supportOperations.filter((item) => item.operation === 'confirm_escalation').length, 1);
+	restoreData = { conversation_id: 42, messages: [], escalations: [{ status: 'uncertain' }, { status: 'expired' }] };
+	await supportController.loadCurrent();
+	assert(allText(supportMessages).includes('will not retry automatically'));
+	assert(allText(supportMessages).includes('Request expired'));
+	assert(!supportMessages.children[0].querySelector('.oras-ai-chat__escalation-actions'));
+	supportInput.value = 'I have a suggestion for ORAS';
+	await supportController.submit();
+	assert.strictEqual(supportOperations.filter((item) => item.operation === 'send').length, 1);
+	assert.strictEqual(supportMessages.children[supportMessages.children.length - 1].getAttribute('data-escalation-state'), 'awaiting_confirmation');
+	assert.strictEqual(fakeDocument.activeElement, supportMessages.children[supportMessages.children.length - 1]);
+
+	console.log(assertionCount + ' frontend chat assertions passed.');
 })().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;

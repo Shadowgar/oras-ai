@@ -84,11 +84,19 @@ final class ORAS_AI_Pending_Escalations {
 			'meta_key' => self::META_TOKEN_HASH, 'meta_value' => $hash,
 			'posts_per_page' => 2,
 		) );
+		if ( ! $posts ) {
+			foreach ( $this->owner_posts() as $candidate ) {
+				$candidate_hash = get_post_meta( $candidate->ID, self::META_TOKEN_HASH, true );
+				if ( is_string( $candidate_hash ) && hash_equals( $this->restore_token( $candidate->ID, $candidate_hash ), $token ) ) {
+					$posts[] = $candidate;
+				}
+			}
+		}
 		if ( count( $posts ) !== 1 ) {
 			return $this->denied();
 		}
 		$record = get_post_meta( $posts[0]->ID, self::META_RECORD, true );
-		if ( ! is_array( $record ) || ! hash_equals( (string) ( $record['token_hash'] ?? '' ), $hash ) ||
+		if ( ! is_array( $record ) || ! hash_equals( (string) ( $record['token_hash'] ?? '' ), (string) get_post_meta( $posts[0]->ID, self::META_TOKEN_HASH, true ) ) ||
 			(int) ( $record['user_id'] ?? 0 ) !== get_current_user_id() ||
 			(int) $posts[0]->post_author !== get_current_user_id() ||
 			( null !== $conversation_id && (int) ( $record['conversation_id'] ?? 0 ) !== $conversation_id ) ) {
@@ -97,6 +105,42 @@ final class ORAS_AI_Pending_Escalations {
 		$record['_post_id'] = (int) $posts[0]->ID;
 		$record['_original'] = get_post_meta( $posts[0]->ID, self::META_RECORD, true );
 		return $this->reconcile( $record );
+	}
+
+	/** Rebuild an opaque status/confirmation reference for this owner's conversation. */
+	public function for_conversation( $conversation_id ) {
+		if ( ! is_int( $conversation_id ) || $conversation_id <= 0 || get_current_user_id() <= 0 ) {
+			return $this->denied();
+		}
+		$results = array();
+		foreach ( $this->owner_posts() as $post ) {
+			$record = get_post_meta( $post->ID, self::META_RECORD, true );
+			if ( ! is_array( $record ) || (int) ( $record['user_id'] ?? 0 ) !== get_current_user_id() ||
+				(int) ( $record['conversation_id'] ?? 0 ) !== $conversation_id ||
+				! is_string( $record['token_hash'] ?? null ) ) {
+				continue;
+			}
+			$record['_post_id'] = (int) $post->ID;
+			$record['_original'] = get_post_meta( $post->ID, self::META_RECORD, true );
+			$record = $this->reconcile( $record );
+			$reference = $this->restore_token( $post->ID, $record['token_hash'] );
+			$result = $this->member_result( $record, $reference );
+			$result['token'] = $reference;
+			$results[] = $result;
+		}
+		return $results;
+	}
+
+	private function owner_posts() {
+		return get_posts( array(
+			'post_type' => self::POST_TYPE, 'post_status' => 'private',
+			'author' => get_current_user_id(), 'posts_per_page' => -1,
+			'orderby' => 'ID', 'order' => 'ASC',
+		) );
+	}
+
+	private function restore_token( $post_id, $hash ) {
+		return hash_hmac( 'sha256', $post_id . ':' . $hash, wp_salt( 'auth' ) );
 	}
 
 	public function claim( array $record, $action ) {

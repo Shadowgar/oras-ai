@@ -640,6 +640,10 @@ function wp_verify_nonce($nonce, $action): bool {
 	return (bool) $GLOBALS['oras_ai_test_nonce_valid'];
 }
 
+function wp_salt($scheme = 'auth'): string {
+	return 'oras-ai-test-' . $scheme . '-salt';
+}
+
 function check_ajax_referer($action, $query_arg = false, $stop = true) {
 	$GLOBALS['oras_ai_test_ajax_nonce_checks'][] = array($action, $query_arg);
 	if (!$GLOBALS['oras_ai_test_nonce_valid']) {

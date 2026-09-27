@@ -39,17 +39,19 @@ final class ORAS_AI_Chat_UI {
 	}
 
 	private function enqueue_chat_assets() {
+		$css_version = ORAS_AI_VERSION . '.' . substr( md5_file( ORAS_AI_PLUGIN_DIR . 'assets/chat.css' ), 0, 12 );
+		$js_version = ORAS_AI_VERSION . '.' . substr( md5_file( ORAS_AI_PLUGIN_DIR . 'assets/chat.js' ), 0, 12 );
 		wp_enqueue_style(
 			'oras-ai-chat',
 			ORAS_AI_PLUGIN_URL . 'assets/chat.css',
 			array(),
-			ORAS_AI_VERSION
+			$css_version
 		);
 		wp_enqueue_script(
 			'oras-ai-chat',
 			ORAS_AI_PLUGIN_URL . 'assets/chat.js',
 			array(),
-			ORAS_AI_VERSION,
+			$js_version,
 			true
 		);
 		wp_localize_script(
@@ -59,6 +61,7 @@ final class ORAS_AI_Chat_UI {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'action'  => ORAS_AI_Conversation_Transport::AJAX_ACTION,
 				'nonce'   => wp_create_nonce( ORAS_AI_Request_Gateway::NONCE_ACTION ),
+				'supportContactUrl' => home_url( '/contact-us/' ),
 				'strings' => array(
 					'loading'             => __( 'Loading your current conversation…', 'oras-ai-assistant' ),
 					'thinking'            => __( 'Thinking…', 'oras-ai-assistant' ),
@@ -77,6 +80,28 @@ final class ORAS_AI_Chat_UI {
 					'close'                => __( 'Close ORAS AI chat', 'oras-ai-assistant' ),
 					'new_chat_label'       => __( 'Start a New Chat', 'oras-ai-assistant' ),
 					'send'                => __( 'Send question', 'oras-ai-assistant' ),
+					'support_heading'     => __( 'Support ticket preview', 'oras-ai-assistant' ),
+					'support_subject'     => __( 'Subject', 'oras-ai-assistant' ),
+					'support_summary'     => __( 'Summary', 'oras-ai-assistant' ),
+					'support_question'    => __( 'Original question', 'oras-ai-assistant' ),
+					'support_category'    => __( 'Category', 'oras-ai-assistant' ),
+					'support_destination' => __( 'Destination', 'oras-ai-assistant' ),
+					'support_disclosure'  => __( 'Chat text is deleted from ORAS AI after 30 days. If you create a ticket, the shown question and summary are stored in ORAS Support under its separate support retention policy.', 'oras-ai-assistant' ),
+					'support_create'      => __( 'Create Support Ticket', 'oras-ai-assistant' ),
+					'support_cancel'      => __( 'Cancel', 'oras-ai-assistant' ),
+					'support_creating'    => __( 'Creating your support ticket. Please wait.', 'oras-ai-assistant' ),
+					'support_cancelling'  => __( 'Cancelling your support request. Please wait.', 'oras-ai-assistant' ),
+					'support_ready'       => __( 'Review the support ticket preview before confirming.', 'oras-ai-assistant' ),
+					'support_created'     => __( 'Your question was sent to ORAS Support.', 'oras-ai-assistant' ),
+					'support_failed'      => __( 'The support ticket could not be created.', 'oras-ai-assistant' ),
+					'support_uncertain'   => __( 'ORAS AI cannot safely determine whether the ticket was created, so it will not retry automatically.', 'oras-ai-assistant' ),
+					'support_cancelled'   => __( 'Support request cancelled. No ticket was created.', 'oras-ai-assistant' ),
+					'support_expired'     => __( 'This support request expired before confirmation. You can continue chatting and request a new proposal.', 'oras-ai-assistant' ),
+					'support_unavailable' => __( 'ORAS support ticketing is temporarily unavailable.', 'oras-ai-assistant' ),
+					'support_status_unknown' => __( 'We could not check the ticket status. Refresh this page before taking another action.', 'oras-ai-assistant' ),
+					'support_contact'     => __( 'Contact ORAS Support', 'oras-ai-assistant' ),
+					'support_ticket_ref'  => __( 'Ticket', 'oras-ai-assistant' ),
+					'support_tag_warning' => __( 'Your ticket was created, but its routing tag could not be confirmed.', 'oras-ai-assistant' ),
 				),
 			)
 		);
@@ -153,7 +178,7 @@ final class ORAS_AI_Chat_UI {
 					<?php endif; ?>
 				</div>
 			</header>
-			<p class="oras-ai-chat__scope"><?php esc_html_e( 'Ask about ORAS/support or astronomy questions.', 'oras-ai-assistant' ); ?></p>
+			<p class="oras-ai-chat__scope"><?php esc_html_e( 'Ask about ORAS/support or astronomy questions. You can also share a bug report, suggestion, idea, or complaint.', 'oras-ai-assistant' ); ?></p>
 			<p class="oras-ai-chat__privacy"><?php esc_html_e( 'Responses use external AI processing. Conversation text is retained for 30 days.', 'oras-ai-assistant' ); ?></p>
 			<div class="oras-ai-chat__messages" data-oras-ai-chat-messages role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
 			<div class="oras-ai-chat__status" data-oras-ai-chat-status role="status" aria-live="polite"></div>

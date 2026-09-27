@@ -303,6 +303,21 @@ oras_ai_test('M7 Task 2 proposal construction performs no Fluent Support writes'
 	}
 });
 
+oras_ai_test('M7 Task 4 feedback intents use the existing confirmed support proposal path', function (): void {
+	list($service, $routing, $adapter, $conversation_id) = oras_ai_test_support_service();
+	$config = oras_ai_test_support_config();
+	$config['topic_routes']['feedback'] = array('mailbox_id' => 1, 'tag_ids' => array(2));
+	oras_ai_assert_true($routing->save($config), 'Feedback routing fixture failed.');
+	foreach (array('I have an idea for ORAS', 'I have a suggestion for ORAS', 'I want to file a complaint', 'I want to report a bug') as $question) {
+		$result = $service->propose(oras_ai_test_support_request($question), $conversation_id, ORAS_AI_Answer_Result::no_evidence('Unknown.'));
+		oras_ai_assert_same('proposed', $result->status(), 'Feedback intent had no proposal: ' . $question);
+		oras_ai_assert_same('feedback', $result->proposal()->topic(), 'Feedback topic mismatch: ' . $question);
+	}
+	foreach ($adapter->calls as $call) {
+		oras_ai_assert_true(in_array($call[0], array('status', 'validate_provider_route'), true), 'Feedback proposal performed provider write.');
+	}
+});
+
 oras_ai_test('M7 Task 2 authenticated chat result exposes only a bounded ephemeral proposal', function (): void {
 	oras_ai_test_reset();
 	$adapter = new ORAS_AI_Test_Read_Only_Support_Adapter();

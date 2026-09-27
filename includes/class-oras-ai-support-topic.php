@@ -43,7 +43,7 @@ final class ORAS_AI_Support_Topic {
 			'equipment'          => '/\b(equipment|telescope problem|mount problem|eyepiece problem)\b/i',
 			'events'             => '/\b(event|astroblast|public night|registration)\b/i',
 			'board_organization' => '/\b(board|organization|committee|volunteer)\b/i',
-			'feedback'           => '/\b(feedback|suggestion|idea|complaint)\b/i',
+			'feedback'           => '/\b(feedback|suggestion|idea|complaint|bug report|report a bug)\b/i',
 		);
 		foreach ( $patterns as $topic => $pattern ) {
 			if ( preg_match( $pattern, $text ) ) {
@@ -55,7 +55,7 @@ final class ORAS_AI_Support_Topic {
 
 	public static function is_explicit_request( $question ) {
 		$text = strtolower( wp_strip_all_tags( (string) $question, true ) );
-		if ( preg_match( '/\b(human help|talk to (?:a )?(?:person|human)|contact support|support ticket|need (?:a )?human|bug report|suggestion|i have an idea|complain|complaint)\b/i', $text ) ) {
+		if ( preg_match( '/\b(human help|talk to (?:a )?(?:person|human)|contact support|support ticket|need (?:a )?human|bug report|report a bug|file a bug|suggestion|i have an idea|complain|complaint)\b/i', $text ) ) {
 			return true;
 		}
 		return (bool) preg_match( '/\b(calendar|website|web site|oras|observatory|facility|facilities|parking)\b.{0,60}\b(broken|bug|problem)\b|\b(broken|bug|problem)\b.{0,60}\b(calendar|website|web site|oras|observatory|facility|facilities|parking)\b/i', $text );

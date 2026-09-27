@@ -22,6 +22,8 @@ oras_ai_test('eligible frontend registers the shared chat shortcode and site-wid
 	$ui->enqueue_assets();
 	oras_ai_assert_same('https://example.test/wp-content/plugins/oras-ai/assets/chat.js', $GLOBALS['oras_ai_test_enqueued_scripts']['oras-ai-chat']['src'], 'Chat script URL changed.');
 	oras_ai_assert_same('https://example.test/wp-content/plugins/oras-ai/assets/chat.css', $GLOBALS['oras_ai_test_enqueued_styles']['oras-ai-chat']['src'], 'Chat stylesheet URL changed.');
+	oras_ai_assert_same('0.2.1.' . substr(md5_file(dirname(__DIR__, 2) . '/assets/chat.css'), 0, 12), $GLOBALS['oras_ai_test_enqueued_styles']['oras-ai-chat']['ver'], 'Chat CSS changes must invalidate cached assets without a plugin version bump.');
+	oras_ai_assert_same('0.2.1.' . substr(md5_file(dirname(__DIR__, 2) . '/assets/chat.js'), 0, 12), $GLOBALS['oras_ai_test_enqueued_scripts']['oras-ai-chat']['ver'], 'Chat JS changes must invalidate cached assets without a plugin version bump.');
 	$config = $GLOBALS['oras_ai_test_localized_scripts']['oras-ai-chat']['data'];
 	oras_ai_assert_same('https://example.test/wp-admin/admin-ajax.php', $config['ajaxUrl'], 'Chat AJAX URL missing.');
 	oras_ai_assert_same('oras_ai_conversation', $config['action'], 'Chat AJAX action changed.');
@@ -103,4 +105,15 @@ oras_ai_test('shared chat markup exposes accessible labels status log and respon
 		oras_ai_assert_contains($marker, $html, 'Accessible chat marker missing: ' . $marker);
 	}
 	oras_ai_assert_not_contains('<script', $html, 'Chat renderer emitted executable script markup.');
+});
+
+oras_ai_test('M7 Task 4 shared chat declares support feedback and a server-owned contact route', function (): void {
+	oras_ai_test_reset();
+	$ui = oras_ai_test_chat_ui();
+	$ui->enqueue_assets();
+	$config = $GLOBALS['oras_ai_test_localized_scripts']['oras-ai-chat']['data'];
+	oras_ai_assert_same('https://example.test/contact-us/', $config['supportContactUrl'], 'Contact route was not server-owned.');
+	$html = $ui->render_component('page');
+	oras_ai_assert_contains('bug report', $html, 'Feedback intake guidance missing.');
+	oras_ai_assert_contains('suggestion', $html, 'Suggestion intake guidance missing.');
 });

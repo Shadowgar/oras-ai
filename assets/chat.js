@@ -85,6 +85,94 @@
 		return wrapper;
 	}
 
+	function renderEscalation(card, escalation, documentRef, strings, contactUrl, onAction) {
+		clearElement(card);
+		card.className = 'oras-ai-chat__escalation';
+		card.setAttribute('tabindex', '-1');
+		var state = escalation && typeof escalation.status === 'string' ? escalation.status : 'unavailable';
+		card.setAttribute('data-escalation-state', state);
+		card.setAttribute('aria-busy', state === 'creating' || state === 'cancelling' ? 'true' : 'false');
+		var heading = documentRef.createElement('h3');
+		heading.textContent = strings.support_heading || 'Support ticket preview';
+		card.appendChild(heading);
+
+		function paragraph(value, className) {
+			var node = documentRef.createElement('p');
+			node.className = className || '';
+			node.textContent = value;
+			card.appendChild(node);
+			return node;
+		}
+		function detail(label, value) {
+			if (typeof value !== 'string' || !value) { return; }
+			var row = documentRef.createElement('p');
+			row.className = 'oras-ai-chat__escalation-detail';
+			var strong = documentRef.createElement('strong');
+			strong.textContent = label + ': ';
+			row.appendChild(strong);
+			var span = documentRef.createElement('span');
+			span.textContent = value;
+			row.appendChild(span);
+			card.appendChild(row);
+		}
+		function fallback() {
+			if (typeof contactUrl !== 'string' || !/^https?:\/\/[^\s]+$/i.test(contactUrl)) { return; }
+			var row = documentRef.createElement('p');
+			var link = documentRef.createElement('a');
+			link.href = contactUrl;
+			link.textContent = strings.support_contact || 'Contact ORAS Support';
+			row.appendChild(link);
+			card.appendChild(row);
+		}
+
+		if (state === 'awaiting_confirmation' && escalation.preview) {
+			var preview = escalation.preview;
+			detail(strings.support_category || 'Category', preview.category);
+			detail(strings.support_subject || 'Subject', preview.subject);
+			detail(strings.support_summary || 'Summary', preview.summary);
+			detail(strings.support_question || 'Original question', preview.original_question);
+			detail(strings.support_destination || 'Destination', preview.destination);
+			paragraph(strings.support_disclosure || 'Support tickets follow a separate retention policy.', 'oras-ai-chat__escalation-disclosure');
+			var actions = documentRef.createElement('div');
+			actions.className = 'oras-ai-chat__escalation-actions';
+			var create = documentRef.createElement('button');
+			create.setAttribute('type', 'button');
+			create.textContent = strings.support_create || 'Create Support Ticket';
+			create.addEventListener('click', function () { if (onAction) { return onAction('confirm_escalation'); } });
+			actions.appendChild(create);
+			var cancel = documentRef.createElement('button');
+			cancel.setAttribute('type', 'button');
+			cancel.textContent = strings.support_cancel || 'Cancel';
+			cancel.addEventListener('click', function () { if (onAction) { return onAction('cancel_escalation'); } });
+			actions.appendChild(cancel);
+			card.appendChild(actions);
+			return card;
+		}
+
+		var messages = {
+			creating: strings.support_creating || 'Creating your support ticket. Please wait.',
+			cancelling: strings.support_cancelling || 'Cancelling your support request. Please wait.',
+			created: strings.support_created || 'Your question was sent to ORAS Support.',
+			failed: strings.support_failed || 'The support ticket could not be created.',
+			uncertain: strings.support_uncertain || 'ORAS AI cannot determine whether the ticket was created and will not retry automatically.',
+			cancelled: strings.support_cancelled || 'Support request cancelled. No ticket was created.',
+			expired: strings.support_expired || 'This support request expired before confirmation.',
+			unavailable: strings.support_unavailable || 'ORAS support ticketing is temporarily unavailable.',
+			status_unavailable: strings.support_status_unknown || 'We could not check the ticket status. Refresh this page.'
+		};
+		paragraph(messages[state] || messages.unavailable, 'oras-ai-chat__escalation-status').setAttribute('role', 'status');
+		if (state === 'created' && Number.isSafeInteger(Number(escalation.ticket_id)) && Number(escalation.ticket_id) > 0) {
+			paragraph((strings.support_ticket_ref || 'Ticket') + ' #' + Number(escalation.ticket_id), 'oras-ai-chat__escalation-reference');
+			if (escalation.reason === 'tag_attachment_uncertain') {
+				paragraph(strings.support_tag_warning || 'Your ticket was created, but its routing tag could not be confirmed.');
+			}
+		}
+		if (state === 'failed' || state === 'uncertain' || state === 'unavailable' || state === 'status_unavailable') {
+			fallback();
+		}
+		return card;
+	}
+
 	function createTransport(config, requestImpl) {
 		requestImpl = requestImpl || window.fetch.bind(window);
 		return function (operation, fields) {
@@ -158,6 +246,7 @@
 		var busy = false;
 		var conversationId = 0;
 		var lastFocused = null;
+		var supportContactUrl = config.supportContactUrl || '';
 
 		function setStatus(text, kind) {
 			status.textContent = text || '';
@@ -184,9 +273,53 @@
 			});
 		}
 
+		function appendEscalation(initial) {
+			if (!initial || typeof initial !== 'object') { return null; }
+			var card = documentRef.createElement('article');
+			messages.appendChild(card);
+			var current = initial;
+			var inFlight = false;
+			function update(next) {
+				current = next;
+				renderEscalation(card, current, documentRef, strings, supportContactUrl, perform);
+			}
+			function perform(operation) {
+				if (inFlight || busy || current.status !== 'awaiting_confirmation' || !current.token) { return Promise.resolve(false); }
+				var token = current.token;
+				inFlight = true;
+				update({ status: operation === 'confirm_escalation' ? 'creating' : 'cancelling', token: token });
+				setStatus(operation === 'confirm_escalation' ? strings.support_creating : strings.support_cancelling, 'pending');
+				card.focus();
+				return transport(operation, { token: token }).then(function (result) {
+				update(result);
+				var currentStatus = card.querySelector('.oras-ai-chat__escalation-status');
+				setStatus(currentStatus ? currentStatus.textContent : '', result.status === 'failed' || result.status === 'uncertain' ? 'error' : 'notice');
+				return result;
+				}).catch(function () {
+					return transport('escalation_status', { token: token }).then(function (result) {
+						update(result);
+						var currentStatus = card.querySelector('.oras-ai-chat__escalation-status');
+						setStatus(currentStatus ? currentStatus.textContent : '', result.status === 'failed' || result.status === 'uncertain' ? 'error' : 'notice');
+						return result;
+					}).catch(function () {
+						update({ status: 'status_unavailable', token: token });
+						setStatus(strings.support_status_unknown, 'error');
+						return false;
+					});
+				}).then(function (result) {
+					inFlight = false;
+					card.focus();
+					return result;
+				});
+			}
+			update(initial);
+			return card;
+		}
+
 		function applyConversation(data) {
 			conversationId = Number(data.conversation_id || 0);
 			renderTranscript(data.messages);
+			(Array.isArray(data.escalations) ? data.escalations : []).forEach(appendEscalation);
 			if (!data.messages || !data.messages.length) {
 				setStatus(strings.empty || 'Ask ORAS AI about ORAS or astronomy.', 'notice');
 			}
@@ -253,6 +386,7 @@
 			}
 			setBusy(true);
 			var question = input.value.trim();
+			var proposalCard = null;
 			return transport('send', { conversation_id: conversationId, question: question }).then(function (data) {
 				if (data.member_message) {
 					renderMessage(messages, data.member_message, documentRef);
@@ -260,9 +394,12 @@
 				if (data.assistant_message) {
 					renderMessage(messages, data.assistant_message, documentRef);
 				}
+				if (data.result && data.result.escalation) {
+					proposalCard = appendEscalation(data.result.escalation);
+				}
 				input.value = '';
 				var state = statusMessage(data.result || {}, strings);
-				setStatus(state.text, state.kind);
+				setStatus(proposalCard && data.result.escalation.status === 'awaiting_confirmation' ? strings.support_ready : state.text, proposalCard ? 'notice' : state.kind);
 				messages.scrollTop = messages.scrollHeight;
 				return data;
 			}).catch(function (error) {
@@ -271,7 +408,7 @@
 				return false;
 			}).then(function (data) {
 				setBusy(false);
-				input.focus();
+				if (proposalCard) { proposalCard.focus(); } else { input.focus(); }
 				return data;
 			});
 		}
@@ -313,6 +450,7 @@
 		normalizeSource: normalizeSource,
 		renderSources: renderSources,
 		renderMessage: renderMessage,
+		renderEscalation: renderEscalation,
 		createTransport: createTransport,
 		statusMessage: statusMessage,
 		createController: createController
