@@ -100,7 +100,7 @@ final class ORAS_AI_Audit_Log {
 	}
 
 	public static function log_support_escalation( $action, $topic ) {
-		if ( ! in_array( $action, array( 'proposed', 'route_unavailable' ), true ) || ! ORAS_AI_Support_Topic::allowed( $topic ) ) {
+		if ( ! in_array( $action, array( 'proposed', 'route_unavailable', 'escalation_confirmation_accepted', 'escalation_cancelled', 'escalation_expired', 'support_ticket_created', 'support_ticket_failed', 'support_ticket_uncertain', 'duplicate_confirmation_replayed' ), true ) || ! ORAS_AI_Support_Topic::allowed( $topic ) ) {
 			return false;
 		}
 		return self::record( 'support.escalation.' . $topic, $action, null, null, 'route_unavailable' === $action ? 'unavailable' : 'success' );

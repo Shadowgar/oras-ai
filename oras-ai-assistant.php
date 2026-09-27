@@ -39,6 +39,8 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-support-routing.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-escalation-proposal.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-escalation-result.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-escalation-proposal-service.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-pending-escalations.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-escalation-confirmation-service.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-support-routing-admin.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/interface-oras-ai-clock.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-system-clock.php';
@@ -132,6 +134,7 @@ final class ORAS_AI_Assistant {
 	private $support_routing_admin;
 	private $conversations;
 	private $conversation_transport;
+	private $pending_escalations;
 	private $chat_ui;
 
 	public function __construct() {
@@ -203,7 +206,9 @@ final class ORAS_AI_Assistant {
 		$this->request_gateway = new ORAS_AI_Request_Gateway( new ORAS_AI_PMPro_Membership_Authorizer(), $orchestrator );
 		$support_routing = new ORAS_AI_Support_Routing();
 		$escalation_service = new ORAS_AI_Escalation_Proposal_Service( $support_routing, $this->conversations );
-		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations, $escalation_service );
+		$this->pending_escalations = new ORAS_AI_Pending_Escalations();
+		$confirmation_service = new ORAS_AI_Escalation_Confirmation_Service( $this->pending_escalations, $support_routing, $this->conversations );
+		$this->conversation_transport = new ORAS_AI_Conversation_Transport( $this->request_gateway, $orchestrator, $this->conversations, $escalation_service, $confirmation_service );
 		$this->chat_ui = new ORAS_AI_Chat_UI( $this->request_gateway );
 		$this->cost_admin = new ORAS_AI_Cost_Admin();
 		$this->connector_health_admin = new ORAS_AI_Connector_Health_Admin( $connector_observability, $connectors );
@@ -459,5 +464,6 @@ final class ORAS_AI_Assistant {
 register_activation_hook( __FILE__, array( 'ORAS_AI_Assistant', 'activate' ) );
 
 register_deactivation_hook( __FILE__, array( 'ORAS_AI_Conversations', 'deactivate' ) );
+register_deactivation_hook( __FILE__, array( 'ORAS_AI_Pending_Escalations', 'deactivate' ) );
 
 new ORAS_AI_Assistant();

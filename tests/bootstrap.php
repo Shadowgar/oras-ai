@@ -464,7 +464,10 @@ function get_post_types($args = array(), $output = 'names'): array {
 	return $GLOBALS['oras_ai_test_public_post_types'];
 }
 
-function update_post_meta($post_id, $meta_key, $meta_value) {
+function update_post_meta($post_id, $meta_key, $meta_value, $prev_value = '') {
+	if ('' !== $prev_value && get_post_meta($post_id, $meta_key, true) !== $prev_value) {
+		return false;
+	}
 	$GLOBALS['oras_ai_test_meta_writes'][(int) $post_id] = ($GLOBALS['oras_ai_test_meta_writes'][(int) $post_id] ?? 0) + 1;
 	$GLOBALS['oras_ai_test_post_meta'][(int) $post_id][(string) $meta_key] = $meta_value;
 	return true;
