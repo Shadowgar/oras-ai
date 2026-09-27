@@ -229,6 +229,10 @@ final class ORAS_AI_Answer_Orchestrator {
 		if ( null !== $action_answer ) {
 			$answer = $action_answer;
 		}
+		$membership_answer = $this->bounded_membership_answer( $request->question(), $context );
+		if ( null !== $membership_answer ) {
+			$answer = $membership_answer;
+		}
 
 		return ORAS_AI_Answer_Result::success(
 			$answer,
@@ -284,7 +288,6 @@ final class ORAS_AI_Answer_Orchestrator {
 		if (
 			preg_match( '/\b(member|membership)\b/', $question )
 			&& preg_match( '/\b(my|mine|me|am i|do i|have i|i have)\b/', $question )
-			&& preg_match( '/\b(status|active|inactive|level|tier|am i|do i)\b/', $question )
 		) {
 			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
 		}
@@ -335,7 +338,7 @@ final class ORAS_AI_Answer_Orchestrator {
 	private function requires_live_oras( $question ) {
 		$question = strtolower( (string) $question );
 		return (bool) ( preg_match( '/\b(?:buy|purchase)\b.*\bobserver\s+pass(?:es)?\b/', $question ) || preg_match(
-			'/\b(price|cost|availability|available|inventory|register|registration|ticket|upcoming event|event date|event time|current schedule|next astroblast|next public night|member status|membership status|membership level|membership tier|active member|order status|support ticket status)\b/',
+			'/\b(price|cost|availability|available|inventory|register|registration|ticket|upcoming event|event date|event time|current schedule|next astroblast|next public night|my membership|member status|membership status|membership level|membership tier|active member|order status|support ticket status)\b/',
 			$question
 		) );
 	}
@@ -404,5 +407,35 @@ final class ORAS_AI_Answer_Orchestrator {
 			return implode( ' ', $schedule ) . ( $schedule ? ' ' : '' ) . 'I could not verify registration availability.';
 		}
 		return null;
+	}
+
+	/** Return only selected current PMPro facts for self-membership answers. */
+	private function bounded_membership_answer( $question, ORAS_AI_Grounded_Context $context ) {
+		$question = strtolower( (string) $question );
+		if ( ! preg_match( '/\b(?:member|membership)\b/', $question )
+			|| ! preg_match( '/\b(?:my|mine|me|am i|do i|have i|i have)\b/', $question )
+			|| ( ! preg_match( '/\b(?:status|level|tier|active|inactive)\b/', $question )
+				&& ! preg_match( '/^what(?:\'s| is) my membership\??$/', $question ) ) ) {
+			return null;
+		}
+		$facts = array();
+		$related = array();
+		foreach ( $context->evidence_packet()->items() as $item ) {
+			if ( ORAS_AI_Source_Precedence::LIVE_ORAS_STATE !== $item->field( 'authority_class' ) ) {
+				continue;
+			}
+			foreach ( (array) $item->field( 'fact_keys' ) as $key ) {
+				if ( 'pmpro_membership' === $item->field( 'source_type' )
+					&& in_array( $key, array( 'member:self:membership-status', 'member:self:membership-level' ), true ) ) {
+					$facts[ $key ] = (string) $item->field( 'relevant_text' );
+				} elseif ( preg_match( '/^event:(?:astroblast|public-night):(start|end|venue)$/', (string) $key ) ) {
+					$related[ $key ] = (string) $item->field( 'relevant_text' );
+				}
+			}
+		}
+		return implode( ' ', array_merge(
+			$facts ? array_values( $facts ) : array( 'I could not verify current membership status or level.' ),
+			array_values( $related )
+		) );
 	}
 }

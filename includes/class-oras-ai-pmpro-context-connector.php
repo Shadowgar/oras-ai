@@ -78,9 +78,14 @@ final class ORAS_AI_PMPro_Context_Connector implements ORAS_AI_Observable_Live_C
 		foreach ( $levels as $level ) {
 			if ( is_object( $level ) ) {
 				$name = $level->name ?? '';
+				$level_user_id = $level->user_id ?? null;
 			} elseif ( is_array( $level ) ) {
 				$name = $level['name'] ?? '';
+				$level_user_id = $level['user_id'] ?? null;
 			} else {
+				return ORAS_AI_Live_Result::unknown( 'membership_data_malformed' );
+			}
+			if ( null !== $level_user_id && filter_var( $level_user_id, FILTER_VALIDATE_INT ) !== $routed_request->user_id() ) {
 				return ORAS_AI_Live_Result::unknown( 'membership_data_malformed' );
 			}
 
@@ -149,6 +154,9 @@ final class ORAS_AI_PMPro_Context_Connector implements ORAS_AI_Observable_Live_C
 				'reason'    => 'non_self_membership_request',
 			);
 		}
+		if ( preg_match( '/\b(?:cancel|renew|change|update|modify|upgrade|downgrade|billing|payment|checkout|subscription)\b/', $question ) ) {
+			return null;
+		}
 
 		$self = (bool) preg_match( '/\b(my|mine|me|am i|do i|have i|i have)\b/', $question );
 		if ( ! $self ) {
@@ -162,14 +170,17 @@ final class ORAS_AI_PMPro_Context_Connector implements ORAS_AI_Observable_Live_C
 		}
 
 		$fact_keys = array();
-		if ( preg_match( '/\b(status|active|inactive|am i|do i)\b/', $question ) ) {
+		if ( preg_match( '/\b(?:status|active|inactive)\b/', $question ) || preg_match( '/^(?:am|do) i\b/', $question ) ) {
 			$fact_keys[] = 'member:self:membership-status';
 		}
 		if ( preg_match( '/\b(level|tier)\b/', $question ) ) {
 			$fact_keys[] = 'member:self:membership-level';
 		}
 		if ( empty( $fact_keys ) ) {
-			return null;
+			if ( ! preg_match( '/^what(?:\'s| is) my membership\??$/', $question ) ) {
+				return null;
+			}
+			$fact_keys[] = 'member:self:membership-status';
 		}
 
 		return array(

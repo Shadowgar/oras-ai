@@ -115,7 +115,9 @@ oras_ai_test('AT-ACTION-004 member state stays bound to authenticated self and e
 	oras_ai_assert_true($authorized instanceof ORAS_AI_Authorized_Request, 'Current member was not authorized.');
 	oras_ai_assert_same(7, $authorized->user_id(), 'Browser ID replaced authenticated WordPress identity.');
 	$lookups = array();
-	$connector = oras_ai_test_pmpro_connector(array(oras_ai_test_pmpro_level()), $lookups);
+	$self_level = oras_ai_test_pmpro_level();
+	$self_level->user_id = 7;
+	$connector = oras_ai_test_pmpro_connector(array($self_level), $lookups);
 	$live = oras_ai_test_pmpro_service($connector);
 	$result = $live->query(ORAS_AI_Live_Request::from_authorized_request($authorized, 'current'));
 	oras_ai_assert_true($result->successful(), 'Self membership facts were unavailable.');
