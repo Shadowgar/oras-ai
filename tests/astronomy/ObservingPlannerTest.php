@@ -179,14 +179,120 @@ oras_ai_test('M6 planner compares only complete authoritative interval scores an
 	oras_ai_assert_same('2026-09-10T02:00:00+00:00', $result->best_intervals()[0]['valid_from'], 'Wrong interval won.');
 });
 
-oras_ai_test('M6 weekend comparison abstains without comparable qualified nights', function (): void {
+oras_ai_test('M6 weekend comparison gathers two nights before declining a whole-night winner', function (): void {
 	ORAS_AI_Test_Member_Hub_Score_API::$calls = array();
 	ORAS_AI_Test_Member_Hub_Score_API::$callback = static function () { return oras_ai_test_score_api_result(); };
-	list($planner) = oras_ai_test_planner_fixture();
+	$weather_fixture = static function (ORAS_AI_Current_Data_Request $request): ORAS_AI_Current_Data_Result {
+		$from = $request->requested_at();
+		return ORAS_AI_Current_Data_Result::success('weather_test', array(
+			new ORAS_AI_Weather_Snapshot('weather_test', $from, $from, $from, $from->modify('+2 hours'), 'forecast', 40, 10, 'none', 12, 2, null, 70, 16000, 'forecast_uncertain'),
+		));
+	};
+	list($planner, $weather, $local, $catalog, $planet) = oras_ai_test_planner_fixture($weather_fixture);
 	$result = $planner->query(oras_ai_test_authorized_request(1010, 'Best ORAS night this weekend?'));
-	oras_ai_assert_same(array(), $result->best_intervals(), 'One current night was misrepresented as weekend comparison.');
-	oras_ai_assert_same(0, count(ORAS_AI_Test_Member_Hub_Score_API::$calls), 'Unqualified weekend ranking invoked score.');
-	oras_ai_assert_contains('unavailable', wp_json_encode($result->evidence_packet()->to_array()), 'Comparison limitation was not disclosed.');
+	oras_ai_assert_same('partially_grounded', $result->state(), 'Qualified nights without a nightly aggregate must be partial.');
+	oras_ai_assert_same(2, count($weather->requests), 'Both weekend nights need forecast requests.');
+	oras_ai_assert_same('2026-09-11', $weather->requests[0]->local_requested_at()->format('Y-m-d'), 'Friday dusk was not requested.');
+	oras_ai_assert_same('2026-09-12', $weather->requests[1]->local_requested_at()->format('Y-m-d'), 'Saturday dusk was not requested.');
+	oras_ai_assert_same('2026-09-12', $weather->requests[0]->window_end()->setTimezone(new DateTimeZone('America/New_York'))->format('Y-m-d'), 'Friday night did not end at following dawn.');
+	oras_ai_assert_same('2026-09-13', $weather->requests[1]->window_end()->setTimezone(new DateTimeZone('America/New_York'))->format('Y-m-d'), 'Saturday night did not end at following dawn.');
+	oras_ai_assert_same(2, count($local->requests), 'Moon must be evaluated at each night interval.');
+	oras_ai_assert_same(2, count(ORAS_AI_Test_Member_Hub_Score_API::$calls), 'Both intervals need authoritative scores.');
+	oras_ai_assert_same(2, count($result->best_intervals()), 'Equal authoritative interval scores must remain tied.');
+	$text = wp_json_encode($result->evidence_packet()->to_array());
+	oras_ai_assert_contains('single aggregate score', $text, 'Whole-night scoring limitation was not disclosed.');
+	oras_ai_assert_contains('2026-09-12', $text, 'Friday interval was lost.');
+	oras_ai_assert_contains('2026-09-13', $text, 'Saturday interval was lost.');
+	oras_ai_assert_not_contains('nightly average', $text, 'A nightly average was invented.');
+});
+
+oras_ai_test('M6 best weekend wording identifies only the highest authoritative interval', function (): void {
+	ORAS_AI_Test_Member_Hub_Score_API::$calls = array();
+	ORAS_AI_Test_Member_Hub_Score_API::$callback = static function ($conditions, $smoke, $moon, $health, $instant) {
+		$result = oras_ai_test_score_api_result();
+		$result['score'] = '2026-09-12' === $instant->format('Y-m-d') ? 74 : 61;
+		return $result;
+	};
+	$forecast = static function (ORAS_AI_Current_Data_Request $request): ORAS_AI_Current_Data_Result {
+		$from = $request->requested_at();
+		return ORAS_AI_Current_Data_Result::success('weather_test', array(
+			new ORAS_AI_Weather_Snapshot('weather_test', $from, $from, $from, $from->modify('+2 hours'), 'forecast', 40, 10, 'none', 12, 2, null, 70, 16000, 'forecast_uncertain'),
+		));
+	};
+	list($planner) = oras_ai_test_planner_fixture($forecast);
+	$result = $planner->query(oras_ai_test_authorized_request(1032, 'Which night this weekend looks best for observing?'));
+	oras_ai_assert_same('partially_grounded', $result->state(), 'Interval comparison became a whole-night winner.');
+	oras_ai_assert_same(1, count($result->best_intervals()), 'The higher authoritative interval was not identified.');
+	oras_ai_assert_same('2026-09-12', (new DateTimeImmutable($result->best_intervals()[0]['valid_from']))->format('Y-m-d'), 'Wrong interval won.');
+	$text = wp_json_encode($result->evidence_packet()->to_array());
+	oras_ai_assert_contains('highest available authoritative interval score is 74', $text, 'Interval comparison was not explicit.');
+	oras_ai_assert_contains('does not calculate a single aggregate score', $text, 'Nightly aggregate limitation was hidden.');
+	oras_ai_assert_not_contains('best night is', strtolower($text), 'A winning whole night was invented.');
+});
+
+oras_ai_test('M6 bounded grounding retains authoritative scores from both long weekend nights', function (): void {
+	oras_ai_test_reset();
+	ORAS_AI_Test_Member_Hub_Score_API::$callback = static function () { return oras_ai_test_score_api_result(); };
+	$forecast = static function (ORAS_AI_Current_Data_Request $request): ORAS_AI_Current_Data_Result {
+		$start = $request->requested_at();
+		$periods = array();
+		for ($hour = 0; $hour < 8; $hour++) {
+			$from = $start->modify('+' . $hour . ' hours');
+			$periods[] = new ORAS_AI_Weather_Snapshot('weather_test', $start, $start, $from, $from->modify('+1 hour'), 'forecast', 40, 10, 'none', 12, 2, null, 70, 16000, 'forecast_uncertain');
+		}
+		return ORAS_AI_Current_Data_Result::success('weather_test', $periods);
+	};
+	list($planner) = oras_ai_test_planner_fixture($forecast);
+	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), null, null, null, $planner);
+	$result = $orchestrator->answer(oras_ai_test_authorized_request(1033, 'Best ORAS night this weekend?'));
+	oras_ai_assert_same(ORAS_AI_Answer_Result::SUCCESS, $result->status(), 'Long weekend was not synthesized from bounded evidence.');
+	$scores = array();
+	foreach ($provider->calls[0]['context']->evidence_packet()->items() as $item) {
+		if ('current_observing_score' === $item->field('source_type')) {
+			$scores[] = $item->field('relevant_text');
+		}
+	}
+	$text = implode(' ', $scores);
+	oras_ai_assert_contains('2026-09-12', $text, 'Friday score was omitted from bounded model context.');
+	oras_ai_assert_contains('2026-09-13', $text, 'Saturday score was omitted from bounded model context.');
+	oras_ai_assert_contains('single aggregate score', wp_json_encode($provider->calls[0]['context']->evidence_packet()->to_array()), 'Nightly-aggregation limit did not reach the model.');
+});
+
+oras_ai_test('M6 good-night observing intent uses current forecast Moon and authoritative score', function (): void {
+	ORAS_AI_Test_Member_Hub_Score_API::$calls = array();
+	ORAS_AI_Test_Member_Hub_Score_API::$callback = static function () { return oras_ai_test_score_api_result(); };
+	foreach (array('Is tonight a good night to observe at ORAS?', 'Is tonight good for observing at ORAS?', 'Are conditions good for observing tonight?', 'How are observing conditions tonight?') as $question) {
+		list($planner, $weather, $local) = oras_ai_test_planner_fixture();
+		$result = $planner->query(oras_ai_test_authorized_request(1030, $question));
+		oras_ai_assert_true($result->matched(), 'Good-night wording bypassed the planner: ' . $question);
+		oras_ai_assert_same('grounded', $result->state(), 'Qualified observing conditions were not grounded: ' . $question);
+		oras_ai_assert_same(1, count($weather->requests), 'Expected one night forecast request: ' . $question);
+		oras_ai_assert_same(2, count($local->requests), 'Moon facts were not aligned with forecast periods: ' . $question);
+		oras_ai_assert_contains('ORAS Observing Score', wp_json_encode($result->evidence_packet()->to_array()), 'Authoritative score missing: ' . $question);
+	}
+});
+
+oras_ai_test('M6 weekday comparison uses separate nights and retains a qualified sibling after failure', function (): void {
+	$forecast = static function (ORAS_AI_Current_Data_Request $request): ORAS_AI_Current_Data_Result {
+		$from = $request->requested_at();
+		if ('2026-09-12' === $request->local_requested_at()->format('Y-m-d')) {
+			return ORAS_AI_Current_Data_Result::unavailable('weather_test', 'provider_unavailable');
+		}
+		return ORAS_AI_Current_Data_Result::success('weather_test', array(
+			new ORAS_AI_Weather_Snapshot('weather_test', $from, $from, $from, $from->modify('+2 hours'), 'forecast', 40, 10, 'none', 12, 2, null, 70, 16000, 'forecast_uncertain'),
+		));
+	};
+	ORAS_AI_Test_Member_Hub_Score_API::$calls = array();
+	ORAS_AI_Test_Member_Hub_Score_API::$callback = static function () { return oras_ai_test_score_api_result(); };
+	list($planner, $weather) = oras_ai_test_planner_fixture($forecast);
+	$result = $planner->query(oras_ai_test_authorized_request(1031, 'How does Friday compare with Saturday for observing?'));
+	oras_ai_assert_same(2, count($weather->requests), 'Comparison did not request two distinct nights.');
+	oras_ai_assert_same('partially_grounded', $result->state(), 'One failed night erased the valid comparison evidence.');
+	oras_ai_assert_same(1, count(ORAS_AI_Test_Member_Hub_Score_API::$calls), 'The valid sibling interval was not scored.');
+	$text = wp_json_encode($result->evidence_packet()->to_array());
+	oras_ai_assert_contains('2026-09-12', $text, 'Friday facts disappeared.');
+	oras_ai_assert_contains('provider_unavailable', $text, 'Saturday failure was hidden.');
+	oras_ai_assert_contains('ORAS Observing Score', $text, 'Friday authoritative score disappeared.');
 });
 
 oras_ai_test('M6 unrelated provider forecast periods cannot enter planning evidence', function (): void {
@@ -322,4 +428,86 @@ oras_ai_test('M6 edge forecast is evaluated inside its requested overlap without
 	$result = $planner->query(oras_ai_test_authorized_request(1019, 'Can I see Jupiter from 9 PM to 11 PM tonight?'));
 	oras_ai_assert_same('2026-09-10T01:30:00+00:00', ORAS_AI_Test_Member_Hub_Score_API::$calls[0][4]->format(DATE_ATOM), 'Edge period midpoint escaped the requested interval.');
 	oras_ai_assert_contains('2026-09-09T23:00:00', wp_json_encode($result->evidence_packet()->to_array()), 'Original provider valid-from time was lost.');
+});
+
+oras_ai_test('M6 good-night ORAS request reaches grounded current planning', function (): void {
+	oras_ai_test_reset();
+	ORAS_AI_Test_Member_Hub_Score_API::$callback = static function () { return oras_ai_test_score_api_result(); };
+	list($planner, $weather) = oras_ai_test_planner_fixture();
+	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), null, null, null, $planner);
+	$result = $orchestrator->answer(oras_ai_test_authorized_request(1040, 'Is tonight a good night to observe at ORAS?'));
+	oras_ai_assert_same(ORAS_AI_Answer_Result::SUCCESS, $result->status(), 'Qualified good-night request did not reach synthesis.');
+	oras_ai_assert_same(1, count($weather->requests), 'Good-night request bypassed current weather.');
+	$context = $provider->calls[0]['context'];
+	oras_ai_assert_same(ORAS_AI_Grounded_Context::CROSSOVER_CURRENT, $context->scope(), 'Current suitability reached general model scope.');
+	oras_ai_assert_contains('ORAS Observing Score', wp_json_encode($context->evidence_packet()->to_array()), 'Authoritative score did not reach guarded context.');
+	oras_ai_assert_not_contains('score_components', wp_json_encode($context->provider_input()), 'Raw Member Hub internals reached model context.');
+});
+
+oras_ai_test('M6 mixed good-night and Observer Pass request retains both authority families', function (): void {
+	oras_ai_test_reset();
+	ORAS_AI_Test_Member_Hub_Score_API::$callback = static function () { return oras_ai_test_score_api_result(); };
+	list($planner, $weather) = oras_ai_test_planner_fixture();
+	$lookups = array();
+	$live = oras_ai_test_woo_service(oras_ai_test_woo_connector(array(oras_ai_test_woo_record()), $lookups));
+	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), $live, null, null, $planner);
+	$result = $orchestrator->answer(oras_ai_test_authorized_request(1041, 'Is tonight good for observing at ORAS and can I buy an Observer Pass?'));
+	oras_ai_assert_same(ORAS_AI_Answer_Result::SUCCESS, $result->status(), 'Mixed request failed.');
+	oras_ai_assert_same(array('observer-pass'), $lookups, 'Observer Pass connector did not run.');
+	oras_ai_assert_same(1, count($weather->requests), 'Mixed request bypassed the M6 planner.');
+	$context = $provider->calls[0]['context'];
+	oras_ai_assert_same(ORAS_AI_Grounded_Context::CROSSOVER_CURRENT, $context->scope(), 'Mixed request lost its current-data scope.');
+	$text = wp_json_encode($context->evidence_packet()->to_array());
+	oras_ai_assert_contains('Annual Observer Pass', $text, 'M5 product fact was erased.');
+	oras_ai_assert_contains('ORAS Observing Score', $text, 'M6 score was erased.');
+	oras_ai_assert_not_contains('raw_object', wp_json_encode($context->provider_input()), 'Raw WooCommerce record entered model context.');
+});
+
+oras_ai_test('M6 failed weather leaves Observer Pass evidence without an invented score', function (): void {
+	oras_ai_test_reset();
+	ORAS_AI_Test_Member_Hub_Score_API::$calls = array();
+	$failed = static function (): ORAS_AI_Current_Data_Result { return ORAS_AI_Current_Data_Result::unavailable('weather_test', 'provider_unavailable'); };
+	list($planner) = oras_ai_test_planner_fixture($failed);
+	$lookups = array();
+	$live = oras_ai_test_woo_service(oras_ai_test_woo_connector(array(oras_ai_test_woo_record()), $lookups));
+	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), $live, null, null, $planner);
+	$result = $orchestrator->answer(oras_ai_test_authorized_request(1042, 'Is tonight good for observing at ORAS and can I buy an Observer Pass?'));
+	oras_ai_assert_same(ORAS_AI_Answer_Result::SUCCESS, $result->status(), 'Independent product facts were erased by NWS failure.');
+	$text = wp_json_encode($provider->calls[0]['context']->evidence_packet()->to_array());
+	oras_ai_assert_contains('Annual Observer Pass', $text, 'Product evidence missing after weather failure.');
+	oras_ai_assert_contains('provider_unavailable', $text, 'Weather uncertainty was hidden.');
+	oras_ai_assert_same(0, count(ORAS_AI_Test_Member_Hub_Score_API::$calls), 'Unqualified weather produced a score.');
+});
+
+oras_ai_test('M6 failed Observer Pass connector keeps qualified observing facts', function (): void {
+	oras_ai_test_reset();
+	ORAS_AI_Test_Member_Hub_Score_API::$callback = static function () { return oras_ai_test_score_api_result(); };
+	list($planner, $weather) = oras_ai_test_planner_fixture();
+	$connector = new class implements ORAS_AI_Live_Connector_Interface {
+		public function supports(ORAS_AI_Live_Request $request) { return true; }
+		public function fetch(ORAS_AI_Live_Request $request) { return ORAS_AI_Live_Result::unavailable('provider_unavailable'); }
+	};
+	$live = new ORAS_AI_Live_Service(array($connector), new ORAS_AI_URL_Policy(array('oras.org')));
+	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), $live, null, null, $planner);
+	$result = $orchestrator->answer(oras_ai_test_authorized_request(1043, 'Is tonight good for observing at ORAS and can I buy an Observer Pass?'));
+	oras_ai_assert_same(ORAS_AI_Answer_Result::SUCCESS, $result->status(), 'M5 connector failure erased M6 facts.');
+	oras_ai_assert_same(1, count($weather->requests), 'Valid M6 plan did not run.');
+	$context = $provider->calls[0]['context'];
+	oras_ai_assert_same(ORAS_AI_Grounded_Context::CROSSOVER_CURRENT, $context->scope(), 'M5 failure reduced current scope.');
+	oras_ai_assert_contains('ORAS Observing Score', wp_json_encode($context->evidence_packet()->to_array()), 'M6 score was erased by product failure.');
+	oras_ai_assert_not_contains('Annual Observer Pass stock status', wp_json_encode($context->evidence_packet()->to_array()), 'Unqualified product state was invented.');
+});
+
+oras_ai_test('M6 unavailable good-night current data never reaches model-memory synthesis', function (): void {
+	oras_ai_test_reset();
+	list($planner, $weather, $local, $catalog, $planet, $clock) = oras_ai_test_planner_fixture();
+	$planner = new ORAS_AI_Observing_Planner(
+		new ORAS_AI_Current_Weather_Service($weather, new ORAS_AI_Astronomical_Night_Resolver(oras_ai_test_darkness_provider($clock, true), $clock), $clock),
+		new ORAS_AI_Current_Astronomy_Service($local, $catalog, $planet, new ORAS_AI_OpenNGC_Target_Resolver(), $clock),
+		new ORAS_AI_Member_Hub_Score_Adapter($clock, 'ORAS_MH_Missing_Service'), $clock
+	);
+	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success('Invented clear skies.'), array(), null, null, null, $planner);
+	$result = $orchestrator->answer(oras_ai_test_authorized_request(1044, 'Is tonight a good night to observe at ORAS?'));
+	oras_ai_assert_same(ORAS_AI_Answer_Result::NO_EVIDENCE, $result->status(), 'Unavailable current conditions were sent to general synthesis.');
+	oras_ai_assert_same(0, count($provider->calls), 'Model memory could substitute for missing current observing data.');
 });

@@ -69,7 +69,7 @@ final class ORAS_AI_Answer_Orchestrator {
 		$intent = $this->intent_for( $request->question() );
 		$plan = null !== $this->observing_planner ? $this->observing_planner->query( $request ) : null;
 		$planning = $plan instanceof ORAS_AI_Observing_Plan_Result && $plan->matched();
-		if ( $planning && 'unavailable' === $plan->state() && ORAS_AI_Domain_Result::ASTRONOMY === $domain->outcome() ) {
+		if ( $planning && 'unavailable' === $plan->state() && ( ORAS_AI_Domain_Result::ASTRONOMY === $domain->outcome() || ! $this->requires_live_oras( $request->question() ) ) ) {
 			$this->ledger->release( $reservation_id );
 			return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
 		}
@@ -123,12 +123,18 @@ final class ORAS_AI_Answer_Orchestrator {
 		) {
 			$live_result = $this->live_service->query( ORAS_AI_Live_Request::from_authorized_request( $request, $intent ) );
 			if ( $live_result instanceof ORAS_AI_Live_Result ) {
-				if ( ! $live_result->successful() ) {
+				if ( ! $live_result->successful() && ( ! $planning || 'unavailable' === $plan->state() ) ) {
 					$this->ledger->release( $reservation_id );
 					return ORAS_AI_Answer_Result::no_evidence( self::NO_EVIDENCE_MESSAGE, 'live_data_unavailable' );
 				}
-				$live_packet = $this->live_service->evidence_packet( $live_result );
+				if ( $live_result->successful() ) {
+					$live_packet = $this->live_service->evidence_packet( $live_result );
+				}
 			}
+		}
+		if ( $planning && 'unavailable' === $plan->state() && $live_packet->is_empty() ) {
+			$this->ledger->release( $reservation_id );
+			return ORAS_AI_Answer_Result::no_evidence( self::CURRENT_DATA_MESSAGE, 'current_data_unavailable' );
 		}
 
 		$packet = new ORAS_AI_Evidence_Packet( array_merge( $current_astronomy_packet->items(), $current_weather_packet->items() ) );
@@ -174,9 +180,9 @@ final class ORAS_AI_Answer_Orchestrator {
 			if ( $this->requires_live_oras( $request->question() ) && ! $this->has_live_oras_evidence( $context ) ) {
 				$context = $this->context_assembler->assemble(
 					$guarded,
-					new ORAS_AI_Evidence_Packet(),
+					$planning ? $current_astronomy_packet : new ORAS_AI_Evidence_Packet(),
 					$intent,
-					ORAS_AI_Grounded_Context::CROSSOVER_ASTRONOMY_ONLY
+					$planning ? ORAS_AI_Grounded_Context::CROSSOVER_CURRENT : ORAS_AI_Grounded_Context::CROSSOVER_ASTRONOMY_ONLY
 				);
 			}
 		}
@@ -324,10 +330,10 @@ final class ORAS_AI_Answer_Orchestrator {
 
 	private function requires_live_oras( $question ) {
 		$question = strtolower( (string) $question );
-		return (bool) preg_match(
+		return (bool) ( preg_match( '/\b(?:buy|purchase)\b.*\bobserver\s+pass(?:es)?\b/', $question ) || preg_match(
 			'/\b(price|cost|availability|available|inventory|register|registration|ticket|upcoming event|event date|event time|current schedule|next astroblast|next public night|member status|membership status|membership level|membership tier|active member|order status|support ticket status)\b/',
 			$question
-		);
+		) );
 	}
 
 	private function has_live_oras_evidence( ORAS_AI_Grounded_Context $context ) {

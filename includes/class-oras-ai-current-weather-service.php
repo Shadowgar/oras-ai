@@ -26,7 +26,8 @@ final class ORAS_AI_Current_Weather_Service {
 		ORAS_AI_Authorized_Request $authorized_request,
 		?DateTimeImmutable $requested_at = null,
 		?DateTimeImmutable $window_end = null,
-		$force_forecast = false
+		$force_forecast = false,
+		?DateTimeImmutable $night_date = null
 	) {
 		$question = strtolower( trim( wp_strip_all_tags( $authorized_request->question(), true ) ) );
 		$matched  = $force_forecast || (bool) preg_match( '/\b(weather|forecast|clouds?|cloudy|rain|snow|precipitation|temperature|wind|humidity|conditions?|seeing|transparency)\b/', $question );
@@ -39,16 +40,16 @@ final class ORAS_AI_Current_Weather_Service {
 			return $this->failure( 'invalid_weather_interval', array( 'weather:forecast:interval' ) );
 		}
 
-		$current = ! $explicit && (bool) preg_match( '/\b(now|currently|at the moment|current conditions?)\b/', $question );
+		$current = ! $explicit && null === $night_date && (bool) preg_match( '/\b(now|currently|at the moment|current conditions?)\b/', $question );
 		if ( $current ) {
 			$requested_at = $this->clock->now();
 			$window_end   = $requested_at;
 		} elseif ( ! $explicit ) {
-			$member_window = $this->explicit_window_from_question( $question );
+			$member_window = null === $night_date ? $this->explicit_window_from_question( $question ) : null;
 			if ( null !== $member_window ) {
 				list( $requested_at, $window_end ) = $member_window;
 			} else {
-				$night = $this->night_resolver->resolve( $authorized_request, $this->night_date( $question ) );
+				$night = $this->night_resolver->resolve( $authorized_request, $night_date ?: $this->night_date( $question ) );
 				if ( is_wp_error( $night ) ) {
 					return $this->failure( 'night_window_unavailable', array( 'weather:forecast:interval' ) );
 				}

@@ -22,83 +22,137 @@ final class ORAS_AI_Observing_Planner {
 		if ( ! $this->matches( $question ) ) {
 			return new ORAS_AI_Observing_Plan_Result( false, 'unavailable', new ORAS_AI_Evidence_Packet() );
 		}
-		if ( preg_match( '/\bweekend\b/', $question ) ) {
-			return new ORAS_AI_Observing_Plan_Result( true, 'unavailable', new ORAS_AI_Evidence_Packet( array(
-				$this->planning_status( 'weekend_comparison_unavailable', 'A definitive best-night comparison this weekend is unavailable without equivalent qualified intervals for each night.' ),
-			) ) );
-		}
-		$weather = $this->weather->query( $request, null, null, true );
-		$weather_items = $weather->evidence_packet()->items();
-		$items = $weather->has_facts() ? array() : $weather_items;
-		$start = $weather->requested_at();
-		$end   = $weather->window_end();
-		if ( ! $start instanceof DateTimeImmutable || ! $end instanceof DateTimeImmutable ) {
-			return new ORAS_AI_Observing_Plan_Result( true, 'unavailable', new ORAS_AI_Evidence_Packet( $items ) );
-		}
-		$items[] = $this->window_evidence( $start, $end );
+		$night_dates = $this->requested_nights( $question );
+		$multi_night = count( $night_dates ) > 1;
 		$broad_planets = (bool) preg_match( '/\b(?:what can i see|which planets|what planets)\b/', $question );
-		$partial = ! $weather->has_facts();
+		$items = array();
+		$night_items = array();
+		$partial = false;
+		$qualified = false;
 		$scores = array();
 		$periods = array();
-		foreach ( $weather->values() as $index => $snapshot ) {
-			if ( ! $snapshot instanceof ORAS_AI_Weather_Snapshot ) {
-				continue;
-			}
-			$data = $snapshot->to_array();
-			$from = new DateTimeImmutable( $data['valid_from'] );
-			$until = new DateTimeImmutable( $data['valid_until'] );
-			$outside_window = $start->getTimestamp() === $end->getTimestamp()
-				? $until <= $start || $from > $start
-				: $until <= $start || $from >= $end;
-			if ( ORAS_AI_Weather_Snapshot::FORECAST !== $data['designation'] || $outside_window || $until <= $from ) {
-				continue;
-			}
-			if ( isset( $weather_items[ $index ] ) ) {
-				$items[] = $weather_items[ $index ];
-			}
-			$overlap_from  = $from > $start ? $from : $start;
-			$overlap_until = $until < $end ? $until : $end;
-			$midpoint = new DateTimeImmutable( '@' . (int) floor( ( $overlap_from->getTimestamp() + $overlap_until->getTimestamp() ) / 2 ) );
-			$astronomy = $this->astronomy->query( $request, $midpoint, true, $broad_planets );
-			$items = array_merge( $items, $astronomy->evidence_packet()->items() );
-			if ( ! $astronomy->has_facts() || $this->has_astronomy_failure( $astronomy->evidence_packet() ) ) {
+		foreach ( $night_dates as $night_date ) {
+			$weather = $this->weather->query( $request, null, null, true, $night_date );
+			$weather_items = $weather->evidence_packet()->items();
+			if ( ! $weather->has_facts() ) {
+				$items = array_merge( $items, $weather_items );
 				$partial = true;
 			}
-			$score = $this->score->score( $snapshot, $astronomy->values(), $midpoint );
-			if ( ORAS_AI_Current_Data_Result::SUCCESS !== $score->status() ) {
-				$partial = true;
-				$items[] = $this->score_unavailable_evidence( $midpoint, $score->reason() );
-			} else {
-				$value = $score->values()[0];
-				$items[] = $this->score_evidence( $value, $midpoint, $from, $until );
-				$scores[] = $value->to_array()['score'];
-				$periods[] = array( 'valid_from' => $from->format( DATE_ATOM ), 'valid_until' => $until->format( DATE_ATOM ), 'evaluation_at' => $midpoint->format( DATE_ATOM ) );
+			$start = $weather->requested_at();
+			$end = $weather->window_end();
+			if ( ! $start instanceof DateTimeImmutable || ! $end instanceof DateTimeImmutable ) {
+				if ( $multi_night ) {
+					$items[] = $this->night_unavailable_evidence( $night_date );
+				}
+				$night_items[] = $items;
+				$items = array();
+				continue;
 			}
+			$items[] = $this->window_evidence( $start, $end );
+			foreach ( $weather->values() as $index => $snapshot ) {
+				if ( ! $snapshot instanceof ORAS_AI_Weather_Snapshot ) {
+					continue;
+				}
+				$data = $snapshot->to_array();
+				$from = new DateTimeImmutable( $data['valid_from'] );
+				$until = new DateTimeImmutable( $data['valid_until'] );
+				$outside_window = $start->getTimestamp() === $end->getTimestamp()
+					? $until <= $start || $from > $start
+					: $until <= $start || $from >= $end;
+				if ( ORAS_AI_Weather_Snapshot::FORECAST !== $data['designation'] || $outside_window || $until <= $from ) {
+					continue;
+				}
+				$qualified = true;
+				if ( isset( $weather_items[ $index ] ) ) {
+					$items[] = $weather_items[ $index ];
+				}
+				$overlap_from  = $from > $start ? $from : $start;
+				$overlap_until = $until < $end ? $until : $end;
+				$midpoint = new DateTimeImmutable( '@' . (int) floor( ( $overlap_from->getTimestamp() + $overlap_until->getTimestamp() ) / 2 ) );
+				$astronomy = $this->astronomy->query( $request, $midpoint, true, $broad_planets );
+				$items = array_merge( $items, $astronomy->evidence_packet()->items() );
+				if ( ! $astronomy->has_facts() || $this->has_astronomy_failure( $astronomy->evidence_packet() ) ) {
+					$partial = true;
+				}
+				$score = $this->score->score( $snapshot, $astronomy->values(), $midpoint );
+				if ( ORAS_AI_Current_Data_Result::SUCCESS !== $score->status() ) {
+					$partial = true;
+					$items[] = $this->score_unavailable_evidence( $midpoint, $score->reason() );
+				} else {
+					$value = $score->values()[0];
+					$items[] = $this->score_evidence( $value, $midpoint, $from, $until );
+					$scores[] = $value->to_array()['score'];
+					$periods[] = array( 'valid_from' => $from->format( DATE_ATOM ), 'valid_until' => $until->format( DATE_ATOM ), 'evaluation_at' => $midpoint->format( DATE_ATOM ) );
+				}
+			}
+			if ( empty( $weather->values() ) ) {
+				// Dusk remains a specifically timed astronomy fact when NWS cannot supply periods.
+				$astronomy = $this->astronomy->query( $request, $start, true, $broad_planets );
+				$items = array_merge( $items, $astronomy->evidence_packet()->items() );
+				$qualified = $qualified || $astronomy->has_facts();
+				$partial = true;
+			}
+			$night_items[] = $items;
+			$items = array();
 		}
-		if ( empty( $weather->values() ) ) {
-			// Dusk remains a specifically timed astronomy fact when NWS cannot supply periods.
-			$astronomy = $this->astronomy->query( $request, $start, true, $broad_planets );
-			$items = array_merge( $items, $astronomy->evidence_packet()->items() );
-			$partial = true;
+		$largest_night = max( array_map( 'count', $night_items ) );
+		for ( $index = 0; $index < $largest_night; $index++ ) {
+			foreach ( $night_items as $night ) {
+				if ( isset( $night[ $index ] ) ) {
+					$items[] = $night[ $index ];
+				}
+			}
 		}
 		$best = array();
-		if ( ! $partial && ! empty( $scores ) && preg_match( '/\b(?:best|better)\b/', $question ) ) {
+		if ( ( ! $partial || $multi_night ) && ! empty( $scores ) && preg_match( '/\b(?:best|better)\b/', $question ) ) {
 			$highest = max( $scores );
 			foreach ( $scores as $index => $score ) {
 				if ( $score === $highest ) {
 					$best[] = $periods[ $index ];
 				}
 			}
-			$items[] = $this->best_evidence( $best, $highest );
+			if ( $multi_night ) {
+				array_unshift( $items, $this->best_evidence( $best, $highest ) );
+			} else {
+				$items[] = $this->best_evidence( $best, $highest );
+			}
 		}
-		$state = empty( $items ) ? 'unavailable' : ( $partial || empty( $scores ) ? 'partially_grounded' : 'grounded' );
+		if ( $multi_night && $qualified ) {
+			array_unshift( $items, $this->planning_status( 'nightly_aggregate_unavailable', 'ORAS AI does not calculate a single aggregate score for an entire observing night. Compare the dated forecast intervals; a highest authoritative interval score does not establish a winning night.' ) );
+		}
+		$state = ! $qualified ? 'unavailable' : ( $multi_night || $partial || empty( $scores ) ? 'partially_grounded' : 'grounded' );
 		return new ORAS_AI_Observing_Plan_Result( true, $state, new ORAS_AI_Evidence_Packet( $items ), $best );
 	}
 
 	private function matches( $question ) {
-		$observing_intent = (bool) preg_match( '/\b(?:can i see|what can i see|which planets|what planets|best.*(?:night|tonight|observing)|when.*best.*observing|observing recommendation)\b/', $question );
+		$observing_intent = (bool) preg_match( '/\b(?:can i see|what can i see|which planets|what planets|best.*(?:night|tonight|observing)|when.*best.*observing|night.*best.*observing|compare.*observing|observing conditions|observing recommendation|(?:good|suitable).{0,50}(?:observe|observing))\b/', $question );
 		$timed = (bool) preg_match( '/\b(?:tonight|tomorrow|weekend|monday|tuesday|wednesday|thursday|friday|saturday|sunday|20\d{2}-\d{2}-\d{2})\b|\b(?:from|at)\s+\d{1,2}(?::[0-5]\d)?\s*(?:am|pm)\b|\b(?:from|at)\s+\d{1,2}:[0-5]\d\b/', $question );
 		return $observing_intent && $timed;
+	}
+
+	private function requested_nights( $question ) {
+		$site = ORAS_AI_Observing_Site::oras_observatory();
+		$today = $this->clock->now()->setTimezone( $site->timezone() );
+		preg_match_all( '/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/', $question, $matches );
+		$weekdays = array_values( array_unique( $matches[1] ) );
+		if ( count( $weekdays ) >= 2 ) {
+			$first = $this->next_weekday( $today, $weekdays[0] );
+			return array( $first, $this->next_weekday( $first->modify( '+1 day' ), $weekdays[1] ) );
+		}
+		if ( preg_match( '/\bweekend\b/', $question ) ) {
+			$friday = $this->next_weekday( $today, 'friday' );
+			return array( $friday, $friday->modify( '+1 day' ) );
+		}
+		return array( null );
+	}
+
+	private function next_weekday( DateTimeImmutable $date, $weekday ) {
+		return strtolower( $date->format( 'l' ) ) === $weekday ? $date : $date->modify( 'next ' . $weekday );
+	}
+
+	private function night_unavailable_evidence( DateTimeImmutable $night_date ) {
+		$date = $night_date->format( 'Y-m-d' );
+		return $this->planning_status( 'night_' . str_replace( '-', '', $date ) . '_unavailable', 'Qualified observing-night facts are unavailable for ' . $date . '.' );
 	}
 
 	private function has_astronomy_failure( ORAS_AI_Evidence_Packet $packet ) {
