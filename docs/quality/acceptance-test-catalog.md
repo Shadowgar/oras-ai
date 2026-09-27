@@ -52,6 +52,13 @@
 - **AT-SUPPORT-005** General astronomy does not unnecessarily open support.
 - **AT-SUPPORT-006** Resolved ticket becomes candidate knowledge only after admin action.
 
+## Member-aware actions
+- **AT-ACTION-001 (ACT-001)** A pass handoff uses a server-derived, policy-validated canonical WooCommerce product URL; member, browser, and model content cannot replace it, and an unsafe or missing URL yields no action link.
+- **AT-ACTION-002 (ACT-001, ACT-002)** A positive pass offering requires current authoritative stock, purchasability, and URL facts, with provider-derived price when stated; missing, unavailable, or non-purchasable products cannot be recommended for purchase. Event schedule alone permits a schedule answer, never a verified registration or ticket-availability claim.
+- **AT-ACTION-003 (ACT-002, ACT-003)** The member completes checkout through WooCommerce; ORAS AI cannot add to cart, create an order or payment, change stock or ownership, or claim a completed purchase from model output.
+- **AT-ACTION-004 (ACT-001, ACT-003)** Membership status and unambiguous level come only from the authorized member's normalized PMPro/WordPress facts; a supplied identity cannot select another member, and raw billing, payment, history, and provider records stay out of model context.
+- **AT-ACTION-005 (ACT-004)** A support-ticket proposal has no side effect; only explicit confirmation may create one ticket, while cancellation, replay, and uncertain creation cannot produce an unsafe duplicate.
+
 ## Cost
 - **AT-COST-001** Quota blocks excess request.
 - **AT-COST-002** Burst limiter blocks rapid requests.

@@ -225,6 +225,10 @@ final class ORAS_AI_Answer_Orchestrator {
 		if ( ORAS_AI_Grounded_Context::CROSSOVER_ASTRONOMY_ONLY === $context->scope() ) {
 			$answer = self::NO_EVIDENCE_MESSAGE . ' ' . $answer;
 		}
+		$action_answer = $this->bounded_action_answer( $request->question(), $context );
+		if ( null !== $action_answer ) {
+			$answer = $action_answer;
+		}
 
 		return ORAS_AI_Answer_Result::success(
 			$answer,
@@ -344,5 +348,61 @@ final class ORAS_AI_Answer_Orchestrator {
 		}
 
 		return false;
+	}
+
+	/** Keep current purchase/registration claims tied to selected live facts, not model prose. */
+	private function bounded_action_answer( $question, ORAS_AI_Grounded_Context $context ) {
+		$question = strtolower( (string) $question );
+		if ( preg_match( '/\bobserver\s+pass(?:es)?\b/', $question )
+			&& preg_match( '/\b(?:buy|purchase|price|cost|available|availability|stock|purchasable|where)\b/', $question ) ) {
+			$products = array();
+			foreach ( $context->evidence_packet()->items() as $item ) {
+				if ( ORAS_AI_Source_Precedence::LIVE_ORAS_STATE !== $item->field( 'authority_class' ) ) {
+					continue;
+				}
+				foreach ( (array) $item->field( 'fact_keys' ) as $key ) {
+					if ( preg_match( '/^product:observer-pass-(annual|daily):(price|availability|purchasable)$/', (string) $key, $match ) ) {
+						$products[ $match[1] ][ $match[2] ] = $item;
+					}
+				}
+			}
+			if ( empty( $products ) ) {
+				return 'I could not verify current Observer Pass availability or purchasability.';
+			}
+			$sentences = array();
+			foreach ( $products as $option => $facts ) {
+				$title = ucfirst( $option ) . ' Observer Pass';
+				if ( isset( $facts['price'] ) ) {
+					$sentences[] = $facts['price']->field( 'relevant_text' );
+				}
+				if ( isset( $facts['availability'], $facts['purchasable'] ) ) {
+					$in_stock = 'instock|yes' === $facts['availability']->field( 'comparison_value' );
+					$purchasable = 'yes' === $facts['purchasable']->field( 'comparison_value' );
+					$url = (string) $facts['purchasable']->field( 'canonical_url' );
+					$sentences[] = $in_stock && $purchasable && '' !== $url
+						? $title . ' is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.'
+						: $title . ' is not currently purchasable.';
+				} else {
+					$sentences[] = 'I could not verify whether the ' . $title . ' is currently purchasable.';
+				}
+			}
+			return implode( ' ', $sentences );
+		}
+		if ( preg_match( '/\b(?:astro\s*blast|public\s+night)\b/', $question )
+			&& preg_match( '/\b(?:register|registration|tickets?|spots?|book|available|availability)\b/', $question ) ) {
+			$schedule = array();
+			foreach ( $context->evidence_packet()->items() as $item ) {
+				if ( ORAS_AI_Source_Precedence::LIVE_ORAS_STATE !== $item->field( 'authority_class' ) ) {
+					continue;
+				}
+				foreach ( (array) $item->field( 'fact_keys' ) as $key ) {
+					if ( preg_match( '/^event:(?:astroblast|public-night):(start|end|venue)$/', (string) $key ) ) {
+						$schedule[] = $item->field( 'relevant_text' );
+					}
+				}
+			}
+			return implode( ' ', $schedule ) . ( $schedule ? ' ' : '' ) . 'I could not verify registration availability.';
+		}
+		return null;
 	}
 }

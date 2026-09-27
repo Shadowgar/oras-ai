@@ -41,6 +41,27 @@ function oras_ai_confirmation_fixture(): array {
 	return array($service, $pending, $adapter, $conversations, $conversation_id, $created);
 }
 
+oras_ai_test('AT-ACTION-005 existing support side effect requires confirmation and remains replay safe', function (): void {
+	list($service, $pending, $adapter, $conversations, $conversation_id, $created) = oras_ai_confirmation_fixture();
+	oras_ai_assert_same('awaiting_confirmation', $created['status'], 'Proposal was not pending.');
+	oras_ai_assert_same(array(), $adapter->calls, 'Proposal contacted support provider.');
+	oras_ai_assert_same('created', $service->confirm($created['token'], $conversation_id)['status'], 'Explicit confirmation did not create a ticket.');
+	oras_ai_assert_same('created', $service->confirm($created['token'], $conversation_id)['status'], 'Replay changed confirmed state.');
+	oras_ai_assert_same(1, count(array_filter($adapter->calls, 'is_array')), 'Confirmation replay created another ticket.');
+
+	list($service, $pending, $adapter, $conversations, $conversation_id, $created) = oras_ai_confirmation_fixture();
+	oras_ai_assert_same('cancelled', $service->cancel($created['token'], $conversation_id)['status'], 'Cancellation failed.');
+	oras_ai_assert_same('cancelled', $service->confirm($created['token'], $conversation_id)['status'], 'Cancelled proposal created a ticket.');
+	oras_ai_assert_same(array(), $adapter->calls, 'Cancellation contacted support provider.');
+
+	list($service, $pending, $adapter, $conversations, $conversation_id, $created) = oras_ai_confirmation_fixture();
+	$adapter->ticket_status = 'ticket_uncertain';
+	$adapter->ticket_reason = 'provider_create_uncertain';
+	oras_ai_assert_same('uncertain', $service->confirm($created['token'], $conversation_id)['status'], 'Uncertain create was not retained.');
+	oras_ai_assert_same('uncertain', $service->confirm($created['token'], $conversation_id)['status'], 'Uncertain replay changed state.');
+	oras_ai_assert_same(1, count(array_filter($adapter->calls, 'is_array')), 'Uncertain create retried.');
+});
+
 oras_ai_test('M7 Task 3 pending is durable, private, token-only and side-effect free', function (): void {
 	list($service, $pending, $adapter, $conversations, $conversation_id, $created) = oras_ai_confirmation_fixture();
 	oras_ai_assert_same('awaiting_confirmation', $created['status'], 'Pending state missing.');
