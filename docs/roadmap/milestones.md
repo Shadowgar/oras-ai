@@ -83,13 +83,20 @@ At M4 the assistant may answer stable ORAS knowledge and general astronomy, but 
 - [x] RB No autonomous purchase behavior.
 
 ## M6 — Astronomy/weather intelligence
-- [ ] RB Astronomy provider/library selected with qualification evidence against the M0 capability contract.
-- [ ] RB Weather provider selected with qualification evidence against the M0 capability contract.
-- [ ] RB Observatory location/time-zone correctness.
-- [ ] RB Current sky calculations.
-- [ ] RB Weather freshness/uncertainty.
-- [ ] RB Best-night recommendation workflow.
-- [ ] QT Latency/cost measured.
+- [x] RB Astronomy provider/library selected with qualification evidence against the M0 capability contract.
+- [x] RB Weather provider selected with qualification evidence against the M0 capability contract.
+- [x] RB Observatory location/time-zone correctness.
+- [x] RB Current sky calculations.
+- [x] RB Weather freshness/uncertainty.
+- [x] RB Best-night recommendation workflow.
+- [x] QT Latency/cost measured.
+
+M6 implementation qualification: **READY TO CLOSE**, 2026-09-27. See
+[verification evidence](../evidence/m6-astronomy-weather-intelligence/verification.md).
+Weekend comparisons preserve authoritative interval scores and disclose the
+absence of a whole-night aggregate. Credentialed AstronomyAPI and installed-site
+verification remain deployment items; ASTRO-007 remains deferred. No closure
+commit or production release is claimed by this documentation.
 
 ## M7 — Fluent Support escalation/feedback
 - [ ] RB Fluent Support bridge qualified against installed version.
