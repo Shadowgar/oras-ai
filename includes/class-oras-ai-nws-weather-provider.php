@@ -97,7 +97,7 @@ final class ORAS_AI_NWS_Weather_Provider implements ORAS_AI_Weather_Provider_Int
 	private function forecast( ORAS_AI_Current_Data_Request $request ) {
 		$cached = $this->cache->get( 'forecast_grid' );
 		if ( is_array( $cached ) && $this->forecast_covers( $cached, $request ) ) {
-			return $this->forecast_result( $cached );
+			return $this->forecast_result( $cached, $request );
 		}
 		$mapping = $this->point_mapping( $request );
 		$url = self::HOST . '/gridpoints/' . $mapping['grid_id'] . '/' . $mapping['grid_x'] . ',' . $mapping['grid_y'];
@@ -111,7 +111,7 @@ final class ORAS_AI_NWS_Weather_Provider implements ORAS_AI_Weather_Provider_Int
 		$this->require_success( $response );
 		$normalized = $this->normalize_forecast( $response['body'], $request );
 		$this->cache->put( 'forecast_grid', $normalized, min( self::FORECAST_TTL, $response['ttl'] ) );
-		return $this->forecast_result( $normalized );
+		return $this->forecast_result( $normalized, $request );
 	}
 
 	private function point_mapping( ORAS_AI_Current_Data_Request $request, $force = false ) {
@@ -247,18 +247,28 @@ final class ORAS_AI_NWS_Weather_Provider implements ORAS_AI_Weather_Provider_Int
 		$matched = array();
 		foreach ( array_slice( $values, 0, 200 ) as $item ) {
 			$interval = $this->interval( $item['validTime'] ?? '' );
-			if ( null !== $interval && $interval[1] >= $request->requested_at() && $interval[0] <= $request->window_end() ) {
+			if ( null === $interval ) {
+				continue;
+			}
+			if ( $this->overlaps_request( $interval[0], $interval[1], $request ) ) {
 				$matched[] = array( 'value' => $item['value'] ?? null, 'from' => $interval[0], 'until' => $interval[1] );
 			}
 		}
 		return $matched;
 	}
 
+	private function overlaps_request( DateTimeImmutable $from, DateTimeImmutable $until, ORAS_AI_Current_Data_Request $request ) {
+		// Forecasts are half-open. A point has containment, not duration overlap.
+		return $until > $from && ( $request->requested_at() == $request->window_end()
+			? $from <= $request->requested_at() && $request->requested_at() < $until
+			: max( $from, $request->requested_at() ) < min( $until, $request->window_end() ) );
+	}
+
 	private function grid_value_at( $property, DateTimeImmutable $instant ) {
 		$values = is_array( $property ) && isset( $property['values'] ) && is_array( $property['values'] ) ? $property['values'] : array();
 		foreach ( array_slice( $values, 0, 200 ) as $item ) {
 			$interval = $this->interval( $item['validTime'] ?? '' );
-			if ( null !== $interval && $interval[0] <= $instant && $interval[1] >= $instant ) {
+			if ( null !== $interval && $interval[0] <= $instant && $instant < $interval[1] ) {
 				return array( 'value' => $item['value'] ?? null, 'from' => $interval[0], 'until' => $interval[1] );
 			}
 		}
@@ -321,6 +331,9 @@ final class ORAS_AI_NWS_Weather_Provider implements ORAS_AI_Weather_Provider_Int
 		try {
 			$from = new DateTimeImmutable( $start );
 			$until = $from->add( new DateInterval( $duration ) );
+			if ( $until <= $from ) {
+				return null;
+			}
 			return array( $from->setTimezone( new DateTimeZone( 'UTC' ) ), $until->setTimezone( new DateTimeZone( 'UTC' ) ) );
 		} catch ( Throwable $throwable ) {
 			return null;
@@ -348,10 +361,10 @@ final class ORAS_AI_NWS_Weather_Provider implements ORAS_AI_Weather_Provider_Int
 		}
 	}
 
-	private function forecast_result( array $data ) {
+	private function forecast_result( array $data, ORAS_AI_Current_Data_Request $request ) {
 		$values = array();
 		foreach ( array_slice( is_array( $data['snapshots'] ?? null ) ? $data['snapshots'] : array(), 0, 200 ) as $snapshot ) {
-			if ( is_array( $snapshot ) ) {
+			if ( is_array( $snapshot ) && $this->overlaps_request( $this->date( $snapshot['valid_from'] ?? '' ), $this->date( $snapshot['valid_until'] ?? '' ), $request ) ) {
 				$values[] = $this->snapshot_from_data( $snapshot );
 			}
 		}

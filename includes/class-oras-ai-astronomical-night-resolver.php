@@ -13,7 +13,7 @@ final class ORAS_AI_Astronomical_Night_Resolver {
 		$this->clock    = $clock;
 	}
 
-	public function resolve( ORAS_AI_Authorized_Request $authorized_request, DateTimeImmutable $local_date ) {
+	public function resolve( ORAS_AI_Authorized_Request $authorized_request, DateTimeImmutable $local_date, $include_active_night = true ) {
 		$site = ORAS_AI_Observing_Site::oras_observatory();
 		$timezone = $site->timezone();
 		$date = $local_date->setTimezone( $timezone )->format( 'Y-m-d' );
@@ -21,8 +21,9 @@ final class ORAS_AI_Astronomical_Night_Resolver {
 		// libraries while preserving the authoritative site timezone.
 		$next = ( new DateTimeImmutable( $date . ' 12:00:00', $timezone ) )->modify( '+1 day' );
 		$now  = $this->clock->now();
-		$first_instant = $now->setTimezone( $timezone )->format( 'Y-m-d' ) === $date
-			? $now
+		$is_today = $now->setTimezone( $timezone )->format( 'Y-m-d' ) === $date;
+		$first_instant = $is_today
+			? null // The request factory samples its own trusted now, avoiding clock drift.
 			: new DateTimeImmutable( $date . ' 12:00:00', $timezone );
 
 		try {
@@ -35,6 +36,12 @@ final class ORAS_AI_Astronomical_Night_Resolver {
 					$first_instant
 				)
 			);
+			// Before today's dawn, "tonight" is still the active preceding night.
+			// Today's calculation supplies that dawn without requesting yesterday.
+			$current_dawn = $this->fact_time( $first, 'astronomy:sun:astronomical-dawn' );
+			if ( $is_today && $include_active_night && $current_dawn instanceof DateTimeImmutable && $now < $current_dawn ) {
+				return array( $now, $current_dawn );
+			}
 			$second = $this->provider->fetch(
 				ORAS_AI_Current_Data_Request::from_authorized_request(
 					$authorized_request,
@@ -53,7 +60,7 @@ final class ORAS_AI_Astronomical_Night_Resolver {
 		if ( ! $dusk instanceof DateTimeImmutable || ! $dawn instanceof DateTimeImmutable || $dawn <= $dusk ) {
 			return new WP_Error( 'night_window_unavailable', 'Astronomical night is unavailable.' );
 		}
-		return array( $dusk, $dawn );
+		return array( $is_today && $now > $dusk ? $now : $dusk, $dawn );
 	}
 
 	private function fact_time( $result, $fact_key ) {

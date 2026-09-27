@@ -60,7 +60,7 @@ final class ORAS_AI_Astronomy_API_Provider implements ORAS_AI_Astronomy_Provider
 			return ORAS_AI_Current_Data_Result::denied( self::PROVIDER_ID, 'unsupported_planet' );
 		}
 
-		$path = 'planet:all' === $target ? '/positions' : '/' . rawurlencode( $body ) . '/positions';
+		$path = 'planet:all' === $target ? '/positions' : '/positions/' . rawurlencode( $body );
 		$url  = self::BASE_URL . $path . '?' . http_build_query( $this->query_arguments( $request ), '', '&', PHP_QUERY_RFC3986 );
 
 		try {
@@ -174,9 +174,18 @@ final class ORAS_AI_Astronomy_API_Provider implements ORAS_AI_Astronomy_Provider
 			if ( $altitude < -90.0 || $altitude > 90.0 || $azimuth < 0.0 || $azimuth > 360.0 ) {
 				continue;
 			}
-			try {
-				$valid_at = isset( $position['date'] ) ? new DateTimeImmutable( (string) $position['date'] ) : $request->requested_at();
-			} catch ( Throwable $throwable ) {
+			// Documented responses can also contain the historical misspelling.
+			// Keep horizontal authoritative, but reject ambiguous duplicate values.
+			if ( array_key_exists( 'horizonal', $position['position'] ) ) {
+				$legacy = $position['position']['horizonal'];
+				$legacy_altitude = is_array( $legacy ) ? ( $legacy['altitude']['degrees'] ?? null ) : null;
+				$legacy_azimuth = is_array( $legacy ) ? ( $legacy['azimuth']['degrees'] ?? null ) : null;
+				if ( ! is_numeric( $legacy_altitude ) || ! is_numeric( $legacy_azimuth ) || (float) $legacy_altitude !== $altitude || (float) $legacy_azimuth !== $azimuth ) {
+					continue;
+				}
+			}
+			$valid_at = $this->qualified_provider_time( $position['date'] ?? null, $request );
+			if ( null === $valid_at ) {
 				continue;
 			}
 
@@ -186,5 +195,30 @@ final class ORAS_AI_Astronomy_API_Provider implements ORAS_AI_Astronomy_Provider
 			$facts[] = new ORAS_AI_Astronomy_Fact( self::PROVIDER_ID, ORAS_AI_Current_Data_Request::PLANET_POSITION, $altitude > 0.0 ? 'above' : 'below', 'geometric_horizon', $calculated, $valid_at, $target, $fact_root . ':geometric_horizon', 'astronomyapi_v2' );
 		}
 		return $facts;
+	}
+
+	/**
+	 * Positions are for the requested observer time, not a latest-observation feed.
+	 * The wire query uses H:i:s; require exactly that second after UTC/offset
+	 * normalization. No nonzero time tolerance or request-time fallback is used.
+	 * https://docs.astronomyapi.com/endpoints/bodies/positions
+	 */
+	private function qualified_provider_time( $value, ORAS_AI_Current_Data_Request $request ) {
+		if ( ! is_string( $value ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/D', $value ) ) {
+			return null;
+		}
+		try {
+			$instant = new DateTimeImmutable( $value );
+			$errors = DateTimeImmutable::getLastErrors();
+			if ( false !== $errors && ( $errors['warning_count'] || $errors['error_count'] ) ) {
+				return null;
+			}
+			if ( $instant->format( 'U.u' ) !== $request->requested_at()->format( 'U' ) . '.000000' ) {
+				return null;
+			}
+			return $instant->setTimezone( new DateTimeZone( 'UTC' ) );
+		} catch ( Throwable $throwable ) {
+			return null;
+		}
 	}
 }

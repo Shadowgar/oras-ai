@@ -40,6 +40,7 @@ final class ORAS_AI_Current_Weather_Service {
 			return $this->failure( 'invalid_weather_interval', array( 'weather:forecast:interval' ) );
 		}
 
+		$active_night = false;
 		$current = ! $explicit && null === $night_date && (bool) preg_match( '/\b(now|currently|at the moment|current conditions?)\b/', $question );
 		if ( $current ) {
 			$requested_at = $this->clock->now();
@@ -49,11 +50,13 @@ final class ORAS_AI_Current_Weather_Service {
 			if ( null !== $member_window ) {
 				list( $requested_at, $window_end ) = $member_window;
 			} else {
-				$night = $this->night_resolver->resolve( $authorized_request, $night_date ?: $this->night_date( $question ) );
+				$include_active_night = null === $night_date && ! preg_match( '/\b(?:tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|20\d{2}-\d{2}-\d{2})\b/', $question );
+				$night = $this->night_resolver->resolve( $authorized_request, $night_date ?: $this->night_date( $question ), $include_active_night );
 				if ( is_wp_error( $night ) ) {
 					return $this->failure( 'night_window_unavailable', array( 'weather:forecast:interval' ) );
 				}
 				list( $requested_at, $window_end ) = $night;
+				$active_night = $requested_at <= $this->clock->now() && $window_end > $this->clock->now();
 			}
 		}
 
@@ -62,9 +65,11 @@ final class ORAS_AI_Current_Weather_Service {
 				$authorized_request,
 				$this->clock,
 				array( ORAS_AI_Current_Data_Request::WEATHER_CONDITIONS ),
-				$requested_at,
-				$window_end
+				$current || $active_night ? null : $requested_at,
+				$current ? null : $window_end
 			);
+			$requested_at = $request->requested_at();
+			$window_end = $request->window_end();
 			$result = $this->provider->fetch( $request );
 		} catch ( Throwable $throwable ) {
 			$result = ORAS_AI_Current_Data_Result::unavailable( $this->provider->provider_id(), 'provider_request_failed' );

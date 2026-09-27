@@ -36,17 +36,28 @@ final class ORAS_AI_Grounded_Context {
 	}
 
 	public function provider_input() {
-		$evidence = array_map(
-			static function ( ORAS_AI_Evidence $item ) {
-				return array(
-					'source_title'    => sanitize_text_field( (string) $item->field( 'source_title' ) ),
-					'authority_class' => sanitize_key( (string) $item->field( 'authority_class' ) ),
-					'relevant_text'   => trim( wp_strip_all_tags( (string) $item->field( 'relevant_text' ), true ) ),
-					'content_role'    => 'untrusted_evidence',
-				);
-			},
-			$this->evidence_packet->items()
-		);
+		$evidence = array();
+		$astronomy_groups = array();
+		foreach ( $this->evidence_packet->items() as $item ) {
+			$entry = array(
+				'source_title'    => sanitize_text_field( (string) $item->field( 'source_title' ) ),
+				'authority_class' => sanitize_key( (string) $item->field( 'authority_class' ) ),
+				'relevant_text'   => trim( wp_strip_all_tags( (string) $item->field( 'relevant_text' ), true ) ),
+				'content_role'    => 'untrusted_evidence',
+			);
+			// Reconciliation has already selected each canonical fact. Only the
+			// model rendering shares identical source metadata; no text or packet
+			// identity is removed, and every timed position keeps its own instant.
+			if ( 'current_astronomy' === $item->field( 'source_type' ) && ORAS_AI_Source_Precedence::CURRENT_ASTRONOMY_WEATHER === $entry['authority_class'] ) {
+				$key = wp_json_encode( array( $entry['source_title'], $entry['authority_class'] ) );
+				if ( isset( $astronomy_groups[ $key ] ) ) {
+					$evidence[ $astronomy_groups[ $key ] ]['relevant_text'] .= "\n" . $entry['relevant_text'];
+					continue;
+				}
+				$astronomy_groups[ $key ] = count( $evidence );
+			}
+			$evidence[] = $entry;
+		}
 
 		return array(
 			array(

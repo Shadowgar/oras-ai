@@ -410,3 +410,91 @@ oras_ai_test('M6 invalid cached grid during station discovery receives one point
 	oras_ai_assert_same(4, count($calls), 'Station discovery retried too many times or skipped rediscovery.');
 	oras_ai_assert_contains('/points/41.3219,-79.5854', $calls[1]['url'], 'Authoritative point mapping was not re-resolved.');
 });
+
+foreach (array(
+	'end equals request start' => array('2026-09-10T12:00:00Z', '2026-09-10T14:00:00Z', false),
+	'start equals request end' => array('2026-09-09T22:00:00Z', '2026-09-10T00:00:00Z', false),
+	'one second overlap' => array('2026-09-10T11:59:59Z', '2026-09-10T14:00:00Z', true),
+	'contained' => array('2026-09-10T01:00:00Z', '2026-09-10T02:00:00Z', true),
+	'enclosing' => array('2026-09-09T23:00:00Z', '2026-09-10T13:00:00Z', true),
+	'identical' => array('2026-09-10T00:00:00Z', '2026-09-10T12:00:00Z', true),
+	'point at start' => array('2026-09-10T00:00:00Z', '2026-09-10T00:00:00Z', true),
+	'point inside' => array('2026-09-10T01:00:00Z', '2026-09-10T01:00:00Z', true),
+	'point at end' => array('2026-09-10T12:00:00Z', '2026-09-10T12:00:00Z', false),
+) as $label => $case) {
+	oras_ai_test('M6 correction half-open NWS ' . $label, static function () use ($case): void {
+		oras_ai_test_reset();
+		$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable('2026-09-09T16:00:00Z'));
+		$calls = array();
+		$provider = new ORAS_AI_NWS_Weather_Provider('ORAS fixture', oras_ai_test_nws_http(array(oras_ai_test_nws_response(oras_ai_test_nws_point()), oras_ai_test_nws_response(oras_ai_test_nws_forecast())), $calls), $clock);
+		$result = $provider->fetch(oras_ai_test_weather_request($clock, new DateTimeImmutable($case[0]), new DateTimeImmutable($case[1])));
+		oras_ai_assert_same($case[2], ORAS_AI_Current_Data_Result::SUCCESS === $result->status(), 'Incorrect positive overlap or point containment.');
+		if ($case[2]) {
+			$data = $result->values()[0]->to_array();
+			oras_ai_assert_same('2026-09-10T00:00:00+00:00', $data['valid_from'], 'Provider start was altered.');
+			oras_ai_assert_same('2026-09-10T12:00:00+00:00', $data['valid_until'], 'Provider end was altered.');
+		}
+	});
+}
+
+oras_ai_test('M6 correction adjacent NWS periods have a single boundary owner for fields and points', function (): void {
+	oras_ai_test_reset();
+	$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable('2026-09-09T16:00:00Z'));
+	$body = oras_ai_test_nws_forecast();
+	// The sky midpoint is exactly a wind boundary; only the new wind period owns it.
+	$body['properties']['windSpeed']['values'] = array(
+		array('validTime' => '2026-09-10T00:00:00Z/PT6H', 'value' => 3.6),
+		array('validTime' => '2026-09-10T06:00:00Z/PT6H', 'value' => 36),
+	);
+	$calls = array();
+	$provider = new ORAS_AI_NWS_Weather_Provider('ORAS fixture', oras_ai_test_nws_http(array(oras_ai_test_nws_response(oras_ai_test_nws_point()), oras_ai_test_nws_response($body)), $calls), $clock);
+	$result = $provider->fetch(oras_ai_test_weather_request($clock, new DateTimeImmutable('2026-09-10T01:00:00Z'), new DateTimeImmutable('2026-09-10T11:00:00Z')));
+	oras_ai_assert_same(10.0, $result->values()[0]->to_array()['wind_speed_mps'], 'Expired wind field claimed adjacent boundary.');
+	oras_ai_test_reset();
+	$body['properties']['skyCover']['values'] = array(
+		array('validTime' => '2026-09-10T00:00:00Z/PT6H', 'value' => 20),
+		array('validTime' => '2026-09-10T06:00:00Z/PT6H', 'value' => 80),
+	);
+	$calls = array();
+	$provider = new ORAS_AI_NWS_Weather_Provider('ORAS fixture', oras_ai_test_nws_http(array(oras_ai_test_nws_response(oras_ai_test_nws_point()), oras_ai_test_nws_response($body)), $calls), $clock);
+	$point = new DateTimeImmutable('2026-09-10T06:00:00Z');
+	$result = $provider->fetch(oras_ai_test_weather_request($clock, $point, $point));
+	oras_ai_assert_same(1, count($result->values()), 'Both adjacent periods claimed the boundary point.');
+	oras_ai_assert_same(80.0, $result->values()[0]->to_array()['cloud_cover_percent'], 'Wrong point period won.');
+});
+
+oras_ai_test('M6 correction expired boundary forecast cannot reach the answer model', function (): void {
+	oras_ai_test_reset();
+	$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable('2026-09-10T12:00:00Z'));
+	$calls = array();
+	$provider = new ORAS_AI_NWS_Weather_Provider('ORAS fixture', oras_ai_test_nws_http(array(oras_ai_test_nws_response(oras_ai_test_nws_point()), oras_ai_test_nws_response(oras_ai_test_nws_forecast())), $calls), $clock);
+	$weather = new ORAS_AI_Current_Weather_Service($provider, new ORAS_AI_Astronomical_Night_Resolver(new ORAS_AI_Local_Sun_Moon_Provider($clock), $clock), $clock);
+	list($orchestrator, $model) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), null, null, $weather);
+	$result = $orchestrator->answer(oras_ai_test_authorized_request(1120, 'What is the weather at ORAS from 8 AM to 10 AM?'));
+	oras_ai_assert_same(ORAS_AI_Answer_Result::SUCCESS, $result->status(), 'Bounded crossover unavailability could not be explained.');
+	$context = $model->calls[0]['context'];
+	foreach ($context->evidence_packet()->items() as $item) {
+		oras_ai_assert_true('current_weather' !== $item->field('source_type'), 'Expired weather fact reached model context.');
+	}
+	oras_ai_assert_contains('forecast_interval_unavailable', wp_json_encode($context->provider_input()), 'Forecast absence was hidden.');
+	oras_ai_assert_not_contains('Cloud cover 35', wp_json_encode($context->provider_input()), 'Expired cloud forecast reached synthesis.');
+});
+
+oras_ai_test('M6 correction cached NWS forecast obeys the same half-open requested window', function (): void {
+	oras_ai_test_reset();
+	$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable('2026-09-09T16:00:00Z'));
+	$calls = array();
+	$provider = new ORAS_AI_NWS_Weather_Provider('ORAS fixture', oras_ai_test_nws_http(array(oras_ai_test_nws_response(oras_ai_test_nws_point()), oras_ai_test_nws_response(oras_ai_test_nws_forecast())), $calls), $clock);
+	$prime = $provider->fetch(oras_ai_test_weather_request($clock, new DateTimeImmutable('2026-09-09T23:00:00Z'), new DateTimeImmutable('2026-09-10T14:00:00Z')));
+	oras_ai_assert_same(ORAS_AI_Current_Data_Result::SUCCESS, $prime->status(), 'Cache did not prime.');
+	foreach (array(
+		array('2026-09-10T12:00:00Z', '2026-09-10T14:00:00Z'),
+		array('2026-09-09T23:00:00Z', '2026-09-10T00:00:00Z'),
+		array('2026-09-10T12:00:00Z', '2026-09-10T12:00:00Z'),
+	) as $case) {
+		$result = $provider->fetch(oras_ai_test_weather_request($clock, new DateTimeImmutable($case[0]), new DateTimeImmutable($case[1])));
+		oras_ai_assert_same(ORAS_AI_Current_Data_Result::UNKNOWN, $result->status(), 'Cache bypassed half-open validity.');
+		oras_ai_assert_same(array(), $result->values(), 'Non-overlapping cached forecast escaped.');
+	}
+	oras_ai_assert_same(2, count($calls), 'Valid cache reuse made unnecessary HTTP calls.');
+});

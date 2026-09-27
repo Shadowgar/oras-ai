@@ -330,3 +330,58 @@ oras_ai_test('M6 plugin wires NWS behind the current weather service and shared 
 	oras_ai_assert_contains('new ORAS_AI_Astronomical_Night_Resolver(', $source, 'Plugin does not route night boundaries through the astronomy contract.');
 	oras_ai_assert_contains('ORAS_AI_Config::get_nws_user_agent()', $source, 'Plugin does not use the validated server-side NWS identity.');
 });
+
+foreach (array(
+	'before dusk' => array('2026-09-09T16:00:00Z', '2026-09-10T00:15:00+00:00', '2026-09-10T09:25:00+00:00'),
+	'exact dusk' => array('2026-09-10T00:15:00Z', '2026-09-10T00:15:00+00:00', '2026-09-10T09:25:00+00:00'),
+	'after dusk' => array('2026-09-10T02:00:00Z', '2026-09-10T02:00:00+00:00', '2026-09-10T09:25:00+00:00'),
+	'after midnight before dawn' => array('2026-09-10T07:00:00Z', '2026-09-10T07:00:00+00:00', '2026-09-10T09:25:00+00:00'),
+	'exact dawn' => array('2026-09-10T09:25:00Z', '2026-09-11T00:15:00+00:00', '2026-09-11T09:25:00+00:00'),
+	'after dawn' => array('2026-09-10T10:00:00Z', '2026-09-11T00:15:00+00:00', '2026-09-11T09:25:00+00:00'),
+	'spring DST active night' => array('2026-03-08T06:30:00Z', '2026-03-08T06:30:00+00:00', '2026-03-08T09:25:00+00:00'),
+	'fall DST first repeated hour' => array('2026-11-01T05:30:00Z', '2026-11-01T05:30:00+00:00', '2026-11-01T10:25:00+00:00'),
+	'fall DST second repeated hour' => array('2026-11-01T06:30:00Z', '2026-11-01T06:30:00+00:00', '2026-11-01T10:25:00+00:00'),
+) as $label => $case) {
+	oras_ai_test('M6 correction tonight window ' . $label, static function () use ($case): void {
+		$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable($case[0]));
+		$weather = oras_ai_test_weather_provider('oras_ai_test_weather_success');
+		$service = new ORAS_AI_Current_Weather_Service($weather, new ORAS_AI_Astronomical_Night_Resolver(oras_ai_test_darkness_provider($clock), $clock), $clock);
+		$result = $service->query(oras_ai_test_authorized_request(1100, 'What is the weather tonight?'));
+		oras_ai_assert_true($result->has_facts(), 'Active/prospective night was rejected before weather.');
+		oras_ai_assert_same(1, count($weather->requests), 'Night must consult weather once.');
+		oras_ai_assert_same($case[1], $weather->requests[0]->requested_at()->format(DATE_ATOM), 'Wrong effective night start.');
+		oras_ai_assert_same($case[2], $weather->requests[0]->window_end()->format(DATE_ATOM), 'Wrong following dawn.');
+		oras_ai_assert_true($weather->requests[0]->requested_at() >= $clock->now(), 'Expired night portion was requested.');
+	});
+}
+
+oras_ai_test('M6 correction active tonight does not reinterpret a named future night or stale explicit interval', function (): void {
+	$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable('2026-09-10T07:00:00Z'));
+	foreach (array('What is the forecast Thursday night?', 'What is the forecast 2026-09-10?') as $question) {
+		$weather = oras_ai_test_weather_provider('oras_ai_test_weather_success');
+		$service = new ORAS_AI_Current_Weather_Service($weather, new ORAS_AI_Astronomical_Night_Resolver(oras_ai_test_darkness_provider($clock), $clock), $clock);
+		$service->query(oras_ai_test_authorized_request(1101, $question));
+		oras_ai_assert_same('2026-09-11T00:15:00+00:00', $weather->requests[0]->requested_at()->format(DATE_ATOM), 'Named evening became the previous active night.');
+	}
+	$weather = oras_ai_test_weather_provider('oras_ai_test_weather_success');
+	$service = new ORAS_AI_Current_Weather_Service($weather, new ORAS_AI_Astronomical_Night_Resolver(oras_ai_test_darkness_provider($clock), $clock), $clock);
+	$result = $service->query(oras_ai_test_authorized_request(1102, 'What is the forecast?'), $clock->now()->modify('-1 second'), $clock->now()->modify('+1 hour'));
+	oras_ai_assert_false($result->has_facts(), 'Unrelated stale explicit request was accepted.');
+	oras_ai_assert_same(0, count($weather->requests), 'Stale explicit interval reached provider.');
+});
+
+oras_ai_test('M6 correction active night samples trusted now at request construction with an advancing clock', function (): void {
+	$clock = new class implements ORAS_AI_Clock_Interface {
+		private int $ticks = 0;
+		public function now(): DateTimeImmutable {
+			return (new DateTimeImmutable('2026-09-10T07:00:00Z'))->modify('+' . $this->ticks++ . ' seconds');
+		}
+	};
+	$weather = oras_ai_test_weather_provider('oras_ai_test_weather_success');
+	$service = new ORAS_AI_Current_Weather_Service($weather, new ORAS_AI_Astronomical_Night_Resolver(oras_ai_test_darkness_provider($clock), $clock), $clock);
+	$result = $service->query(oras_ai_test_authorized_request(1103, 'What is the weather tonight?'));
+	oras_ai_assert_true($result->has_facts(), 'Clock advancement rejected a derived current-night start.');
+	oras_ai_assert_same(1, count($weather->requests), 'Weather was not consulted with the current request.');
+	oras_ai_assert_true($weather->requests[0]->requested_at() > new DateTimeImmutable('2026-09-10T07:00:00Z'), 'Factory did not sample current trusted time.');
+	oras_ai_assert_same($weather->requests[0]->requested_at(), $result->requested_at(), 'Result retained an older captured start.');
+});
