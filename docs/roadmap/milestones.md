@@ -95,8 +95,9 @@ M6 implementation qualification: **READY TO CLOSE**, 2026-09-27. See
 [verification evidence](../evidence/m6-astronomy-weather-intelligence/verification.md).
 Weekend comparisons preserve authoritative interval scores and disclose the
 absence of a whole-night aggregate. Credentialed AstronomyAPI and installed-site
-verification remain deployment items; ASTRO-007 remains deferred. No closure
-commit or production release is claimed by this documentation.
+verification remain deployment items; ASTRO-007 remains deferred. The original
+closure evidence was committed at `657ed77`; this final rerun makes no new
+commit or production-release claim.
 
 ## M7 — Fluent Support escalation/feedback
 - [ ] RB Fluent Support bridge qualified against installed version.
