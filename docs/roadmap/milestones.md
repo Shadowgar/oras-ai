@@ -100,7 +100,7 @@ closure evidence was committed at `657ed77`; this final rerun makes no new
 commit or production-release claim.
 
 ## M7 — Fluent Support escalation/feedback
-**Status:** READY TO CLOSE — 2026-09-27, pending owner review.
+**Status:** COMPLETE — frozen development qualification committed at `039d6ae`.
 
 **Evidence:** [M7 Fluent Support qualification](../evidence/m7-fluent-support-escalation/verification.md)
 - [x] RB Fluent Support bridge qualified against disposable core/Pro 2.4.0.
@@ -110,11 +110,27 @@ commit or production-release claim.
 - [x] RB Ticket data minimization.
 - [x] RB Admin-initiated resolved-ticket knowledge candidate enters Needs Review without auto-approval.
 
+The M7 qualification and SUP-004 correction are committed. Its production
+configuration and credentialed-provider verification remain deployment items;
+the M8 qualification reruns its confirmation and duplicate-safety regressions.
+
 ## M8 — Member-aware actions
-- [ ] RB Member-specific answers use least privilege.
-- [ ] RB Pass/event recommendations use live availability.
-- [ ] RB Side-effect confirmation.
+**Status:** COMPLETE — frozen development qualification, 2026-10-01.
+
+**Closure decision:** READY TO CLOSE; documentation awaits owner review and is uncommitted.
+
+**Evidence:** [M8 member-aware actions qualification](../evidence/m8-member-aware-actions/verification.md)
+- [x] RB Member-specific answers use least privilege.
+- [x] RB Pass/event recommendations use live availability.
+- [x] RB Side-effect confirmation.
 - [ ] DC Direct payment automation remains prohibited unless separately approved.
+
+Qualification covers ACT-001–004, AT-ACTION-001–005, hostile-model grounding,
+combined-domain preservation, and fact-scoped partial failure at implementation
+HEAD `816da5adf311049f6a95a288a484d0e3337a417f`. All M1–M7 automated regressions
+remain green. Production product/event mappings, prices, capacity, installed
+versions, and canonical HTTPS handoffs remain deployment verification items.
+Plugin version remains `0.2.1`; ASTRO-007 remains deferred and M9 is unchanged.
 
 ## M9 — Production release
 - [ ] RD Security review.
