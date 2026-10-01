@@ -176,6 +176,7 @@ assert.strictEqual(sources.children[1].children[0].children[0].href, 'https://or
 const passSources = new FakeNode('div');
 api.renderSources(passSources, [
 	{ source_title: 'Annual Observer Pass', canonical_url: 'https://oras.org/product/annual-observer-pass/' },
+	{ source_title: 'Daily Observer Pass', canonical_url: 'https://oras.org/product/daily-observer-pass/' },
 	{ source_title: 'Unverified checkout', canonical_url: 'javascript:alert(1)' },
 ], fakeDocument);
 const passLink = passSources.children[1].children[0].children[0];
@@ -184,7 +185,11 @@ assert.strictEqual(passLink.textContent, 'Annual Observer Pass');
 assert.strictEqual(passLink.href, 'https://oras.org/product/annual-observer-pass/');
 assert.strictEqual(passLink.target, '_blank');
 assert.strictEqual(passLink.rel, 'noopener noreferrer');
-assert.strictEqual(passSources.children[1].children.length, 1, 'Unsafe destination was rendered');
+const dailyPassLink = passSources.children[1].children[1].children[0];
+assert.strictEqual(dailyPassLink.tagName, 'A', 'Daily handoff must be keyboard accessible');
+assert.strictEqual(dailyPassLink.textContent, 'Daily Observer Pass');
+assert.strictEqual(dailyPassLink.href, 'https://oras.org/product/daily-observer-pass/');
+assert.strictEqual(passSources.children[1].children.length, 2, 'Unsafe destination was rendered');
 const unknownRegistration = new FakeNode('div');
 api.renderMessage(unknownRegistration, { role: 'assistant', content: 'AstroBlast starts Friday. I could not verify registration availability.' }, fakeDocument);
 assert(allText(unknownRegistration).includes('could not verify registration availability'), 'Unknown event availability was hidden');

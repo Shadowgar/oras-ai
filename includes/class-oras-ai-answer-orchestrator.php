@@ -125,6 +125,9 @@ final class ORAS_AI_Answer_Orchestrator {
 			if ( $live_result instanceof ORAS_AI_Live_Result ) {
 				if ( ! $live_result->successful() && ( ! $planning || 'unavailable' === $plan->state() ) ) {
 					$this->ledger->release( $reservation_id );
+					if ( 'ambiguous_event_subject' === $live_result->reason() ) {
+						return ORAS_AI_Answer_Result::no_evidence( 'Please name the event so I can verify current registration availability.', 'event_identity_required' );
+					}
 					return ORAS_AI_Answer_Result::no_evidence( self::NO_EVIDENCE_MESSAGE, 'live_data_unavailable' );
 				}
 				if ( $live_result->successful() ) {
@@ -225,13 +228,9 @@ final class ORAS_AI_Answer_Orchestrator {
 		if ( ORAS_AI_Grounded_Context::CROSSOVER_ASTRONOMY_ONLY === $context->scope() ) {
 			$answer = self::NO_EVIDENCE_MESSAGE . ' ' . $answer;
 		}
-		$action_answer = $this->bounded_action_answer( $request->question(), $context );
+		$action_answer = $this->bounded_member_aware_answer( $request->question(), $context );
 		if ( null !== $action_answer ) {
 			$answer = $action_answer;
-		}
-		$membership_answer = $this->bounded_membership_answer( $request->question(), $context );
-		if ( null !== $membership_answer ) {
-			$answer = $membership_answer;
 		}
 
 		return ORAS_AI_Answer_Result::success(
@@ -273,10 +272,7 @@ final class ORAS_AI_Answer_Orchestrator {
 		if ( preg_match( '/\b(current|currently|now|today|tonight|tomorrow|upcoming|latest|next|price|availability|available|schedule|registration)\b/', $question ) ) {
 			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
 		}
-		if (
-			preg_match( '/\bobserver\s+pass(?:es)?\b/', $question )
-			&& preg_match( '/\b(how much|cost|stock|in stock|buy|purchase|purchasable|where)\b/', $question )
-		) {
+		if ( ORAS_AI_WooCommerce_Connector::matches_offering_question( $question ) ) {
 			return ORAS_AI_Retrieval_Request::INTENT_CURRENT;
 		}
 		if (
@@ -337,7 +333,7 @@ final class ORAS_AI_Answer_Orchestrator {
 
 	private function requires_live_oras( $question ) {
 		$question = strtolower( (string) $question );
-		return (bool) ( preg_match( '/\b(?:buy|purchase)\b.*\bobserver\s+pass(?:es)?\b/', $question ) || preg_match(
+		return (bool) ( ORAS_AI_WooCommerce_Connector::matches_offering_question( $question ) || preg_match(
 			'/\b(price|cost|availability|available|inventory|register|registration|ticket|upcoming event|event date|event time|current schedule|next astroblast|next public night|my membership|member status|membership status|membership level|membership tier|active member|order status|support ticket status)\b/',
 			$question
 		) );
@@ -353,14 +349,32 @@ final class ORAS_AI_Answer_Orchestrator {
 		return false;
 	}
 
-	/** Keep current purchase/registration claims tied to selected live facts, not model prose. */
-	private function bounded_action_answer( $question, ORAS_AI_Grounded_Context $context ) {
+	/** Compose independent admitted domains once; no model prose can replace a fragment. */
+	private function bounded_member_aware_answer( $question, ORAS_AI_Grounded_Context $context ) {
+		$fragments = array();
+		foreach ( array(
+			$this->bounded_membership_answer( $question, $context ),
+			$this->bounded_pass_answer( $question, $context ),
+		) as $fragment ) {
+			if ( null !== $fragment ) {
+				$fragments[] = $fragment;
+			}
+		}
+		$event = $this->bounded_event_answer( $question, $context, ! empty( $fragments ) );
+		if ( null !== $event ) {
+			$fragments[] = $event;
+		}
+		return $fragments ? implode( ' ', $fragments ) : null;
+	}
+
+	/** Keep pass purchase/price claims tied to selected Woo facts. */
+	private function bounded_pass_answer( $question, ORAS_AI_Grounded_Context $context ) {
 		$question = strtolower( (string) $question );
-		if ( preg_match( '/\bobserver\s+pass(?:es)?\b/', $question )
-			&& preg_match( '/\b(?:buy|purchase|price|cost|available|availability|stock|purchasable|where)\b/', $question ) ) {
+		if ( ORAS_AI_WooCommerce_Connector::matches_offering_question( $question ) ) {
 			$products = array();
 			foreach ( $context->evidence_packet()->items() as $item ) {
-				if ( ORAS_AI_Source_Precedence::LIVE_ORAS_STATE !== $item->field( 'authority_class' ) ) {
+				if ( ORAS_AI_Source_Precedence::LIVE_ORAS_STATE !== $item->field( 'authority_class' )
+					|| ! in_array( $item->field( 'source_type' ), array( 'product', 'product_variation' ), true ) ) {
 					continue;
 				}
 				foreach ( (array) $item->field( 'fact_keys' ) as $key ) {
@@ -373,38 +387,79 @@ final class ORAS_AI_Answer_Orchestrator {
 				return 'I could not verify current Observer Pass availability or purchasability.';
 			}
 			$sentences = array();
-			foreach ( $products as $option => $facts ) {
+			$is_annual = (bool) preg_match( '/\bannual\b/', $question );
+			$is_daily = (bool) preg_match( '/\bdaily\b/', $question );
+			$options = $is_annual && ! $is_daily ? array( 'annual' )
+				: ( $is_daily && ! $is_annual ? array( 'daily' ) : array( 'annual', 'daily' ) );
+			foreach ( $options as $option ) {
+				$facts = $products[ $option ] ?? array();
 				$title = ucfirst( $option ) . ' Observer Pass';
 				if ( isset( $facts['price'] ) ) {
 					$sentences[] = $facts['price']->field( 'relevant_text' );
+				} elseif ( preg_match( '/\b(?:price|cost|how much)\b/', $question ) ) {
+					$sentences[] = 'I could not verify the ' . $title . ' price.';
 				}
 				if ( isset( $facts['availability'], $facts['purchasable'] ) ) {
-					$in_stock = 'instock|yes' === $facts['availability']->field( 'comparison_value' );
+					$in_stock = in_array( $facts['availability']->field( 'comparison_value' ), array( 'instock|yes', 'onbackorder|yes' ), true );
 					$purchasable = 'yes' === $facts['purchasable']->field( 'comparison_value' );
 					$url = (string) $facts['purchasable']->field( 'canonical_url' );
 					$sentences[] = $in_stock && $purchasable && '' !== $url
 						? $title . ' is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.'
 						: $title . ' is not currently purchasable.';
 				} else {
-					$sentences[] = 'I could not verify whether the ' . $title . ' is currently purchasable.';
+					$sentences[] = $facts
+						? 'I could not verify whether the ' . $title . ' is currently purchasable.'
+						: 'I could not verify current ' . $title . ' availability or purchasability.';
 				}
 			}
 			return implode( ' ', $sentences );
 		}
-		if ( preg_match( '/\b(?:astro\s*blast|public\s+night)\b/', $question )
-			&& preg_match( '/\b(?:register|registration|tickets?|spots?|book|available|availability)\b/', $question ) ) {
+		return null;
+	}
+
+	/** Event state is independent of whether its canonical page can be linked. */
+	private function bounded_event_answer( $question, ORAS_AI_Grounded_Context $context, $include_schedule = false ) {
+		$question = strtolower( (string) $question );
+		$registration_requested = (bool) preg_match( '/\b(?:register|registration|tickets?|spots?|book|sold out)\b/', $question )
+			|| ( ! preg_match( '/\bobserver\s+pass(?:es)?\b/', $question )
+				&& preg_match( '/\b(?:available|availability)\b/', $question ) )
+			|| (bool) preg_match( '/\b(?:next|upcoming)\s+events?\b/', $question );
+		if ( ( preg_match( '/\b(?:astro\s*blast|public\s+night)\b/', $question )
+				&& ( $registration_requested || $include_schedule ) )
+			|| preg_match( '/\b(?:next|upcoming)\s+events?\b/', $question ) ) {
+			$subject = preg_match( '/\bastro\s*blast\b/', $question ) ? 'astroblast'
+				: ( preg_match( '/\bpublic\s+night\b/', $question ) ? 'public-night' : 'upcoming' );
 			$schedule = array();
+			$registration = null;
 			foreach ( $context->evidence_packet()->items() as $item ) {
 				if ( ORAS_AI_Source_Precedence::LIVE_ORAS_STATE !== $item->field( 'authority_class' ) ) {
 					continue;
 				}
 				foreach ( (array) $item->field( 'fact_keys' ) as $key ) {
-					if ( preg_match( '/^event:(?:astroblast|public-night):(start|end|venue)$/', (string) $key ) ) {
+					if ( preg_match( '/^event:' . preg_quote( $subject, '/' ) . ':(start|end|venue)$/', (string) $key ) ) {
 						$schedule[] = $item->field( 'relevant_text' );
+					} elseif ( 'event_offering' === $item->field( 'source_type' )
+						&& 'event:' . $subject . ':registration' === (string) $key ) {
+						$registration = $item;
 					}
 				}
 			}
-			return implode( ' ', $schedule ) . ( $schedule ? ' ' : '' ) . 'I could not verify registration availability.';
+			if ( ! $registration_requested ) {
+				return $schedule ? implode( ' ', $schedule ) : 'I could not verify the current event schedule.';
+			}
+			$state = null === $registration ? '' : (string) $registration->field( 'comparison_value' );
+			$url = null === $registration ? '' : (string) $registration->field( 'canonical_url' );
+			$availability = array(
+				'open' => 'Registration is currently open.',
+				'full' => 'Registration is currently full.',
+				'closed' => 'Registration is currently closed.',
+			);
+			if ( 'open' === $state && '' !== $url ) {
+				$availability_text = 'Registration is currently open. Use the linked ORAS event page to register.';
+			} else {
+				$availability_text = $availability[ $state ] ?? 'I could not verify registration availability.';
+			}
+			return implode( ' ', $schedule ) . ( $schedule ? ' ' : '' ) . $availability_text;
 		}
 		return null;
 	}
@@ -419,7 +474,6 @@ final class ORAS_AI_Answer_Orchestrator {
 			return null;
 		}
 		$facts = array();
-		$related = array();
 		foreach ( $context->evidence_packet()->items() as $item ) {
 			if ( ORAS_AI_Source_Precedence::LIVE_ORAS_STATE !== $item->field( 'authority_class' ) ) {
 				continue;
@@ -428,14 +482,9 @@ final class ORAS_AI_Answer_Orchestrator {
 				if ( 'pmpro_membership' === $item->field( 'source_type' )
 					&& in_array( $key, array( 'member:self:membership-status', 'member:self:membership-level' ), true ) ) {
 					$facts[ $key ] = (string) $item->field( 'relevant_text' );
-				} elseif ( preg_match( '/^event:(?:astroblast|public-night):(start|end|venue)$/', (string) $key ) ) {
-					$related[ $key ] = (string) $item->field( 'relevant_text' );
 				}
 			}
 		}
-		return implode( ' ', array_merge(
-			$facts ? array_values( $facts ) : array( 'I could not verify current membership status or level.' ),
-			array_values( $related )
-		) );
+		return $facts ? implode( ' ', array_values( $facts ) ) : 'I could not verify current membership status or level.';
 	}
 }

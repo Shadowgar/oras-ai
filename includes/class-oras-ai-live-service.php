@@ -75,13 +75,31 @@ final class ORAS_AI_Live_Service {
 
 			$connector_facts = array();
 			$connector_failure = null;
+			$unsafe_fact_keys = array();
+			$unsafe_event_link = false;
 			foreach ( $result->facts() as $fact ) {
 				$canonical_url = (string) $fact->field( 'canonical_url' );
 				if ( '' !== $canonical_url && ! $this->url_policy->allows( $canonical_url ) ) {
+					if ( 'events_calendar' === $connector_id ) {
+						// The event page is optional provenance, not authority for its facts.
+						$fields = $fact->to_array();
+						$fields['canonical_url'] = '';
+						$fact = ORAS_AI_Live_Fact::from_array( $fields );
+						$unsafe_event_link = true;
+						$connector_facts[] = $fact;
+						continue;
+					}
+					if ( 'woocommerce' === $connector_id ) {
+						$unsafe_fact_keys[] = $fact->fact_key();
+						continue;
+					}
 					$connector_failure = ORAS_AI_Live_Result::unknown( 'unsafe_canonical_url' );
 					break;
 				}
 				$connector_facts[] = $fact;
+			}
+			if ( ! empty( $unsafe_fact_keys ) && empty( $connector_facts ) ) {
+				$connector_failure = ORAS_AI_Live_Result::unknown( 'unsafe_canonical_url' );
 			}
 			if ( $connector_failure ) {
 				$this->record_outcome( $connector_id, $connector_failure );
@@ -98,7 +116,21 @@ final class ORAS_AI_Live_Service {
 				continue;
 			}
 			$facts = array_merge( $facts, $connector_facts );
+			$failures = array_merge( $failures, $result->failures() );
+			if ( ! empty( $unsafe_fact_keys ) ) {
+				$failures[] = array(
+					'connector' => $connector_id,
+					'reason' => 'unsafe_canonical_url',
+					'fact_keys' => $unsafe_fact_keys,
+				);
+			}
 			$this->record_outcome( $connector_id, $result );
+			foreach ( $result->failures() as $failure ) {
+				$this->record_outcome( $connector_id, ORAS_AI_Live_Result::unknown( $failure['reason'] ) );
+			}
+			if ( ! empty( $unsafe_fact_keys ) || $unsafe_event_link ) {
+				$this->record_outcome( $connector_id, ORAS_AI_Live_Result::unknown( 'unsafe_canonical_url' ) );
+			}
 		}
 
 		if ( ! $matched ) {

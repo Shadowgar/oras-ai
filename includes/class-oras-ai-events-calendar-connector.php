@@ -12,10 +12,12 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 
 	private $event_loader;
 	private $now_provider;
+	private $offering_loader;
 
-	public function __construct( $event_loader = null, $now_provider = null ) {
+	public function __construct( $event_loader = null, $now_provider = null, $offering_loader = null ) {
 		$this->event_loader = is_callable( $event_loader ) ? $event_loader : null;
 		$this->now_provider = is_callable( $now_provider ) ? $now_provider : null;
+		$this->offering_loader = is_callable( $offering_loader ) ? $offering_loader : null;
 	}
 
 	public function supports( ORAS_AI_Live_Request $request ) {
@@ -72,7 +74,8 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 		$normalized    = array();
 		$saw_malformed = false;
 		foreach ( $events as $event ) {
-			if ( ! is_array( $event ) || ! $this->title_matches_subject( $event['title'] ?? '', $routed_request->subject() ) ) {
+			if ( ! is_array( $event ) || ( 'upcoming' !== $routed_request->subject()
+				&& ! $this->title_matches_subject( $event['title'] ?? '', $routed_request->subject() ) ) ) {
 				continue;
 			}
 
@@ -101,9 +104,30 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 		);
 
 		$event = $normalized[0];
+		$selected_registration = null;
+		if ( 'upcoming' === $routed_request->subject() ) {
+			foreach ( $normalized as $candidate ) {
+				$offering = $this->registration_fact( $candidate, 'event:upcoming:registration' );
+				if ( $offering instanceof ORAS_AI_Live_Fact && 'open' === $offering->field( 'comparison_value' ) ) {
+					$event = $candidate;
+					$selected_registration = $offering;
+					break;
+				}
+			}
+		}
 		$facts = array();
+		$failures = array();
 		foreach ( $routed_request->fact_keys() as $fact_key ) {
 			$field = substr( $fact_key, strrpos( $fact_key, ':' ) + 1 );
+			if ( 'registration' === $field ) {
+				$offering = $selected_registration ?: $this->registration_fact( $event, $fact_key );
+				if ( is_wp_error( $offering ) ) {
+					$failures[] = array( 'connector' => self::CONNECTOR, 'reason' => 'event_offering_unavailable', 'fact_keys' => array( $fact_key ) );
+				} else {
+					$facts[] = $offering;
+				}
+				continue;
+			}
 			if ( 'venue' === $field && '' === $event['venue'] ) {
 				return ORAS_AI_Live_Result::unknown( 'event_data_malformed' );
 			}
@@ -133,7 +157,7 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 			$facts[] = $fact;
 		}
 
-		return ORAS_AI_Live_Result::success( $facts );
+		return ORAS_AI_Live_Result::success( $facts, $failures );
 	}
 
 	private function route( ORAS_AI_Live_Request $request ) {
@@ -144,7 +168,7 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 		$question       = strtolower( trim( wp_strip_all_tags( $request->question(), true ) ) );
 		$is_astroblast  = (bool) preg_match( '/\bastro\s*blast\b/', $question );
 		$is_public_night = (bool) preg_match( '/\bpublic\s+night\b/', $question );
-		$current_signal = (bool) preg_match( '/\b(next|upcoming|when|where|start|starts|end|ends|time|schedule|venue|location|today|tomorrow|weekend)\b/', $question );
+		$current_signal = (bool) preg_match( '/\b(next|upcoming|when|where|start|starts|end|ends|time|schedule|venue|location|today|tomorrow|weekend|register|registration|tickets?|spots?|book|available|availability|sold out)\b/', $question );
 
 		if ( ! $current_signal ) {
 			return null;
@@ -153,7 +177,14 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 			return array( 'reason' => 'ambiguous_event_subject' );
 		}
 		if ( ! $is_astroblast && ! $is_public_night ) {
-			return (bool) preg_match( '/\b(event|events)\b/', $question )
+			if ( preg_match( '/\b(?:next|upcoming)\s+events?\b/', $question ) ) {
+				return array(
+					'subject' => 'upcoming',
+					'fact_keys' => array( 'event:upcoming:start', 'event:upcoming:end', 'event:upcoming:registration' ),
+					'reason' => '',
+				);
+			}
+			return (bool) preg_match( '/\b(event|events|register|registration|tickets?|spots?|book)\b/', $question )
 				? array( 'reason' => 'ambiguous_event_subject' )
 				: null;
 		}
@@ -173,6 +204,13 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 		}
 		if ( preg_match( '/\b(where|venue|location)\b/', $question ) ) {
 			$fact_keys[] = 'event:' . $subject . ':venue';
+		}
+		if ( preg_match( '/\b(register|registration|tickets?|spots?|book|sold out)\b/', $question )
+			|| ( ! preg_match( '/\bobserver\s+pass(?:es)?\b/', $question )
+				&& preg_match( '/\b(available|availability)\b/', $question ) ) ) {
+			$fact_keys[] = 'event:' . $subject . ':start';
+			$fact_keys[] = 'event:' . $subject . ':end';
+			$fact_keys[] = 'event:' . $subject . ':registration';
 		}
 
 		return array(
@@ -207,6 +245,7 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 
 		if (
 			'' === $title
+			|| 0 === absint( $event['id'] ?? 0 )
 			|| 'publish' !== $status
 			|| '' === $timezone
 			|| '' === $url
@@ -263,6 +302,91 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 		return '';
 	}
 
+	/** Project only public provider state; never expose ticket, product, or attendee records. */
+	private function registration_fact( array $event, $fact_key ) {
+		try {
+			$offerings = null === $this->offering_loader
+				? $this->load_oras_offerings( $event['id'] )
+				: call_user_func( $this->offering_loader, $event['id'] );
+		} catch ( Throwable $throwable ) {
+			return new WP_Error( 'event_offering_lookup_failed' );
+		}
+		if ( is_wp_error( $offerings ) || ! is_array( $offerings ) || empty( $offerings ) ) {
+			return new WP_Error( 'event_offering_unavailable' );
+		}
+		$states = array();
+		$unsafe_link_seen = false;
+		foreach ( $offerings as $offering ) {
+			$state = is_array( $offering ) && in_array( $offering['state'] ?? '', array( 'open', 'full', 'closed', 'unknown' ), true )
+				? $offering['state'] : 'unknown';
+			if ( is_array( $offering ) && isset( $offering['url'] )
+				&& (string) $offering['url'] !== $event['canonical_url'] ) {
+				$unsafe_link_seen = true;
+				if ( 'open' === $state ) {
+					$state = 'unknown';
+				}
+			}
+			$states[] = $state;
+		}
+		$state = in_array( 'open', $states, true ) ? 'open'
+			: ( 1 === count( array_unique( $states ) ) ? $states[0] : 'unknown' );
+		$link_qualified = 'open' === $state || ! $unsafe_link_seen;
+		$descriptions = array(
+			'open' => 'Registration is currently open for %s.',
+			'full' => 'Registration is currently full for %s.',
+			'closed' => 'Registration is currently closed for %s.',
+			'unknown' => 'Registration availability could not be verified for %s.',
+		);
+		return ORAS_AI_Live_Fact::from_array( array(
+			'fact_key' => $fact_key,
+			'source_title' => $event['title'],
+			'source_wp_object_id' => $event['id'],
+			'source_type' => 'event_offering',
+			'canonical_url' => $link_qualified ? $event['canonical_url'] : '',
+			'relevant_text' => sprintf( $descriptions[ $state ], $event['title'] ),
+			'comparison_value' => $state,
+			'visibility' => 'public',
+			'retrieved_at' => $event['retrieved_at'],
+		) );
+	}
+
+	/** Read the event-owned ORAS Tickets collection and RSVP decision without mutations. */
+	private function load_oras_offerings( $event_id ) {
+		$resolver = 'ORAS\\Tickets\\Domain\\Event_Offering_Resolver';
+		$capacity = 'ORAS\\Tickets\\Registration_Desk\\RSVP_Capacity';
+		if ( ! class_exists( $resolver ) || ! class_exists( $capacity ) || ! function_exists( 'get_post_meta' ) ) {
+			return new WP_Error( 'event_offering_provider_missing' );
+		}
+		$states = array();
+		foreach ( $resolver::resolve_for_event( (int) $event_id ) as $ticket ) {
+			if ( ! is_array( $ticket ) || ! in_array( $ticket['sale_state'] ?? '', array( 'on_sale', 'upcoming', 'ended' ), true ) ) {
+				$states[] = array( 'state' => 'unknown' );
+				continue;
+			}
+			if ( empty( $ticket['product_exists'] ) ) {
+				$state = 'unknown';
+			} elseif ( 'on_sale' !== $ticket['sale_state'] ) {
+				$state = 'closed';
+			} elseif ( 'sold_out' === ( $ticket['availability'] ?? '' ) ) {
+				$state = 'full';
+			} elseif ( 'available' === ( $ticket['availability'] ?? '' ) && ! empty( $ticket['selectable'] ) ) {
+				$state = 'open';
+			} else {
+				$state = 'unknown';
+			}
+			$states[] = array( 'state' => $state );
+		}
+		$rsvp_meta = get_post_meta( (int) $event_id, '_oras_rsvp_v1', true );
+		if ( is_array( $rsvp_meta ) && ! empty( $rsvp_meta['enabled'] ) ) {
+			$rsvp = $capacity::state( (int) $event_id );
+			$state = 'open' !== ( $rsvp['window_state'] ?? '' ) ? 'closed'
+				: ( 'admit' === ( $rsvp['decision'] ?? '' ) ? 'open'
+				: ( in_array( $rsvp['decision'] ?? '', array( 'waitlist', 'refuse' ), true ) ? 'full' : 'unknown' ) );
+			$states[] = array( 'state' => $state );
+		}
+		return $states;
+	}
+
 	private function load_from_tec( $subject ) {
 		if (
 			! function_exists( 'tribe_get_events' )
@@ -272,7 +396,7 @@ final class ORAS_AI_Events_Calendar_Connector implements ORAS_AI_Observable_Live
 			return new WP_Error( 'oras_ai_events_unavailable', __( 'The Events Calendar is unavailable.', 'oras-ai-assistant' ) );
 		}
 
-		$search = 'astroblast' === $subject ? 'AstroBlast' : 'Public Night';
+		$search = 'astroblast' === $subject ? 'AstroBlast' : ( 'public-night' === $subject ? 'Public Night' : '' );
 		$posts  = tribe_get_events(
 			array(
 				'eventDisplay'   => 'custom',

@@ -320,7 +320,8 @@ oras_ai_test('WooCommerce connector source contains only read-only commerce oper
 	$path = dirname(__DIR__, 2) . '/includes/class-oras-ai-woocommerce-connector.php';
 	oras_ai_assert_true(is_file($path), 'WooCommerce connector production file is missing.');
 	$source = (string) file_get_contents($path);
-	oras_ai_assert_contains("'name'", $source, 'Production lookup does not use a documented fixed product-name query.');
+	oras_ai_assert_contains("'title'", $source, 'Production lookup does not use a fixed exact product-title query.');
+	oras_ai_assert_not_contains("'name'    => \$name", $source, 'Production lookup uses Woo name as a WordPress slug query.');
 	oras_ai_assert_not_contains("'search'", $source, 'Production lookup uses an undocumented broad catalog-search argument.');
 	foreach (
 		array(

@@ -267,9 +267,11 @@ oras_ai_test('live service accepts only safe connector URLs and converts facts t
 		)
 	);
 	$unsafe = $unsafeService->query(oras_ai_test_live_request('When is the next AstroBlast?'));
-	oras_ai_assert_same(ORAS_AI_Live_Result::UNKNOWN, $unsafe->status(), 'Unsafe connector URL must invalidate the result.');
-	oras_ai_assert_same('unsafe_canonical_url', $unsafe->reason(), 'Unsafe URL reason changed.');
-	oras_ai_assert_true($unsafeService->evidence_packet($unsafe)->is_empty(), 'Unsafe connector result produced evidence.');
+	oras_ai_assert_true($unsafe->successful(), 'Unsafe optional event URL erased valid schedule facts.');
+	oras_ai_assert_same(2, $unsafeService->evidence_packet($unsafe)->count(), 'Schedule facts were erased with the link.');
+	foreach ($unsafe->facts() as $fact) {
+		oras_ai_assert_same('', $fact->field('canonical_url'), 'Rejected event URL entered evidence.');
+	}
 });
 
 oras_ai_test('live service contains connector exceptions from matching as bounded failures', function (): void {

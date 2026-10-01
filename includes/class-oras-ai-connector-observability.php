@@ -18,6 +18,7 @@ final class ORAS_AI_Connector_Observability {
 		'events_connector_unavailable',
 		'event_lookup_failed',
 		'event_data_malformed',
+		'event_offering_unavailable',
 		'woocommerce_connector_unavailable',
 		'product_lookup_failed',
 		'product_data_malformed',

@@ -81,16 +81,22 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 		$matches       = array();
 		$saw_relevant  = false;
 		$saw_ambiguous = false;
+		$saw_malformed = false;
 		foreach ( $records as $record ) {
 			if ( ! is_array( $record ) ) {
-				return ORAS_AI_Live_Result::unknown( 'product_data_malformed' );
-			}
-			if ( ! $this->is_observer_pass( $record ) ) {
+				$saw_malformed = true;
 				continue;
 			}
-
-			$saw_relevant = true;
-			$option       = $this->option_for( $record );
+			try {
+				if ( ! $this->is_observer_pass( $record ) ) {
+					continue;
+				}
+				$saw_relevant = true;
+				$option = $this->option_for( $record );
+			} catch ( Throwable $throwable ) {
+				$saw_malformed = true;
+				continue;
+			}
 			if ( '' === $option ) {
 				$saw_ambiguous = true;
 				continue;
@@ -99,42 +105,96 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 				continue;
 			}
 
-			$normalized = $this->normalize_product( $record, $option, $route['fields'] );
-			if ( is_wp_error( $normalized ) ) {
-				return ORAS_AI_Live_Result::unknown( $normalized->get_error_code() );
-			}
-			if ( isset( $matches[ $option ] ) ) {
-				return ORAS_AI_Live_Result::unknown( 'ambiguous_product_match' );
-			}
-			$matches[ $option ] = $normalized;
+			$matches[ $option ][] = $record;
 		}
 
-		if ( $saw_ambiguous ) {
-			return ORAS_AI_Live_Result::unknown( 'ambiguous_product_variation' );
-		}
 		if ( empty( $matches ) ) {
+			if ( $saw_ambiguous || $saw_malformed ) {
+				return ORAS_AI_Live_Result::unknown( $saw_ambiguous ? 'ambiguous_product_variation' : 'product_data_malformed' );
+			}
 			return ORAS_AI_Live_Result::unknown( $saw_relevant ? 'observer_pass_option_not_found' : 'observer_pass_not_found' );
 		}
 
-		$ordered = array();
-		foreach ( array( 'annual', 'daily' ) as $option ) {
-			if ( isset( $matches[ $option ] ) ) {
-				$ordered[ $option ] = $matches[ $option ];
-			}
-		}
-
 		$facts = array();
-		foreach ( $ordered as $option => $product ) {
+		$failures = array();
+		$first_failure = '';
+		$options = 'all' === $route['option'] ? array( 'annual', 'daily' ) : array( $route['option'] );
+		foreach ( $options as $option ) {
+			if ( empty( $matches[ $option ] ) ) {
+				$failures[] = $this->field_failure( $option, $route['fields'], 'observer_pass_option_not_found' );
+				continue;
+			}
+			if ( count( $matches[ $option ] ) > 1 ) {
+				$first_failure = '' === $first_failure ? 'ambiguous_product_match' : $first_failure;
+				$failures[] = $this->field_failure( $option, $route['fields'], 'ambiguous_product_match' );
+				continue;
+			}
 			foreach ( $route['fields'] as $field ) {
+				try {
+					$product = $this->normalize_product( $matches[ $option ][0], $option, array( $field ) );
+				} catch ( Throwable $throwable ) {
+					$product = new WP_Error( 'product_data_malformed' );
+				}
+				if ( is_wp_error( $product ) ) {
+					$reason = $product->get_error_code();
+					$first_failure = '' === $first_failure ? $reason : $first_failure;
+					$failures[] = $this->field_failure( $option, array( $field ), $reason );
+					continue;
+				}
 				$fact = $this->make_fact( $product, $option, $field );
 				if ( is_wp_error( $fact ) ) {
-					return ORAS_AI_Live_Result::unknown( 'product_data_malformed' );
+					$first_failure = '' === $first_failure ? 'product_data_malformed' : $first_failure;
+					$failures[] = $this->field_failure( $option, array( $field ), 'product_data_malformed' );
+					continue;
 				}
 				$facts[] = $fact;
 			}
 		}
 
-		return ORAS_AI_Live_Result::success( $facts );
+		if ( ! $facts ) {
+			return ORAS_AI_Live_Result::unknown( '' !== $first_failure ? $first_failure : 'observer_pass_option_not_found' );
+		}
+		if ( count( $failures ) > 1 ) {
+			$failed_keys = array();
+			$reason = $failures[0]['reason'];
+			$found_operational = false;
+			foreach ( $failures as $failure ) {
+				$failed_keys = array_merge( $failed_keys, $failure['fact_keys'] );
+				if ( ! $found_operational && ! in_array( $failure['reason'], array( 'product_unavailable', 'observer_pass_option_not_found' ), true ) ) {
+					$reason = $failure['reason'];
+					$found_operational = true;
+				}
+			}
+			$failures = array(
+				array(
+					'connector' => self::CONNECTOR,
+					'reason' => $reason,
+					'fact_keys' => ORAS_AI_Live_Request::normalize_fact_keys( $failed_keys ),
+				),
+			);
+		}
+
+		return ORAS_AI_Live_Result::success( $facts, $failures );
+	}
+
+	private function field_failure( $option, array $fields, $reason ) {
+		return array(
+			'connector' => self::CONNECTOR,
+			'reason' => $reason,
+			'fact_keys' => array_map(
+				static function ( $field ) use ( $option ) {
+					return 'product:observer-pass-' . $option . ':' . $field;
+				},
+				$fields
+			),
+		);
+	}
+
+	/** Shared bounded offering intent for connector routing and answer grounding. */
+	public static function matches_offering_question( $question ) {
+		$question = strtolower( trim( wp_strip_all_tags( (string) $question, true ) ) );
+		return (bool) preg_match( '/\bobserver\s+pass(?:es)?\b/', $question )
+			&& (bool) preg_match( '/\b(how much|price|cost|available|availability|stock|in stock|buy|get|purchase|purchasable|where)\b/', $question );
 	}
 
 	private function route( ORAS_AI_Live_Request $request ) {
@@ -143,10 +203,7 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 		}
 
 		$question = strtolower( trim( wp_strip_all_tags( $request->question(), true ) ) );
-		if ( ! preg_match( '/\bobserver\s+pass(?:es)?\b/', $question ) ) {
-			return null;
-		}
-		if ( ! preg_match( '/\b(how much|price|cost|available|availability|stock|in stock|buy|purchase|purchasable|where)\b/', $question ) ) {
+		if ( ! self::matches_offering_question( $question ) ) {
 			return null;
 		}
 
@@ -157,7 +214,7 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 		if ( preg_match( '/\b(how much|price|cost)\b/', $question ) ) {
 			$fields[] = 'price';
 		}
-		if ( preg_match( '/\b(available|availability|stock|in stock|buy|purchase|purchasable|where)\b/', $question ) ) {
+		if ( preg_match( '/\b(available|availability|stock|in stock|buy|get|purchase|purchasable|where)\b/', $question ) ) {
 			$fields[] = 'availability';
 			$fields[] = 'purchasable';
 		}
@@ -372,11 +429,12 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 		}
 
 		$products = array();
+		$malformed_records = array();
 		foreach ( array( 'Observer Pass', 'Annual Observer Pass', 'Daily Observer Pass' ) as $name ) {
 			$named_products = wc_get_products(
 				array(
 					'status'  => 'publish',
-					'name'    => $name,
+					'title'   => $name,
 					'limit'   => self::MAX_PRODUCTS + 1,
 					'orderby' => 'ID',
 					'order'   => 'ASC',
@@ -388,9 +446,15 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 			}
 			foreach ( $named_products as $product ) {
 				if ( ! is_object( $product ) || ! method_exists( $product, 'get_id' ) ) {
-					return new WP_Error( 'oras_ai_products_invalid', __( 'The product data was malformed.', 'oras-ai-assistant' ) );
+					$malformed_records[] = null;
+					continue;
 				}
-				$products[ absint( $product->get_id() ) ] = $product;
+				try {
+					$products[ absint( $product->get_id() ) ] = $product;
+				} catch ( Throwable $throwable ) {
+					$identity = $this->safe_record_from_product( $product, '' );
+					$malformed_records[] = is_wp_error( $identity ) ? null : $identity;
+				}
 			}
 			if ( count( $products ) > self::MAX_PRODUCTS ) {
 				return new WP_Error( 'oras_ai_products_ambiguous', __( 'The product lookup was ambiguous.', 'oras-ai-assistant' ) );
@@ -399,11 +463,12 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 		$products = array_values( $products );
 
 		$currency = (string) get_woocommerce_currency();
-		$records  = array();
+		$records  = $malformed_records;
 		foreach ( $products as $product ) {
-			$record = $this->record_from_product( $product, $currency );
+			$record = $this->safe_record_from_product( $product, $currency );
 			if ( is_wp_error( $record ) ) {
-				return $record;
+				$records[] = null;
+				continue;
 			}
 
 			if ( 'variable' !== (string) $record['type'] ) {
@@ -412,25 +477,63 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 			}
 
 			if ( ! method_exists( $product, 'get_children' ) ) {
-				return new WP_Error( 'oras_ai_products_invalid', __( 'The product data was malformed.', 'oras-ai-assistant' ) );
+				$records[] = null;
+				continue;
 			}
-			$children = (array) $product->get_children();
+			try {
+				$children = (array) $product->get_children();
+			} catch ( Throwable $throwable ) {
+				$records[] = $record;
+				continue;
+			}
 			if ( empty( $children ) || count( $children ) > self::MAX_PRODUCTS ) {
 				$records[] = $record;
 				continue;
 			}
 
 			foreach ( $children as $child_id ) {
-				$variation = wc_get_product( absint( $child_id ) );
-				$child     = $this->record_from_product( $variation, $currency, $record['name'], $record['slug'] );
+				try {
+					$variation = wc_get_product( absint( $child_id ) );
+				} catch ( Throwable $throwable ) {
+					$variation = null;
+				}
+				$child     = $this->safe_record_from_product( $variation, $currency, $record['name'], $record['slug'] );
 				if ( is_wp_error( $child ) ) {
-					return $child;
+					$records[] = null;
+					continue;
 				}
 				$records[] = $child;
 			}
 		}
 
 		return $records;
+	}
+
+	private function safe_record_from_product( $product, $currency, $parent_name = '', $parent_slug = '' ) {
+		try {
+			$record = $this->record_from_product( $product, $currency, $parent_name, $parent_slug );
+		} catch ( Throwable $throwable ) {
+			$record = new WP_Error( 'oras_ai_products_invalid' );
+		}
+		if ( ! is_wp_error( $record ) ) {
+			return $record;
+		}
+
+		// Preserve a known failed identity so a bad duplicate cannot leave an arbitrary winner.
+		$identity = array( 'id' => 0, 'status' => 'publish', 'type' => '', 'parent_name' => $parent_name, 'parent_slug' => $parent_slug );
+		foreach ( array( 'name' => 'get_name', 'slug' => 'get_slug' ) as $field => $method ) {
+			if ( is_object( $product ) && method_exists( $product, $method ) ) {
+				try {
+					$value = $product->$method();
+					if ( is_string( $value ) ) {
+						$identity[ $field ] = $value;
+					}
+				} catch ( Throwable $throwable ) {
+					// A field that cannot be read supplies no identity.
+				}
+			}
+		}
+		return $this->is_observer_pass( $identity ) && '' !== $this->option_for( $identity ) ? $identity : $record;
 	}
 
 	private function record_from_product( $product, $currency, $parent_name = '', $parent_slug = '' ) {
