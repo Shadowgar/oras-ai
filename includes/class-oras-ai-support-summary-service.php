@@ -20,7 +20,7 @@ final class ORAS_AI_Support_Summary_Service {
 			|| ! is_string( $question ) || '' === trim( $question ) || strlen( $question ) > ORAS_AI_Escalation_Proposal_Service::MAX_QUESTION_BYTES ) {
 			return array( 'status' => 'unavailable' );
 		}
-		$admission = $this->controls->admit( $request, $this->provider->model(), strlen( $question ) + 400 );
+		$admission = $this->controls->admit_support_summary( $request, $this->provider->model(), strlen( $question ) + 400 );
 		if ( ! $admission->allowed() ) {
 			return array( 'status' => 'unavailable' );
 		}
@@ -29,7 +29,8 @@ final class ORAS_AI_Support_Summary_Service {
 			$result = $this->provider->summarize_support_question(
 				$question,
 				min( 160, $admission->max_output_tokens() ),
-				min( 10, $admission->timeout_seconds() )
+				min( 10, $admission->timeout_seconds() ),
+				$reservation_id
 			);
 		} catch ( Throwable $error ) {
 			$this->ledger->settle_reserved_maximum( $reservation_id );

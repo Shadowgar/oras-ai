@@ -95,6 +95,7 @@ oras_ai_test('static source creates then reuses one managed knowledge entry', fu
 
 oras_ai_test('review source creates then updates one review knowledge entry', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	$sourceId = oras_ai_test_add_source('page', 'Mixed page', 'Mixed facts and changing details');
 	$classification = oras_ai_test_classification(
 		array(

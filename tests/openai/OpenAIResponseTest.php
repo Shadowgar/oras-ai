@@ -32,6 +32,7 @@ function oras_ai_test_http_response(int $code, array $body): array {
 
 oras_ai_test('OpenAI model uses the v0.2.1 default and allowlist', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	oras_ai_assert_same('gpt-5.6-luna', ORAS_AI_OpenAI::get_model(), 'Default model changed.');
 	update_option(ORAS_AI_OpenAI::OPTION_MODEL, 'gpt-5.6-sol');
 	oras_ai_assert_same('gpt-5.6-sol', ORAS_AI_OpenAI::get_model(), 'Allowed Sol model should be preserved.');
@@ -41,6 +42,7 @@ oras_ai_test('OpenAI model uses the v0.2.1 default and allowlist', function (): 
 
 oras_ai_test('OpenAI classifier returns no-key error without making HTTP request', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	$result = ORAS_AI_OpenAI::classify_source('Title', 'https://oras.org/page/', 'page', 'Content');
 	oras_ai_assert_wp_error($result, 'oras_ai_no_key', 'Missing API key behavior changed.');
 	oras_ai_assert_same(0, count($GLOBALS['oras_ai_test_remote_calls']), 'Missing-key classification must not attempt HTTP.');
@@ -48,6 +50,7 @@ oras_ai_test('OpenAI classifier returns no-key error without making HTTP request
 
 oras_ai_test('OpenAI classifier accepts direct output_text structured JSON', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$classification = oras_ai_test_classification();
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
@@ -68,6 +71,7 @@ oras_ai_test('OpenAI classifier accepts direct output_text structured JSON', fun
 
 oras_ai_test('OpenAI structured schema exposes exactly five outcomes and mixed extraction fields', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
 		200,
@@ -91,6 +95,7 @@ oras_ai_test('OpenAI structured schema exposes exactly five outcomes and mixed e
 
 oras_ai_test('OpenAI policy prompt keeps legitimate ORAS privacy and security pages eligible', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
 		200,
@@ -113,6 +118,7 @@ oras_ai_test('OpenAI policy prompt keeps legitimate ORAS privacy and security pa
 
 oras_ai_test('OpenAI policy prompt represents historical ORAS events as durable event knowledge', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
 		200,
@@ -134,6 +140,7 @@ oras_ai_test('OpenAI policy prompt represents historical ORAS events as durable 
 
 oras_ai_test('OpenAI classifier accepts nested output content text', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$classification = oras_ai_test_classification(array('source_kind' => 'review'));
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
@@ -156,6 +163,7 @@ oras_ai_test('OpenAI classifier accepts nested output content text', function ()
 
 oras_ai_test('OpenAI classifier rejects malformed JSON output', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(200, array('output_text' => '{broken'));
 	$result = ORAS_AI_OpenAI::classify_source('Title', 'https://oras.org/page/', 'page', 'Content');
@@ -164,23 +172,27 @@ oras_ai_test('OpenAI classifier rejects malformed JSON output', function (): voi
 
 oras_ai_test('OpenAI classifier rejects an empty successful response', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(200, array('output' => array()));
 	$result = ORAS_AI_OpenAI::classify_source('Title', 'https://oras.org/page/', 'page', 'Content');
 	oras_ai_assert_wp_error($result, 'oras_ai_empty_response', 'Empty response handling changed.');
 });
 
-oras_ai_test('OpenAI classifier returns WordPress HTTP errors unchanged', function (): void {
+oras_ai_test('OpenAI classifier bounds WordPress HTTP errors without leaking transport detail', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$httpError = new WP_Error('http_request_failed', 'Connection unavailable.');
 	$GLOBALS['oras_ai_test_remote_responses'][] = $httpError;
 	$result = ORAS_AI_OpenAI::classify_source('Title', 'https://oras.org/page/', 'page', 'Content');
-	oras_ai_assert_same($httpError, $result, 'WordPress HTTP error should pass through unchanged.');
+	oras_ai_assert_wp_error($result, 'oras_ai_paid_call_unavailable', 'Transport error must be bounded.');
+	oras_ai_assert_not_contains('Connection unavailable.', $result->get_error_message(), 'Raw transport detail leaked.');
 });
 
 oras_ai_test('OpenAI classifier maps non-success responses to the current HTTP error', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
 		429,
@@ -188,12 +200,13 @@ oras_ai_test('OpenAI classifier maps non-success responses to the current HTTP e
 	);
 	$result = ORAS_AI_OpenAI::classify_source('Title', 'https://oras.org/page/', 'page', 'Content');
 	oras_ai_assert_wp_error($result, 'oras_ai_openai_http', 'Non-success HTTP handling changed.');
-	oras_ai_assert_same('Rate limit reached.', $result->get_error_message(), 'API error message extraction changed.');
+	oras_ai_assert_same('OpenAI API request failed.', $result->get_error_message(), 'Provider error must be bounded.');
 	oras_ai_assert_same(array('status' => 429), $result->get_error_data(), 'HTTP status error data changed.');
 });
 
 oras_ai_test('OpenAI API key constant takes precedence over stored option', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-option-key');
 	if (!defined('ORAS_AI_OPENAI_API_KEY')) {
 		define('ORAS_AI_OPENAI_API_KEY', '  constant-key  ');

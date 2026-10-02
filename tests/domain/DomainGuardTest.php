@@ -142,6 +142,7 @@ oras_ai_test('malformed or failed ambiguity classification fails closed', functi
 
 oras_ai_test('OpenAI domain adapter uses configured model strict output and question-only context', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_Config::OPTION_OPENAI_API_KEY, 'server-only-key');
 	update_option(ORAS_AI_Config::OPTION_OPENAI_MODEL, 'gpt-5.6-terra');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
@@ -158,7 +159,7 @@ oras_ai_test('OpenAI domain adapter uses configured model strict output and ques
 	$payload = json_decode($GLOBALS['oras_ai_test_remote_calls'][0]['args']['body'], true);
 	oras_ai_assert_same('gpt-5.6-terra', $payload['model'], 'Domain adapter must use configured model selection.');
 	oras_ai_assert_same('low', $payload['reasoning']['effort'], 'Domain classification should use low reasoning effort.');
-	oras_ai_assert_same(array('model', 'reasoning', 'input', 'text'), array_keys($payload), 'Domain classifier must not receive tools or unrelated context.');
+	oras_ai_assert_same(array('model', 'max_output_tokens', 'reasoning', 'input', 'text'), array_keys($payload), 'Domain classifier must not receive tools or unrelated context.');
 	oras_ai_assert_contains('Can you help identify what I saw?', wp_json_encode($payload), 'Question missing from domain classifier input.');
 	oras_ai_assert_not_contains('retrieved evidence', wp_json_encode($payload), 'Domain classifier must not receive retrieved evidence.');
 });

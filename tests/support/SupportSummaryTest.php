@@ -67,46 +67,23 @@ oras_ai_test('SUP-004 invalid duplicate HTML empty oversized and malformed summa
 	}
 });
 
-oras_ai_test('SUP-004 burst denial blocks the second summary call', function (): void {
-	list( $service, $provider ) = oras_ai_test_summary_fixture( null, array( 'burst_per_minute' => 1 ) );
+oras_ai_test('SUP-004 summaries add spend without daily monthly or burst question charges', function (): void {
+	list( $service, $provider, $ledger ) = oras_ai_test_summary_fixture( null, array( 'daily_quota' => 1, 'monthly_quota' => 1, 'burst_per_minute' => 1 ) );
 	$request = oras_ai_test_authorized_request( 7, 'What are the ORAS membership renewal rules?' );
-	oras_ai_assert_same( 'generated', $service->generate( $request, $request->question() )['status'], 'First summary failed.' );
-	oras_ai_assert_same( 'unavailable', $service->generate( $request, $request->question() )['status'], 'Burst limit bypassed.' );
-	oras_ai_assert_same( 1, count( $provider->calls ), 'Burst-denied summary reached model.' );
-});
-
-oras_ai_test('SUP-004 monthly quota denies a later-day summary without provider dispatch', function (): void {
-	oras_ai_test_reset();
-	$now = strtotime( '2026-09-03 00:00:00 UTC' );
-	$ledger = new ORAS_AI_Usage_Ledger( static function () use ( &$now ): int { return $now; } );
-	$config = ORAS_AI_Cost_Config::defaults();
-	$config['daily_quota'] = 1;
-	$config['monthly_quota'] = 1;
-	$config['pricing'] = array( 'gpt-5.6-luna' => array(
-		'input_microdollars_per_million_tokens' => 1000000,
-		'output_microdollars_per_million_tokens' => 3000000,
-		'unit' => 'per_million_tokens',
-	) );
-	$provider = new ORAS_AI_Test_Summary_Provider();
-	$service = new ORAS_AI_Support_Summary_Service( $provider, new ORAS_AI_Execution_Controls( $ledger, $config ), $ledger );
-	$request = oras_ai_test_authorized_request( 7, 'What are the ORAS membership renewal rules?' );
-	oras_ai_assert_same( 'generated', $service->generate( $request, $request->question() )['status'], 'First monthly admission failed.' );
-	$now += DAY_IN_SECONDS + 61;
-	oras_ai_assert_same( 'unavailable', $service->generate( $request, $request->question() )['status'], 'Monthly quota bypassed.' );
-	oras_ai_assert_same( 1, count( $provider->calls ), 'Monthly-denied summary reached model.' );
-});
-
-oras_ai_test('SUP-004 quota and hard stop deny summary before provider dispatch', function (): void {
-	foreach ( array( array( 'daily_quota' => 1 ), array( 'hard_stop_microdollars' => 1 ) ) as $limits ) {
-		list( $service, $provider, $ledger ) = oras_ai_test_summary_fixture( null, $limits );
-		$request = oras_ai_test_authorized_request( 7, 'What are the ORAS membership renewal rules?' );
-		if ( isset( $limits['daily_quota'] ) ) {
-			oras_ai_assert_same( 'generated', $service->generate( $request, $request->question() )['status'], 'First quota admission failed.' );
-		}
-		$result = $service->generate( $request, $request->question() );
-		oras_ai_assert_same( 'unavailable', $result['status'], 'Cost admission did not fail closed.' );
-		oras_ai_assert_same( isset( $limits['daily_quota'] ) ? 1 : 0, count( $provider->calls ), 'Denied call reached provider.' );
+	foreach ( range( 1, 2 ) as $attempt ) {
+		oras_ai_assert_same( 'generated', $service->generate( $request, $request->question() )['status'], 'Auxiliary summary consumed question quota.' );
 	}
+	oras_ai_assert_same( 2, count( $provider->calls ), 'Qualified summaries were blocked by question limits.' );
+	oras_ai_assert_same( 0, $ledger->summary(7)['member_day_allowed'], 'Summary incremented daily questions.' );
+	oras_ai_assert_same( 0, $ledger->summary(7)['member_month_allowed'], 'Summary incremented monthly questions.' );
+	oras_ai_assert_same( 178, $ledger->summary()['site_month_actual_microdollars'], 'Both summary costs must remain recorded.' );
+});
+
+oras_ai_test('SUP-004 hard stop denies summary before provider dispatch', function (): void {
+	list( $service, $provider ) = oras_ai_test_summary_fixture( null, array( 'hard_stop_microdollars' => 1 ) );
+	$request = oras_ai_test_authorized_request( 7, 'What are the ORAS membership renewal rules?' );
+	oras_ai_assert_same( 'unavailable', $service->generate( $request, $request->question() )['status'], 'Summary bypassed hard stop.' );
+	oras_ai_assert_same( 0, count( $provider->calls ), 'Denied summary reached provider.' );
 });
 
 oras_ai_test('SUP-004 provider failures release or conservatively settle reservation', function (): void {
@@ -116,7 +93,7 @@ oras_ai_test('SUP-004 provider failures release or conservatively settle reserva
 		list( $service, $provider, $ledger ) = oras_ai_test_summary_fixture( $provider );
 		$request = oras_ai_test_authorized_request( 7, 'What are the ORAS membership renewal rules?' );
 		oras_ai_assert_same( 'unavailable', $service->generate( $request, $request->question() )['status'], 'Provider failure produced proposal summary.' );
-		oras_ai_assert_same( $usage_may_have_occurred ? 'reconciled' : 'released', $ledger->reservation( 'oras-ai-0000000001' )['status'], 'Failure accounting was unsafe.' );
+		oras_ai_assert_same( $usage_may_have_occurred ? 'usage_unknown' : 'released', $ledger->reservation( 'oras-ai-0000000001' )['status'], 'Failure accounting was unsafe.' );
 	}
 });
 

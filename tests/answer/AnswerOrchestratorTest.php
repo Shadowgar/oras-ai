@@ -370,8 +370,8 @@ oras_ai_test('provider failure releases definite no-call and conservatively sett
 	);
 	$unknownResult = $unknownOrchestrator->answer(oras_ai_test_authorized_request(215, 'How does ORAS observatory access work?'));
 	$reservation = $unknownLedger->reservation($unknownResult->reservation_id());
-	oras_ai_assert_same('reconciled', $reservation['status'], 'Unknown possible usage must not erase reservation.');
-	oras_ai_assert_same($reservation['reserved_cost_microdollars'], $reservation['actual_cost_microdollars'], 'Unknown usage must settle at reserved maximum.');
+	oras_ai_assert_same('usage_unknown', $reservation['status'], 'Unknown possible usage must not erase reservation.');
+	oras_ai_assert_same($reservation['reserved_cost_microdollars'], $reservation['conservative_cost_microdollars'], 'Unknown usage must settle at reserved maximum.');
 	oras_ai_assert_same(1, $unknownLedger->summary(215)['member_day_allowed'], 'Possible paid execution should remain accounted.');
 });
 

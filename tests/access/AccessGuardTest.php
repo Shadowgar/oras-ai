@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 oras_ai_test('access guard allows member AI execution when globally enabled', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	ORAS_AI_Config::set_member_ai_enabled(true);
 	oras_ai_assert_true(
 		ORAS_AI_Access_Guard::member_ai_execution_allowed(),
@@ -12,6 +13,7 @@ oras_ai_test('access guard allows member AI execution when globally enabled', fu
 
 oras_ai_test('access guard denies member AI execution when globally disabled', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	ORAS_AI_Config::set_member_ai_enabled(false);
 	oras_ai_assert_false(
 		ORAS_AI_Access_Guard::member_ai_execution_allowed(),
@@ -21,6 +23,7 @@ oras_ai_test('access guard denies member AI execution when globally disabled', f
 
 oras_ai_test('disabled member AI does not block administrative scanner processing', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	ORAS_AI_Config::set_member_ai_enabled(false);
 	$sourceId = oras_ai_test_add_source('oras_speaker', 'Admin scan source', 'Speaker biography');
 
@@ -32,6 +35,7 @@ oras_ai_test('disabled member AI does not block administrative scanner processin
 
 oras_ai_test('disabled member AI does not block administrative OpenAI classification', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	ORAS_AI_Config::set_member_ai_enabled(false);
 	update_option(ORAS_AI_Config::OPTION_OPENAI_API_KEY, 'stored-test-key');
 	$classification = oras_ai_test_classification();

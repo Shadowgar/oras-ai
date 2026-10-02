@@ -4,12 +4,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Bounded metadata-only accounting for paid member execution.
+ * Metadata-only accounting for site-wide paid execution and member question quotas.
  */
 final class ORAS_AI_Usage_Ledger {
 
 	const OPTION      = 'oras_ai_usage_ledger';
 	const LOCK_OPTION = 'oras_ai_usage_ledger_lock';
+	const FAULT_OPTION = 'oras_ai_usage_ledger_fault';
 	const RETENTION   = '12 months';
 	const LOCK_TTL    = 30;
 
@@ -19,57 +20,64 @@ final class ORAS_AI_Usage_Ledger {
 		$this->clock = is_callable( $clock ) ? $clock : 'time';
 	}
 
-	public function reserve( $user_id, $model, $estimated_input_tokens, array $configuration ) {
+	public function reserve( $user_id, $model, $estimated_input_tokens, array $configuration, $source = 'answer', $member_question = true ) {
 		$user_id = absint( $user_id );
 		$model   = sanitize_text_field( (string) $model );
 		$input   = max( 1, (int) $estimated_input_tokens );
 
-		if ( $user_id <= 0 ) {
+		if ( ( $member_question && $user_id <= 0 ) || ! in_array( $source, array( 'answer', 'support_summary', 'domain_classifier', 'scanner_classification' ), true ) ) {
 			return new ORAS_AI_Execution_Admission( false, 'invalid_identity' );
 		}
 
 		$result = $this->with_lock(
-			function () use ( $user_id, $model, $input, $configuration ) {
+			function () use ( $user_id, $model, $input, $configuration, $source, $member_question ) {
+				if ( get_option( self::FAULT_OPTION, false ) ) {
+					return new ORAS_AI_Execution_Admission( false, 'ledger_unavailable' );
+				}
 				$now   = $this->now();
 				$state = $this->pruned_state( $this->state(), $now );
-				$burst = isset( $state['burst'][ $user_id ] ) && is_array( $state['burst'][ $user_id ] )
-					? $state['burst'][ $user_id ]
-					: array();
-				$burst = array_values(
-					array_filter(
-						$burst,
-						static function ( $timestamp ) use ( $now ) {
-							return (int) $timestamp > $now - 60;
-						}
-					)
-				);
-				$burst_count = count( $burst );
-				$burst[]     = $now;
-				$state['burst'][ $user_id ] = $burst;
+				if ( $member_question ) {
+					$burst = isset( $state['burst'][ $user_id ] ) && is_array( $state['burst'][ $user_id ] )
+						? $state['burst'][ $user_id ]
+						: array();
+					$burst = array_values(
+						array_filter(
+							$burst,
+							static function ( $timestamp ) use ( $now ) {
+								return (int) $timestamp > $now - 60;
+							}
+						)
+					);
+					$burst_count = count( $burst );
+					$burst[]     = $now;
+					$state['burst'][ $user_id ] = $burst;
 
-				if ( $burst_count >= (int) $configuration['burst_per_minute'] ) {
-					$this->increment_rejection( $state, $user_id, 'burst_limit', $now );
-					$this->store( $state );
-					return new ORAS_AI_Execution_Admission( false, 'burst_limit' );
-				}
+					if ( $burst_count >= (int) $configuration['burst_per_minute'] ) {
+						$this->increment_rejection( $state, $user_id, 'burst_limit', $now );
+						$this->store( $state );
+						return new ORAS_AI_Execution_Admission( false, 'burst_limit' );
+					}
 
-				$counts = $this->reservation_counts( $state, $user_id, $now );
-				if ( $counts['day'] >= (int) $configuration['daily_quota'] ) {
-					$this->increment_rejection( $state, $user_id, 'daily_quota', $now );
-					$this->store( $state );
-					return new ORAS_AI_Execution_Admission( false, 'daily_quota' );
-				}
+					$counts = $this->reservation_counts( $state, $user_id, $now );
+					if ( $counts['day'] >= (int) $configuration['daily_quota'] ) {
+						$this->increment_rejection( $state, $user_id, 'daily_quota', $now );
+						$this->store( $state );
+						return new ORAS_AI_Execution_Admission( false, 'daily_quota' );
+					}
 
-				if ( $counts['month'] >= (int) $configuration['monthly_quota'] ) {
-					$this->increment_rejection( $state, $user_id, 'monthly_quota', $now );
-					$this->store( $state );
-					return new ORAS_AI_Execution_Admission( false, 'monthly_quota' );
+					if ( $counts['month'] >= (int) $configuration['monthly_quota'] ) {
+						$this->increment_rejection( $state, $user_id, 'monthly_quota', $now );
+						$this->store( $state );
+						return new ORAS_AI_Execution_Admission( false, 'monthly_quota' );
+					}
 				}
 
 				$pricing = isset( $configuration['pricing'][ $model ] ) && is_array( $configuration['pricing'][ $model ] )
 					? $configuration['pricing'][ $model ]
 					: null;
-				if ( ! $pricing || 'per_million_tokens' !== ( $pricing['unit'] ?? '' ) ) {
+				if ( ! in_array( $model, ORAS_AI_Config::allowed_openai_models(), true ) || ! $pricing || 'per_million_tokens' !== ( $pricing['unit'] ?? '' )
+					|| ! is_int( $pricing['input_microdollars_per_million_tokens'] ?? null ) || $pricing['input_microdollars_per_million_tokens'] <= 0
+					|| ! is_int( $pricing['output_microdollars_per_million_tokens'] ?? null ) || $pricing['output_microdollars_per_million_tokens'] <= 0 ) {
 					$this->increment_rejection( $state, $user_id, 'missing_model_price', $now );
 					$this->store( $state );
 					return new ORAS_AI_Execution_Admission( false, 'missing_model_price' );
@@ -93,6 +101,8 @@ final class ORAS_AI_Usage_Ledger {
 				$state['reservations'][ $reservation_id ] = array(
 					'id'                         => $reservation_id,
 					'user_id'                    => $user_id,
+					'source'                     => $source,
+					'member_question'            => (bool) $member_question,
 					'created_at'                 => $now,
 					'model'                      => $model,
 					'status'                     => 'open',
@@ -104,8 +114,8 @@ final class ORAS_AI_Usage_Ledger {
 						'output_microdollars_per_million_tokens' => (int) $pricing['output_microdollars_per_million_tokens'],
 						'unit'                                    => 'per_million_tokens',
 					),
-					'actual_input_tokens'         => 0,
-					'actual_output_tokens'        => 0,
+					'actual_input_tokens'         => null,
+					'actual_output_tokens'        => null,
 					'actual_cost_microdollars'    => 0,
 					'resolved_at'                 => 0,
 				);
@@ -167,7 +177,7 @@ final class ORAS_AI_Usage_Ledger {
 				if ( 'reconciled' === $record['status'] ) {
 					return $record;
 				}
-				if ( 'open' !== $record['status'] ) {
+				if ( ! in_array( $record['status'], array( 'open', 'dispatched', 'usage_unknown' ), true ) ) {
 					return $this->invalid_reservation();
 				}
 
@@ -227,17 +237,67 @@ final class ORAS_AI_Usage_Ledger {
 	 * @return array|WP_Error
 	 */
 	public function settle_reserved_maximum( $reservation_id ) {
-		$record = $this->reservation( $reservation_id );
-		if ( ! is_array( $record ) ) {
-			return $this->invalid_reservation();
-		}
-
-		return $this->reconcile(
-			$reservation_id,
-			(string) $record['model'],
-			(int) $record['estimated_input_tokens'],
-			(int) $record['maximum_output_tokens']
+		return $this->with_lock(
+			function () use ( $reservation_id ) {
+				$state = $this->state();
+				$record = $state['reservations'][ $reservation_id ] ?? null;
+				if ( ! is_array( $record ) ) {
+					return $this->invalid_reservation();
+				}
+				if ( in_array( $record['status'], array( 'reconciled', 'usage_unknown' ), true ) ) {
+					return $record;
+				}
+				if ( ! in_array( $record['status'], array( 'open', 'dispatched' ), true ) ) {
+					return $this->invalid_reservation();
+				}
+				$record['status'] = 'usage_unknown';
+				$record['actual_input_tokens'] = null;
+				$record['actual_output_tokens'] = null;
+				$record['conservative_cost_microdollars'] = $record['reserved_cost_microdollars'];
+				$record['resolved_at'] = $this->now();
+				$state['reservations'][ $reservation_id ] = $record;
+				$this->store( $state );
+				return $record;
+			}
 		);
+	}
+
+	/** Claim once, covering the complete serialized request before HTTP. */
+	public function claim_dispatch( $reservation_id, $model, $source, $input, $output, array $configuration ) {
+		return $this->with_lock(
+			function () use ( $reservation_id, $model, $source, $input, $output, $configuration ) {
+				if ( get_option( self::FAULT_OPTION, false ) ) {
+					return $this->invalid_reservation();
+				}
+				$state = $this->state();
+				$record = $state['reservations'][ $reservation_id ] ?? null;
+				if ( ! is_array( $record ) || 'open' !== $record['status'] || $model !== $record['model']
+					|| $source !== ( $record['source'] ?? 'answer' ) || $output > $record['maximum_output_tokens'] ) {
+					return $this->invalid_reservation();
+				}
+				$site = $this->site_month_totals( $state, $this->now() );
+				$record['estimated_input_tokens'] = max( $input, $record['estimated_input_tokens'] );
+				$cost = $this->calculate_cost( $record['estimated_input_tokens'], $record['maximum_output_tokens'], $record['pricing'] );
+				if ( $site['actual'] + $site['reserved'] - $record['reserved_cost_microdollars'] + $cost >= $configuration['hard_stop_microdollars'] ) {
+					return new WP_Error( 'oras_ai_site_hard_stop', __( 'OpenAI budget is unavailable.', 'oras-ai-assistant' ) );
+				}
+				$record['reserved_cost_microdollars'] = $cost;
+				$record['status'] = 'dispatched';
+				$record['dispatched_at'] = $this->now();
+				$state['reservations'][ $reservation_id ] = $record;
+				$this->store( $state );
+				return $record;
+			}
+		);
+	}
+
+	/** Durable incident fence; this is not another spend ledger. First failure wins. */
+	public function flag_settlement_failure( $reservation_id, $input_tokens = null, $output_tokens = null ) {
+		$this->insert_option_once( self::FAULT_OPTION, array(
+			'reservation_id' => sanitize_text_field( (string) $reservation_id ),
+			'input_tokens' => is_int( $input_tokens ) && $input_tokens >= 0 ? $input_tokens : null,
+			'output_tokens' => is_int( $output_tokens ) && $output_tokens >= 0 ? $output_tokens : null,
+		) );
 	}
 
 	public function reservation( $reservation_id ) {
@@ -260,6 +320,8 @@ final class ORAS_AI_Usage_Ledger {
 			'input_tokens'  => 0,
 			'output_tokens' => 0,
 			'models'        => array(),
+			'sources'       => array(),
+			'unknown'       => 0,
 		);
 
 		foreach ( $state['rejections'] as $record_user_id => $periods ) {
@@ -273,10 +335,22 @@ final class ORAS_AI_Usage_Ledger {
 		}
 
 		foreach ( $state['reservations'] as $reservation ) {
-			if ( 'released' === ( $reservation['status'] ?? '' ) || gmdate( 'Y-m', (int) ( $reservation['created_at'] ?? 0 ) ) !== $month ) {
+			$status = $reservation['status'] ?? '';
+			$settled = in_array( $status, array( 'reconciled', 'usage_unknown' ), true );
+			if ( 'released' === $status || ( $settled && gmdate( 'Y-m', (int) ( $reservation['resolved_at'] ?? 0 ) ) !== $month ) ) {
 				continue;
 			}
 			$site_usage['allowed']++;
+			$source = $reservation['source'] ?? 'answer';
+			if ( ! isset( $site_usage['sources'][ $source ] ) ) {
+				$site_usage['sources'][ $source ] = array( 'calls' => 0, 'accounted_microdollars' => 0 );
+			}
+			$site_usage['sources'][ $source ]['calls']++;
+			$cost = 'usage_unknown' === $reservation['status'] ? ( $reservation['conservative_cost_microdollars'] ?? 0 ) : ( $reservation['actual_cost_microdollars'] ?? 0 );
+			$site_usage['sources'][ $source ]['accounted_microdollars'] += $cost;
+			if ( 'usage_unknown' === $reservation['status'] ) {
+				$site_usage['unknown'] += $cost;
+			}
 			$model = (string) ( $reservation['model'] ?? '' );
 			if ( '' !== $model ) {
 				$site_usage['models'][ $model ] = ( $site_usage['models'][ $model ] ?? 0 ) + 1;
@@ -288,6 +362,7 @@ final class ORAS_AI_Usage_Ledger {
 		}
 
 		return array(
+			'accounting_available'            => ! (bool) get_option( self::FAULT_OPTION, false ),
 			'member_day_allowed'              => $counts['day'],
 			'member_month_allowed'            => $counts['month'],
 			'site_month_actual_microdollars'   => $site['actual'],
@@ -296,6 +371,8 @@ final class ORAS_AI_Usage_Ledger {
 			'site_month_input_tokens'          => $site_usage['input_tokens'],
 			'site_month_output_tokens'         => $site_usage['output_tokens'],
 			'site_month_models'                => $site_usage['models'],
+			'site_month_sources'               => $site_usage['sources'],
+			'site_month_unknown_microdollars'  => $site_usage['unknown'],
 			'rejections'                       => $rejections,
 		);
 	}
@@ -307,7 +384,7 @@ final class ORAS_AI_Usage_Ledger {
 
 		return array(
 			'warning'   => $actual >= (int) $configuration['warning_microdollars'],
-			'hard_stop' => $exposure >= (int) $configuration['hard_stop_microdollars'],
+			'hard_stop' => ! $summary['accounting_available'] || $exposure >= (int) $configuration['hard_stop_microdollars'],
 		);
 	}
 
@@ -334,7 +411,10 @@ final class ORAS_AI_Usage_Ledger {
 	}
 
 	private function store( array $state ) {
-		return update_option( self::OPTION, $state, false );
+		if ( ! update_option( self::OPTION, $state, false ) && get_option( self::OPTION ) !== $state ) {
+			throw new RuntimeException( 'Usage ledger persistence failed.' );
+		}
+		return true;
 	}
 
 	private function pruned_state( array $state, $now ) {
@@ -381,7 +461,7 @@ final class ORAS_AI_Usage_Ledger {
 		$counts = array( 'day' => 0, 'month' => 0 );
 
 		foreach ( $state['reservations'] as $reservation ) {
-			if ( (int) ( $reservation['user_id'] ?? 0 ) !== (int) $user_id || 'released' === ( $reservation['status'] ?? '' ) ) {
+			if ( false === ( $reservation['member_question'] ?? true ) || (int) ( $reservation['user_id'] ?? 0 ) !== (int) $user_id || 'released' === ( $reservation['status'] ?? '' ) ) {
 				continue;
 			}
 			$created = (int) ( $reservation['created_at'] ?? 0 );
@@ -402,8 +482,10 @@ final class ORAS_AI_Usage_Ledger {
 
 		foreach ( $state['reservations'] as $reservation ) {
 			$status = $reservation['status'] ?? '';
-			if ( 'open' === $status && gmdate( 'Y-m', (int) $reservation['created_at'] ) === $month ) {
+			if ( in_array( $status, array( 'open', 'dispatched' ), true ) ) {
 				$totals['reserved'] += max( 0, (int) $reservation['reserved_cost_microdollars'] );
+			} elseif ( 'usage_unknown' === $status && gmdate( 'Y-m', (int) $reservation['resolved_at'] ) === $month ) {
+				$totals['actual'] += max( 0, (int) $reservation['conservative_cost_microdollars'] );
 			} elseif ( 'reconciled' === $status && gmdate( 'Y-m', (int) $reservation['resolved_at'] ) === $month ) {
 				$totals['actual'] += max( 0, (int) $reservation['actual_cost_microdollars'] );
 			}
@@ -440,25 +522,45 @@ final class ORAS_AI_Usage_Ledger {
 		$token = uniqid( 'oras-ai-', true );
 		$lock  = array( 'token' => $token, 'acquired_at' => $now );
 
-		if ( ! add_option( self::LOCK_OPTION, $lock, '', false ) ) {
-			$current = get_option( self::LOCK_OPTION, array() );
-			if ( ! is_array( $current ) || (int) ( $current['acquired_at'] ?? 0 ) > $now - self::LOCK_TTL ) {
-				return new WP_Error( 'oras_ai_usage_ledger_busy', __( 'Usage accounting is temporarily unavailable.', 'oras-ai-assistant' ) );
-			}
-			delete_option( self::LOCK_OPTION );
-			if ( ! add_option( self::LOCK_OPTION, $lock, '', false ) ) {
-				return new WP_Error( 'oras_ai_usage_ledger_busy', __( 'Usage accounting is temporarily unavailable.', 'oras-ai-assistant' ) );
-			}
+		$this->refresh_options();
+		if ( ! $this->insert_option_once( self::LOCK_OPTION, $lock ) ) {
+			// Never delete an unowned lock, even if old: a delayed writer may still run.
+			return new WP_Error( 'oras_ai_usage_ledger_busy', __( 'Usage accounting is temporarily unavailable.', 'oras-ai-assistant' ) );
 		}
-
+		$release = true;
 		try {
+			$this->refresh_options();
 			return call_user_func( $callback );
+		} catch ( Throwable $error ) {
+			// Failed storage may hide known spend. Deny further dispatch until repaired.
+			$release = false;
+			return new WP_Error( 'oras_ai_usage_ledger_unavailable', __( 'Usage accounting is temporarily unavailable.', 'oras-ai-assistant' ) );
 		} finally {
+			$this->refresh_options();
 			$current = get_option( self::LOCK_OPTION, array() );
-			if ( is_array( $current ) && $token === ( $current['token'] ?? '' ) ) {
+			if ( $release && is_array( $current ) && $token === ( $current['token'] ?? '' ) ) {
 				delete_option( self::LOCK_OPTION );
 			}
 		}
+	}
+
+	/** WordPress add_option can upsert a concurrent insert, so cannot acquire a lock. */
+	private function insert_option_once( $name, array $value ) {
+		global $wpdb;
+		$inserted = $wpdb->query( $wpdb->prepare(
+			"INSERT IGNORE INTO `{$wpdb->options}` (`option_name`, `option_value`, `autoload`) VALUES (%s, %s, 'no')",
+			$name,
+			serialize( $value )
+		) );
+		$this->refresh_options();
+		return 1 === $inserted;
+	}
+
+	private function refresh_options() {
+		wp_cache_delete( self::OPTION, 'options' );
+		wp_cache_delete( self::LOCK_OPTION, 'options' );
+		wp_cache_delete( self::FAULT_OPTION, 'options' );
+		wp_cache_delete( 'notoptions', 'options' );
 	}
 
 	private function invalid_reservation() {

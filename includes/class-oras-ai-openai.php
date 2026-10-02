@@ -27,6 +27,11 @@ final class ORAS_AI_OpenAI {
 			return new WP_Error( 'oras_ai_no_key', __( 'OpenAI API key is not configured.', 'oras-ai-assistant' ) );
 		}
 
+		if ( ! is_string( $title ) || strlen( $title ) > 1000 || ! is_string( $url ) || strlen( $url ) > 2048
+			|| ! is_string( $post_type ) || strlen( $post_type ) > 64 || ! is_string( $content ) ) {
+			return new WP_Error( 'oras_ai_invalid_source', __( 'Source input exceeds processing limits.', 'oras-ai-assistant' ) );
+		}
+
 		$categories = ORAS_AI_Knowledge_Base::default_categories();
 		$content_for_ai = mb_substr( $content, 0, 30000 );
 
@@ -140,7 +145,8 @@ final class ORAS_AI_OpenAI {
 		);
 
 		$payload = array(
-			'model'     => self::get_model(),
+			'model'     => get_option( ORAS_AI_Config::OPTION_OPENAI_MODEL, ORAS_AI_Config::DEFAULT_OPENAI_MODEL ),
+			'max_output_tokens' => ORAS_AI_Paid_OpenAI_Transport::SCANNER_OUTPUT_TOKENS,
 			'reasoning' => array( 'effort' => 'low' ),
 			'input'     => array(
 				array(
@@ -162,17 +168,7 @@ final class ORAS_AI_OpenAI {
 			),
 		);
 
-		$response = wp_remote_post(
-			'https://api.openai.com/v1/responses',
-			array(
-				'timeout' => 60,
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $api_key,
-					'Content-Type'  => 'application/json',
-				),
-				'body'    => wp_json_encode( $payload ),
-			)
-		);
+		$response = ( new ORAS_AI_Paid_OpenAI_Transport() )->request( 'scanner_classification', $payload, $api_key, 60 );
 
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -182,7 +178,7 @@ final class ORAS_AI_OpenAI {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $code < 200 || $code >= 300 ) {
-			$message = isset( $body['error']['message'] ) ? $body['error']['message'] : __( 'OpenAI API request failed.', 'oras-ai-assistant' );
+			$message = __( 'OpenAI API request failed.', 'oras-ai-assistant' );
 			return new WP_Error( 'oras_ai_openai_http', sanitize_text_field( $message ), array( 'status' => $code ) );
 		}
 
@@ -194,7 +190,7 @@ final class ORAS_AI_OpenAI {
 
 		$classification = json_decode( $output_text, true );
 
-		if ( ! is_array( $classification ) ) {
+		if ( strlen( $output_text ) > 96000 || ! is_array( $classification ) ) {
 			return new WP_Error( 'oras_ai_invalid_json', __( 'OpenAI returned an invalid classification payload.', 'oras-ai-assistant' ) );
 		}
 

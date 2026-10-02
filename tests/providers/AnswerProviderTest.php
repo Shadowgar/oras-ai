@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 oras_ai_test('SUP-004 OpenAI summary request contains only bounded question and no tools', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response( 200, array(
 		'output_text' => '{"summary":"The member needs clarification about renewal."}',
 		'usage' => array( 'input_tokens' => 31, 'output_tokens' => 12 ),
@@ -36,6 +37,7 @@ oras_ai_test('SUP-004 OpenAI summary rejects HTML and malformed provider output'
 		new WP_Error( 'timeout', 'private detail' ),
 	) as $response ) {
 		oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 		$GLOBALS['oras_ai_test_remote_responses'][] = $response;
 		$provider = new ORAS_AI_OpenAI_Answer_Provider( static function (): string { return 'stored-answer-key'; } );
 		$result = $provider->summarize_support_question( 'What are the ORAS renewal rules?', 160, 10 );
@@ -54,6 +56,7 @@ function oras_ai_test_provider_context(): ORAS_AI_Grounded_Context {
 
 oras_ai_test('OpenAI answer adapter sends separated bounded context and normalizes valid usage', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_Config::OPTION_OPENAI_API_KEY, 'stored-answer-key');
 	update_option(ORAS_AI_Config::OPTION_OPENAI_MODEL, 'gpt-5.6-terra');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
@@ -88,6 +91,7 @@ oras_ai_test('OpenAI answer adapter sends separated bounded context and normaliz
 
 oras_ai_test('OpenAI answer adapter missing key fails before dispatch', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	$adapter = new ORAS_AI_OpenAI_Answer_Provider(static function (): string { return ''; });
 	$result = $adapter->answer(oras_ai_test_provider_context(), 100, 10);
 
@@ -108,6 +112,7 @@ oras_ai_test('OpenAI answer adapter treats transport HTTP malformed empty and us
 
 	foreach ($cases as $response) {
 		oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 		update_option(ORAS_AI_Config::OPTION_OPENAI_API_KEY, 'stored-answer-key');
 		$GLOBALS['oras_ai_test_remote_responses'][] = $response;
 		$result = (new ORAS_AI_OpenAI_Answer_Provider())->answer(oras_ai_test_provider_context(), 100, 10);

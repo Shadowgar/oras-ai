@@ -102,6 +102,9 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_admin_nonce_checks'] = array();
 	$GLOBALS['oras_ai_test_remote_responses'] = array();
 	$GLOBALS['oras_ai_test_remote_calls'] = array();
+	$GLOBALS['oras_ai_test_before_http'] = null;
+	$GLOBALS['oras_ai_test_fail_option_write'] = '';
+	$GLOBALS['oras_ai_test_competing_lock'] = false;
 	$GLOBALS['oras_ai_test_current_screen'] = null;
 	$GLOBALS['oras_ai_test_enqueued_scripts'] = array();
 	$GLOBALS['oras_ai_test_enqueued_styles'] = array();
@@ -493,6 +496,29 @@ function get_permalink($post): string {
 	return isset($post->permalink) ? (string) $post->permalink : 'https://example.test/' . $post->post_name . '/';
 }
 
+// Minimal database seam for create-only ledger locks; native WordPress race is
+// independently exercised by the disposable contract against its real wpdb.
+final class ORAS_AI_Test_Options_Database {
+	public $options = 'wp_options';
+	public function prepare($query, ...$args): array { return array($query, $args); }
+	public function query($prepared): int {
+		list($query, $args) = $prepared;
+		if (!str_starts_with($query, 'INSERT IGNORE INTO ')) { throw new RuntimeException('Unexpected database write in test.'); }
+		list($name, $serialized) = $args;
+		if ('oras_ai_usage_ledger_lock' === $name && $GLOBALS['oras_ai_test_competing_lock']) {
+			$GLOBALS['oras_ai_test_competing_lock'] = false;
+			$GLOBALS['oras_ai_test_options'][$name] = array('token' => 'race-winner', 'acquired_at' => time());
+		}
+		if (array_key_exists($name, $GLOBALS['oras_ai_test_options'])) { return 0; }
+		$GLOBALS['oras_ai_test_options'][$name] = unserialize($serialized, array('allowed_classes' => false));
+		$GLOBALS['oras_ai_test_option_autoload'][$name] = false;
+		return 1;
+	}
+}
+$GLOBALS['wpdb'] = new ORAS_AI_Test_Options_Database();
+
+function wp_cache_delete($key, $group = ''): bool { return true; }
+
 function get_option($name, $default = false) {
 	return array_key_exists((string) $name, $GLOBALS['oras_ai_test_options'])
 		? $GLOBALS['oras_ai_test_options'][(string) $name]
@@ -500,6 +526,7 @@ function get_option($name, $default = false) {
 }
 
 function update_option($name, $value, $autoload = null): bool {
+	if (($GLOBALS['oras_ai_test_fail_option_write'] ?? '') === $name) { return false; }
 	$GLOBALS['oras_ai_test_options'][(string) $name] = $value;
 	if (null !== $autoload) {
 		$GLOBALS['oras_ai_test_option_autoload'][(string) $name] = $autoload;
@@ -512,6 +539,11 @@ function add_option($name, $value = '', $deprecated = '', $autoload = 'yes'): bo
 		return false;
 	}
 
+	// Native add_option upserts after its cached existence check.
+	if ('oras_ai_usage_ledger_lock' === $name && $GLOBALS['oras_ai_test_competing_lock']) {
+		$GLOBALS['oras_ai_test_competing_lock'] = false;
+		$GLOBALS['oras_ai_test_options'][$name] = array('token' => 'race-winner', 'acquired_at' => time());
+	}
 	$GLOBALS['oras_ai_test_options'][(string) $name] = $value;
 	$GLOBALS['oras_ai_test_option_autoload'][(string) $name] = $autoload;
 	return true;
@@ -606,6 +638,7 @@ function wp_json_encode($value, $flags = 0, $depth = 512): string {
 }
 
 function wp_remote_post($url, $args = array()) {
+	if (is_callable($GLOBALS['oras_ai_test_before_http'] ?? null)) { call_user_func($GLOBALS['oras_ai_test_before_http'], $url, $args); }
 	$GLOBALS['oras_ai_test_remote_calls'][] = array('url' => $url, 'args' => $args);
 	if (empty($GLOBALS['oras_ai_test_remote_responses'])) {
 		return new WP_Error('oras_ai_test_unexpected_http', 'No mocked HTTP response was queued.');

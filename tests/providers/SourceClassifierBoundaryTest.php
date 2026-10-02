@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 oras_ai_test('source classifier contract and OpenAI adapter are available', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	oras_ai_assert_true(
 		interface_exists('ORAS_AI_Source_Classifier_Interface'),
 		'Source classifier contract should load.'
@@ -25,6 +26,7 @@ oras_ai_test('source classifier contract and OpenAI adapter are available', func
 
 oras_ai_test('source processing uses an injected classifier without HTTP', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	oras_ai_assert_true(
 		interface_exists('ORAS_AI_Source_Classifier_Interface'),
 		'Source classifier contract is required for injection.'
@@ -80,6 +82,7 @@ oras_ai_test('source processing uses an injected classifier without HTTP', funct
 
 oras_ai_test('OpenAI adapter converts provider payloads to the application result', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
 		200,
@@ -100,6 +103,7 @@ oras_ai_test('OpenAI adapter converts provider payloads to the application resul
 
 oras_ai_test('OpenAI adapter routes structurally invalid provider output to review', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
 	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(
 		200,
@@ -124,6 +128,7 @@ oras_ai_test('OpenAI adapter routes structurally invalid provider output to revi
 
 oras_ai_test('default source classifier remains available when member AI is disabled', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	ORAS_AI_Config::set_member_ai_enabled(false);
 	update_option(ORAS_AI_Config::OPTION_OPENAI_API_KEY, 'stored-test-key');
 	$classification = oras_ai_test_classification(array('knowledge_title' => 'Admin classified source'));
@@ -142,6 +147,7 @@ oras_ai_test('default source classifier remains available when member AI is disa
 
 oras_ai_test('deterministic source match bypasses the injected classifier', function (): void {
 	oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 	$classifier = new class implements ORAS_AI_Source_Classifier_Interface {
 		public $calls = 0;
 
@@ -169,6 +175,7 @@ oras_ai_test('events products and Elementor libraries bypass the provider', func
 
 	foreach ($cases as $case) {
 		oras_ai_test_reset();
+	oras_ai_test_configure_paid_prices();
 		$classifier = new class implements ORAS_AI_Source_Classifier_Interface {
 			public $calls = 0;
 

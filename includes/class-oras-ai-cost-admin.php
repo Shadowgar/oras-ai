@@ -24,6 +24,9 @@ final class ORAS_AI_Cost_Admin {
 		$summary = $this->ledger->summary();
 		$budget  = $this->ledger->budget_state( $config );
 		$status  = $budget['hard_stop'] ? __( 'Hard stop', 'oras-ai-assistant' ) : ( $budget['warning'] ? __( 'Warning', 'oras-ai-assistant' ) : __( 'Normal', 'oras-ai-assistant' ) );
+		if ( ! $summary['accounting_available'] ) {
+			$status = __( 'Accounting unavailable', 'oras-ai-assistant' );
+		}
 		?>
 		<div class="wrap oras-ai-wrap">
 			<h1><?php esc_html_e( 'Usage & Cost Controls', 'oras-ai-assistant' ); ?></h1>
@@ -34,9 +37,19 @@ final class ORAS_AI_Cost_Admin {
 
 			<div class="oras-ai-panel">
 				<h2><?php esc_html_e( 'Current month', 'oras-ai-assistant' ); ?></h2>
+				<?php if ( ! $summary['accounting_available'] ) : ?>
+					<p class="notice notice-error"><?php esc_html_e( 'Accounting unavailable: totals below are incomplete. Paid calls are blocked until outstanding usage is reconciled and accounting is repaired.', 'oras-ai-assistant' ); ?></p>
+				<?php endif; ?>
 				<p><strong><?php esc_html_e( 'Current month accounted spend:', 'oras-ai-assistant' ); ?></strong> $<?php echo esc_html( ORAS_AI_Cost_Config::format_usd( $summary['site_month_actual_microdollars'] ) ); ?></p>
 				<p><strong><?php esc_html_e( 'Outstanding maximum reservations:', 'oras-ai-assistant' ); ?></strong> $<?php echo esc_html( ORAS_AI_Cost_Config::format_usd( $summary['site_month_reserved_microdollars'] ) ); ?></p>
 				<p><strong><?php esc_html_e( 'Allowed executions:', 'oras-ai-assistant' ); ?></strong> <?php echo esc_html( number_format_i18n( $summary['site_month_allowed'] ) ); ?></p>
+				<p><strong><?php esc_html_e( 'Included conservative spend with unknown usage:', 'oras-ai-assistant' ); ?></strong> $<?php echo esc_html( ORAS_AI_Cost_Config::format_usd( $summary['site_month_unknown_microdollars'] ) ); ?></p>
+				<table class="widefat striped">
+					<thead><tr><th><?php esc_html_e( 'Paid call source', 'oras-ai-assistant' ); ?></th><th><?php esc_html_e( 'Calls', 'oras-ai-assistant' ); ?></th><th><?php esc_html_e( 'Accounted USD', 'oras-ai-assistant' ); ?></th></tr></thead>
+					<tbody><?php foreach ( $summary['site_month_sources'] as $source => $usage ) : ?>
+						<tr><td><?php echo esc_html( $source ); ?></td><td><?php echo esc_html( $usage['calls'] ); ?></td><td><?php echo esc_html( ORAS_AI_Cost_Config::format_usd( $usage['accounted_microdollars'] ) ); ?></td></tr>
+					<?php endforeach; ?></tbody>
+				</table>
 				<p><strong><?php esc_html_e( 'Provider input tokens:', 'oras-ai-assistant' ); ?></strong> <?php echo esc_html( number_format_i18n( $summary['site_month_input_tokens'] ) ); ?></p>
 				<p><strong><?php esc_html_e( 'Provider output tokens:', 'oras-ai-assistant' ); ?></strong> <?php echo esc_html( number_format_i18n( $summary['site_month_output_tokens'] ) ); ?></p>
 				<p><strong><?php esc_html_e( 'Budget state:', 'oras-ai-assistant' ); ?></strong> <?php echo esc_html( $status ); ?></p>

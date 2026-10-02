@@ -39,4 +39,12 @@ final class ORAS_AI_Execution_Controls {
 			$this->configuration
 		);
 	}
+	/** Auxiliary calls add spend, never another member question or burst attempt. */
+	public function admit_support_summary( ORAS_AI_Authorized_Request $request, $model, $input ) {
+		$config = $this->configuration;
+		$config['max_output_tokens'] = min( 160, $config['max_output_tokens'] );
+		$config['execution_timeout_seconds'] = min( 10, $config['execution_timeout_seconds'] );
+		return $this->ledger->reserve( $request->user_id(), $model, $input, $config, 'support_summary', false );
+	}
+
 }

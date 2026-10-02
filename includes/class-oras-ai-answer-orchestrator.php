@@ -198,7 +198,8 @@ final class ORAS_AI_Answer_Orchestrator {
 		$provider_answer = $this->answer_provider->answer(
 			$context,
 			$admission->max_output_tokens(),
-			$admission->timeout_seconds()
+			$admission->timeout_seconds(),
+			$reservation_id
 		);
 		if ( ! $provider_answer instanceof ORAS_AI_Provider_Answer ) {
 			$this->ledger->settle_reserved_maximum( $reservation_id );

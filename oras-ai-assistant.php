@@ -84,6 +84,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-capability-registry.ph
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-url-policy.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-execution-admission.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-usage-ledger.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-paid-openai-transport.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-execution-controls.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-cost-admin.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-knowledge-base.php';
