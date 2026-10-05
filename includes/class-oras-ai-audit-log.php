@@ -124,6 +124,29 @@ final class ORAS_AI_Audit_Log {
 		return array_slice( $events, 0, absint( $limit ) );
 	}
 
+	/** Operator-only, bounded transport metadata; never messages, headers or bodies. */
+	public static function log_openai_transport_failure( $source, array $metadata ) {
+		if ( ! in_array( $source, array( 'answer', 'support_summary', 'domain_classifier', 'scanner_classification' ), true ) ) {
+			return false;
+		}
+		$safe = array( 'source' => $source );
+		if ( is_int( $metadata['http_status'] ?? null ) && $metadata['http_status'] >= 100 && $metadata['http_status'] <= 599 ) {
+			$safe['http_status'] = $metadata['http_status'];
+		}
+		$provider_codes = array( 'model_not_found', 'invalid_api_key', 'insufficient_quota', 'unsupported_parameter', 'invalid_request_error', 'rate_limit_exceeded', 'invalid_value', 'invalid_model', 'model_not_available', 'server_error', 'authentication_error', 'permission_error', 'billing_hard_limit_reached', 'context_length_exceeded' );
+		$transport_codes = array( 'http_request_failed', 'http_request_not_executed', 'oras_registration_desk_external_http_blocked', 'oras_qbo_disposable_http_blocked', 'transport_exception' );
+		foreach ( array( 'provider_type' => $provider_codes, 'provider_code' => $provider_codes, 'transport_code' => $transport_codes ) as $field => $allowed ) {
+			if ( isset( $metadata[ $field ] ) ) {
+				$safe[ $field ] = in_array( $metadata[ $field ], $allowed, true ) ? $metadata[ $field ] : 'other';
+			}
+		}
+		$id = $metadata['request_id'] ?? null;
+		if ( is_string( $id ) && preg_match( '/\A(?:req_[a-f0-9]{32}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\z/i', $id ) ) {
+			$safe['request_id'] = $id;
+		}
+		return self::record( 'provider.openai_transport', 'failed', null, $safe, 'failure' );
+	}
+
 	private static function record( $config_item, $action, $old_state, $new_state, $outcome = 'success' ) {
 		$event = array(
 			'timestamp'     => current_time( 'mysql' ),

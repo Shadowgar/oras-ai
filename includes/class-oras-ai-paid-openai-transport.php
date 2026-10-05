@@ -62,6 +62,7 @@ final class ORAS_AI_Paid_OpenAI_Transport {
 			if ( is_wp_error( $ledger->settle_reserved_maximum( $reservation_id ) ) ) {
 				$ledger->flag_settlement_failure( $reservation_id );
 			}
+			ORAS_AI_Audit_Log::log_openai_transport_failure( $source, array( 'transport_code' => 'transport_exception' ) );
 			return $this->failure( true );
 		}
 		$decoded = is_wp_error( $response ) ? null : json_decode( wp_remote_retrieve_body( $response ), true );
@@ -73,6 +74,24 @@ final class ORAS_AI_Paid_OpenAI_Transport {
 			: $ledger->settle_reserved_maximum( $reservation_id );
 		if ( is_wp_error( $settled ) ) {
 			$ledger->flag_settlement_failure( $reservation_id, $known ? $usage['input_tokens'] : null, $known ? $usage['output_tokens'] : null );
+		}
+		if ( is_wp_error( $response ) ) {
+			ORAS_AI_Audit_Log::log_openai_transport_failure( $source, array( 'transport_code' => $response->get_error_code() ) );
+		} else {
+			$status = (int) wp_remote_retrieve_response_code( $response );
+			if ( $status < 200 || $status >= 300 || isset( $decoded['error'] )
+				|| ( isset( $decoded['status'] ) && 'completed' !== $decoded['status'] ) ) {
+				$headers = $response['headers'] ?? array();
+				ORAS_AI_Audit_Log::log_openai_transport_failure(
+					$source,
+					array(
+						'http_status' => $status,
+						'provider_type' => $decoded['error']['type'] ?? null,
+						'provider_code' => $decoded['error']['code'] ?? null,
+						'request_id' => ( is_array( $headers ) || $headers instanceof ArrayAccess ) ? ( $headers['x-request-id'] ?? null ) : null,
+					)
+				);
+			}
 		}
 		if ( is_wp_error( $settled ) || is_wp_error( $response )
 			|| ( $known && ( $usage['input_tokens'] > $record['estimated_input_tokens'] || $usage['output_tokens'] > $output ) )

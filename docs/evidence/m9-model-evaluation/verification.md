@@ -1,3 +1,291 @@
+# M9 Task 3B-DEBUG — OpenAI transport diagnosis
+
+Date: 2026-10-05. **OPENAI TRANSPORT: READY FOR LIVE CORPUS**, under the
+proven process-scoped disposable OpenAI exception described below.
+**Luna/Low model release qualification remains incomplete: no corpus run.**
+This section supersedes the unresolved transport diagnosis in Task 3B below;
+all prior evidence and the original conservative settlement are retained.
+
+## Baseline and exact failure layer
+
+Branch `m9/production-release`; HEAD
+`08cbe4255fd89243c37e6d670c514c9b0e1a6e8e`; plugin/package/runtime version
+0.2.1. Starting worktree contained only the existing modified `verification.md`
+and untracked `live-preflight.json`. Existing harness/corpus work was preserved.
+Starting local accounted spend was **385 microdollars ($0.000385)**, with zero
+outstanding reservations.
+
+**WORDPRESS RUNTIME KEY: PRESENT.** The same disposable tests CLI/PHP runtime
+resolved the configured constant through `ORAS_AI_Config`; constant presence
+matched Config presence, with no empty override. No credential value was printed
+or written by this task. PHP **8.1.34**, WordPress **7.2-alpha-63427**;
+WordPress HTTP, cURL and OpenSSL were available.
+
+Unauthenticated HEAD from the same CLI container resolved DNS, verified TLS and
+received HTTP **421**, with cURL error 0. This proves a responding HTTPS endpoint,
+not authentication. The first WordPress GET `/v1/models` was preempted locally:
+
+- WP_Error: YES; `oras_registration_desk_external_http_blocked`.
+- Safe message: `External HTTP is disabled in the Registration Desk test runtime.`
+- HTTP response/status: none; duration 0.003625 seconds; no network dispatch.
+
+The source is the must-use fixture
+`/var/www/html/wp-content/mu-plugins/oras-registration-desk-test-guard.php:99`,
+registered on `pre_http_request` at `PHP_INT_MIN`. Its source counterpart is
+`/home/rocco/projects/ORAS-Tickets/scripts/fixtures/oras-registration-desk-test-guard.php`.
+It blocks non-Intuit external HTTP and remains loaded under `--skip-plugins`.
+The original preflight's final gate returned that preempted error unchanged.
+WordPress returns early on preemption, before the response debug observer fires;
+this explains the earlier zero observed responses and generic failure.
+`WP_HTTP_BLOCK_EXTERNAL=false` did not exclude this plugin filter.
+The second must-use QBO guard blocks Intuit only and was not the OpenAI blocker.
+
+## Local correction and bounded live results
+
+No must-use plugin, owner configuration or environment file was edited. A
+**process-only final filter** changed only this exact guard's WP_Error to `false`
+for the approved URL/method (`GET /v1/models`, or `POST /v1/responses` in its
+respective diagnostic process). Other endpoints remained blocked. The filter
+was removed before exit; all persistent Registration Desk/QBO guards and mail
+boundaries remain intact. Future corpus execution must explicitly carry this
+same narrow authorized exception into its disposable bootstrap; the unchanged
+harness must not be assumed to override a must-use guard automatically.
+
+After correction, the one authenticated non-generation network probe returned
+**HTTP 200**, Content-Type `application/json`, WP_Error NO, 0.970125 seconds.
+No model-list body was printed or retained. Only after this evidence established
+connectivity/authentication was the direct synthetic Responses probe sent.
+
+| Measurement | Direct WP diagnostic A | Accounted ORAS preflight B |
+| --- | --- | --- |
+| Generation requests | 1 | 1; also the fresh post-correction qualification preflight |
+| Endpoint / method | `https://api.openai.com/v1/responses` / POST | Same |
+| HTTP / object / status | 200 / response / completed | 200 / response / completed |
+| Returned model / requested reasoning | gpt-5.6-luna / Low | gpt-5.6-luna / Low |
+| Usage returned / input / output | YES / 10 / 5 | YES / 10 / 5 |
+| Output text present | YES; text not retained | YES; text not retained |
+| Request ID available | YES; safe ID in compact artifact | YES; safe ID in compact artifact |
+| Duration | 2.434484 seconds | 1.795951 seconds |
+| Accounting | Outside plugin ledger; may incur provider billing | Normal shared reservation/reconciliation |
+| Calculated cost at unchanged qualified rates | $0.000008; excluded from plugin ledger | $0.000008 reconciled |
+
+Both sent a single synthetic `Reply with OK.` user message, Low reasoning, no
+tools/search/member data, timeout 20 seconds, zero redirects and output bound
+**16**, the [current Responses API minimum](https://developers.openai.com/api/reference/python/resources/responses/methods/create).
+The [official Luna model documentation](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
+confirms Responses/Low support. Production fields already match:
+`model`, `reasoning: {"effort":"low"}`, `max_output_tokens`, and role/content
+`input` messages. No legacy `reasoning_effort` is used. Both requests use JSON
+Content-Type and internally constructed Bearer authentication, fully omitted
+from evidence. `wp_remote_post` supplies POST; WordPress's TLS verification
+default is true, matching the explicit direct probe. Endpoint, body decoding,
+usage parsing, redirects and timeout were compared without changing behavior.
+No provider error type/code/message was returned by the successful requests.
+
+The B request serves both direct-versus-accounted comparison and the required
+fresh preflight; no third generation request was made. There were two actual
+Responses calls, one actual authenticated model-list GET and one unauthenticated
+HEAD in this task. The initial blocked WP probe had no network call. The full
+71-case corpus was **not** run; no repeated retries or alternative models.
+
+## Small operational correction, test first
+
+A separate source-confirmed diagnostics gap was corrected: the paid transport
+previously replaced WP errors with its generic error and adapter handling discarded
+structured provider error metadata. This did not cause the connectivity failure.
+The two production files now retain a bounded failure event in the existing
+100-entry operator audit log (`provider.openai_transport`): source, HTTP status,
+allowlisted provider type/code or local transport code, and a strictly shaped
+request ID when available. Unknown strings become `other`; malformed IDs are
+omitted. No message, prompt, output/body, Authorization or arbitrary header is
+stored. Member-facing WP_Error/data and existing adapter error contracts remain
+unchanged. No request/model/prompt/pricing/accounting behavior was modified.
+
+Three permanent regressions in `tests/cost/SiteWideAccountingTest.php` first
+failed on missing diagnostics (**RED**, `/tmp/oras-ai-m9-debug-red.log`), then
+passed after the minimal correction. They cover structured 429 metadata with
+ArrayAccess headers, the exact local blocker, secret/prompt/header exclusion,
+malformed/unknown metadata, unchanged member errors and preserved conservative
+settlement. Focused GREEN: `/tmp/oras-ai-m9-debug-focused-green.log` (3 tests).
+Full GREEN: `/tmp/oras-ai-m9-debug-green.log` (760 PHP tests).
+Live execution used exact copies of the changed checkout classes in temporary
+container storage, not an installed/deployed plugin.
+
+## Final accounting, verification and handoff
+
+The prior **$0.000385** remains untouched. B reconciled
+`ceil(10 * 0.20) + ceil(5 * 1.20) = 2 + 6 = 8` microdollars.
+Ending spend: **$0.000393**; unknown-usage portion: **$0.000385**;
+outstanding reservations: **$0**; $10 warning: not reached;
+remaining $20 ledger headroom: **$19.999607**. Direct A is explicitly outside this
+ledger and was not inserted, refunded or double-counted. Its observed usage
+would add $0.000008 at configured rates to a provider-cost estimate, not local
+accounting. Quotas, warning/stop, prices, runtime model/reasoning and all product
+output caps are unchanged. No corpus quality scores or release qualification
+are inferred from two trivial successful calls.
+
+Normal required verification passed: `npm run lint:php` (217 files),
+`npm run lint:js`, `npm test` (760 PHP tests; 78 frontend assertions),
+`npm run quality`, and `git diff --check`, with zero unexpected warnings.
+Final logs: `/tmp/oras-ai-m9-debug-final-*.log`.
+The [compact safe diagnostic artifact](transport-debug.json) contains only
+bounded measurements, request IDs and non-content ledger state.
+
+Next: owner review of the root cause, safe diagnostic patch and scoped disposable
+bootstrap exception, then a separately authorized corpus run through the retained
+harness and normal accounting. The unmodified full corpus launcher was not run
+or qualified in this diagnostic task. No commit, version bump, package,
+deployment, production access or M9 closure. Stop for owner review.
+
+---
+
+# M9 Task 3B — Live Luna/Low qualification
+
+Date: 2026-10-05. **LUNA/LOW: NOT QUALIFIED**.
+
+**Stopped after the single unsuccessful preflight; no retry or corpus execution.**
+Credential and local pricing prerequisites are now present. No provider response
+was observed, so Responses API model/account acceptance, Low acceptance and
+provider usage remain unverified. This is an unresolved transport/environment
+failure, not evidence of a model-capability, prompt or token-cap failure.
+The historical Task 3 fixture report below is preserved separately; its missing
+credential/pricing and pending-threshold statements are superseded by this section.
+
+## Current baseline and scope
+
+| Item | Task 3B result |
+| --- | --- |
+| Branch / HEAD | `m9/production-release` / `08cbe4255fd89243c37e6d670c514c9b0e1a6e8e` |
+| Origin | Fresh fetch succeeded; ahead/behind 0/0 |
+| Starting worktree | Clean; evaluation harness/corpus already committed at this HEAD |
+| Plugin header / runtime constant / package version | 0.2.1 / 0.2.1 / 0.2.1 |
+| Fresh baseline quality | Passed: 217 PHP lint files, 757 PHP tests, 78 frontend assertions, zero unexpected warnings |
+| Baseline log | `/tmp/oras-ai-m9-task3b-current-baseline-quality.log` |
+| Credential | **OPENAI CREDENTIAL: PRESENT**; presence only |
+| Environment | Authorized disposable `oras-wp-env` tests site, `http://localhost:8889`; native WP CLI with plugins/themes skipped |
+| Transport provenance | Six exact checkout classes copied to temporary container storage; actual `ORAS_AI_Paid_OpenAI_Transport` and durable native ledger; no plugin activation or installation |
+| Changes | Local qualified pricing plus one conservatively settled ledger attempt; repository evidence only |
+
+No credential value, header, provider body, identifier, private user content or
+exception message is retained. The existing running wp-env stack and unrelated
+owner files are preserved. No production WordPress access, model/reasoning
+configuration change, version bump, package, deployment, staging or commit.
+
+## Pricing and frozen controls
+
+The [official Luna documentation](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
+was checked against the owner's approved prices. The existing
+`ORAS_AI_Cost_Config::update()` mechanism persisted the following in the
+**disposable environment only**, under `pricing['gpt-5.6-luna']`:
+
+```json
+{
+  "input_microdollars_per_million_tokens": 200000,
+  "output_microdollars_per_million_tokens": 1200000,
+  "unit": "per_million_tokens"
+}
+```
+
+One dollar is 1,000,000 microdollars. Thus 1,000,000 input tokens produce
+200,000 microdollars = **$0.20**, and 1,000,000 output tokens produce
+1,200,000 microdollars = **$1.20**. Each call rounds input and output costs up
+separately, as the existing ledger requires. Cached input officially costs
+$0.02/million, but the schema has no separate cached-input rate: all reported
+input remains conservatively charged at $0.20/million. No accounting feature
+was added. **25/day, 150/month, 5/minute, $10 warning and $20 stop are unchanged**.
+
+## Single preflight and actual accounting
+
+One minimal `Reply with OK.` request was attempted through the native shared
+transport using `gpt-5.6-luna`, `reasoning.effort=low`, output cap 128 and timeout
+20 seconds. It used the `domain_classifier` accounting source; this is an API
+preflight, not a retained classifier scenario. Serialized bytes plus the existing
+1,024 framing allowance bounded input at 1,154 tokens. Its ceiling was
+`ceil(1154 * 0.20) + ceil(128 * 1.20) = 231 + 154 = 385` microdollars.
+
+The transport attempt was unsuccessful. Its exact returned error code was not
+retained by this minimal probe; the production transport uses the bounded generic
+`oras_ai_paid_call_unavailable` error for failed calls. No provider-specific code
+or HTTP response was observed. The response observer recorded zero events. **This does not establish
+zero network dispatches or zero provider billing.** The ledger claimed one
+attempt and conservatively settled its full maximum because usage was unknown.
+The original observer's initial `not_dispatched` label is not a valid dispatch
+conclusion. The [sanitized preflight record](live-preflight.json) explicitly
+normalizes that label to `no_provider_response_observed`, with this limitation.
+No further provider request, model catalog lookup or retry was made.
+
+| Accounting / reliability item | Actual result |
+| --- | --- |
+| Transport attempts / observed provider responses | 1 / 0; network dispatch count unknown |
+| Corpus cases / successful provider completions | 0 / 0 |
+| Actual input / output tokens | Unknown / unknown; ledger zeros mean no known tokens, not zero consumption |
+| Starting / ending accounted spend | $0 / **$0.000385** |
+| Provider-reconciled cost | Unavailable; entire $0.000385 is conservative unknown-usage settlement |
+| Outstanding reservations | $0 after settlement |
+| Cost by family | Classifier-source preflight $0.000385; answer, summary and scanner $0 attempted |
+| Member question quota consumption | 0 daily / 0 monthly |
+| $10 warning / $20 remaining headroom | Not reached / **$19.999615** |
+| Transport failures / provider-specific failures / timeouts | 1 / unknown / unknown |
+| Provider latency median / p95 / max | Unavailable; no observed response sample, including every family |
+
+No-network diagnostics found external HTTP blocking disabled, WordPress not
+blocking the OpenAI endpoint, and cURL/OpenSSL available. They do not identify
+the failure cause. The local pricing and durable settlement remain in place;
+accounting was not reset or refunded merely because the preflight failed.
+
+## Retained corpus, frozen gates and unmeasured results
+
+Corpus `oras-release-core-v1` remains **71 cases: 68 live eligible and 3 fixture
+only**. SHA-256 remains
+`9b7c7a4bee28a98cbcfd6f1abadd269c1612c16edd4505741c1ed4ac559b7fd3`.
+No prompt, expectation, category, grader or threshold changed.
+
+The owner has now approved and frozen: overall pass rate >=95%, mean >=4/5,
+median >=4/5, every category mean >=3.8/5 and pass rate >=90%. Zero final security,
+privacy/IDOR, authoritative-current-fact, URL, payment-completion or unconfirmed
+side-effect failures are allowed. Earlier fixture rule passes are not live
+quality or semantic hard-gate evidence.
+
+An **offline planning calculation only**, using the retained harness's serialized
+byte/framing limits and separate round-ups, gives a full live-eligible ceiling of
+**121 calls, 10,097,904 input tokens, 98,784 output tokens and $2.138169**.
+Including the preflight settlement would total at most $2.138554, within the
+site $20 stop. The existing 100-call/$2 batch ceilings would require explicit
+nonoverlapping batches. **No live batch was admitted or executed**, because the
+API preflight did not succeed. This ceiling is not observed token usage.
+
+| Required qualification measurement | Task 3B live result |
+| --- | --- |
+| Hard gates | Not evaluated; no live pass/failure rate asserted |
+| Overall pass rate / mean / median | Unavailable / unavailable / unavailable |
+| Per-category pass rates / means | Unavailable for knowledge, general astronomy, current astronomy, weather, member, support, security and partial failure |
+| Six SUP-004 summaries / maximum output | Not run / unknown; 160-token cap unchanged |
+| Five retained classifier domains / maximum output | Not run / unknown; 128-token cap unchanged |
+| Four synthetic scanners / largest output / headroom | Not run / unknown / unknown; 12,000-token cap unchanged |
+| Main answer median / p95 / maximum tokens | Unknown / unknown / unknown; 800-token cap unchanged |
+| Cap hits, truncations, damaged answers | Not measured |
+| Hostile grounding | All retained pass/price/event/member/horizon/provider/URL/payment scenarios untested live |
+| Raw-model compliance / deterministic corrections | Not measured live; historical fixture corrections are separate |
+
+**Recommendation: LUNA/LOW: NOT QUALIFIED.** Classification is an unresolved
+transport/environment blocker in the provider-reliability qualification gate.
+No model capability or deterministic pipeline defect is established by this
+attempt. The owner must decide the bounded investigation/next qualification
+attempt after reviewing this failure. No Medium or alternative-model testing,
+production recommendation, packaging or M9 closure follows from these results.
+
+## Task 3B normal verification
+
+After these evidence-only changes, all required commands passed:
+`npm run lint:php` (217 files), `npm run lint:js`, `npm test` (757 PHP tests and
+78 frontend assertions), `npm run quality`, and `git diff --check`.
+Unexpected warning count: zero. Logs: `/tmp/oras-ai-m9-task3b-final-*.log`.
+Runtime files are unchanged. Evidence is left uncommitted for owner review.
+
+---
+
+# Historical Task 3 fixture evidence (prior to Task 3B)
+
 # M9 Task 3 — Model and evaluation qualification
 
 Date: 2026-10-05. **LIVE MODEL EVALUATION: BLOCKED BY CONFIGURATION.**

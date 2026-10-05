@@ -1,0 +1,71 @@
+{
+  "credential": "PRESENT",
+  "model": "gpt-5.6-luna",
+  "reasoning": "low",
+  "rates": {
+    "input_microdollars_per_million_tokens": 200000,
+    "output_microdollars_per_million_tokens": 1200000,
+    "unit": "per_million_tokens"
+  },
+  "price_verification_microdollars": {
+    "million_input": 200000,
+    "million_output": 1200000
+  },
+  "cached_input_separate_accounting": false,
+  "starting_budget": {
+    "accounting_available": true,
+    "member_day_allowed": 0,
+    "member_month_allowed": 0,
+    "site_month_actual_microdollars": 0,
+    "site_month_reserved_microdollars": 0,
+    "site_month_allowed": 0,
+    "site_month_input_tokens": 0,
+    "site_month_output_tokens": 0,
+    "site_month_models": [],
+    "site_month_sources": [],
+    "site_month_unknown_microdollars": 0,
+    "rejections": []
+  },
+  "preflight_bound": {
+    "maximum_calls": 1,
+    "maximum_input_tokens": 1154,
+    "maximum_output_tokens": 128,
+    "maximum_microdollars": 385
+  },
+  "transport_success": false,
+  "observation": {
+    "status": "no_provider_response_observed",
+    "input_tokens": null,
+    "output_tokens": null,
+    "provider_response_count": 0
+  },
+  "ending_budget": {
+    "accounting_available": true,
+    "member_day_allowed": 0,
+    "member_month_allowed": 0,
+    "site_month_actual_microdollars": 385,
+    "site_month_reserved_microdollars": 0,
+    "site_month_allowed": 1,
+    "site_month_input_tokens": 0,
+    "site_month_output_tokens": 0,
+    "site_month_models": {
+      "gpt-5.6-luna": 1
+    },
+    "site_month_sources": {
+      "domain_classifier": {
+        "calls": 1,
+        "accounted_microdollars": 385
+      }
+    },
+    "site_month_unknown_microdollars": 385,
+    "rejections": []
+  },
+  "status": "preflight_failed",
+  "frozen_controls_preserved": true,
+  "transport_dispatch_attempts": 1,
+  "network_dispatch_count": null,
+  "provider_error_code": null,
+  "corpus_cases_run": 0,
+  "model_qualification": "NOT_QUALIFIED",
+  "observation_note": "The original observer counted http_api_debug response events, not network dispatches. Its zero count and initial not_dispatched label cannot establish that no request was sent. Actual tokens and provider billing are unknown."
+}

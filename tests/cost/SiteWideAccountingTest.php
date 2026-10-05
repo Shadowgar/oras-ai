@@ -396,3 +396,43 @@ oras_ai_test('M9 concurrent lock insertion cannot be overwritten by WordPress ad
 	oras_ai_assert_same(0, count($GLOBALS['oras_ai_test_remote_calls']), 'Racing writer lock was stolen before paid dispatch.');
 	oras_ai_assert_same('race-winner', get_option(ORAS_AI_Usage_Ledger::LOCK_OPTION)['token'] ?? '', 'Competing lock token was overwritten.');
 });
+
+oras_ai_test('M9 paid transport retains bounded operator metadata for HTTP provider rejection', function (): void {
+	$ledger = oras_ai_test_site_cost_setup();
+	$response = oras_ai_test_http_response(429, array('error' => array('type' => 'insufficient_quota', 'code' => 'insufficient_quota', 'message' => 'Private question and fixture-secret-key'), 'private' => 'private-provider-body'));
+	$response['headers'] = new ArrayObject(array('x-request-id' => 'req_0123456789abcdef0123456789abcdef', 'authorization' => 'Bearer fixture-secret-key'));
+	$GLOBALS['oras_ai_test_remote_responses'][] = $response;
+	$result = (new ORAS_AI_Paid_OpenAI_Transport())->request('domain_classifier', array('model' => 'gpt-5.6-luna', 'reasoning' => array('effort' => 'low'), 'max_output_tokens' => 16, 'input' => 'Synthetic question'), 'fixture-secret-key', 20);
+	oras_ai_assert_true(!is_wp_error($result), 'Existing non-success response adapter contract changed.');
+	$events = ORAS_AI_Audit_Log::recent_events();
+	oras_ai_assert_same('provider.openai_transport', $events[0]['config_item'] ?? '', 'Provider rejection lost operator diagnostic.');
+	oras_ai_assert_same(array('source' => 'domain_classifier', 'http_status' => 429, 'provider_type' => 'insufficient_quota', 'provider_code' => 'insufficient_quota', 'request_id' => 'req_0123456789abcdef0123456789abcdef'), $events[0]['new_state'], 'Safe diagnostic fields missing.');
+	foreach (array('fixture-secret-key', 'Private question', 'private-provider-body', 'authorization') as $private) { oras_ai_assert_not_contains($private, wp_json_encode($events), 'Unsafe provider data retained.'); }
+	oras_ai_assert_true($ledger->summary()['site_month_unknown_microdollars'] > 0, 'Unknown usage was erased.');
+	oras_ai_assert_same(0, $ledger->summary()['site_month_reserved_microdollars'], 'Failure left reservation outstanding.');
+});
+
+oras_ai_test('M9 paid transport retains local blocker code without its private message', function (): void {
+	oras_ai_test_site_cost_setup();
+	$GLOBALS['oras_ai_test_remote_responses'][] = new WP_Error('oras_registration_desk_external_http_blocked', 'Private question fixture-secret-key');
+	$result = (new ORAS_AI_Paid_OpenAI_Transport())->request('domain_classifier', array('model' => 'gpt-5.6-luna', 'reasoning' => array('effort' => 'low'), 'max_output_tokens' => 16, 'input' => 'Synthetic question'), 'fixture-secret-key', 20);
+	oras_ai_assert_wp_error($result, 'oras_ai_paid_call_unavailable', 'Member error changed.');
+	oras_ai_assert_same(array('dispatched' => true), $result->get_error_data(), 'Operator diagnostics leaked into member error.');
+	$events = ORAS_AI_Audit_Log::recent_events();
+	oras_ai_assert_same('oras_registration_desk_external_http_blocked', $events[0]['new_state']['transport_code'] ?? '', 'Local HTTP blocker reason was lost.');
+	oras_ai_assert_not_contains('fixture-secret-key', wp_json_encode($events), 'Secret retained.');
+	oras_ai_assert_not_contains('Private question', wp_json_encode($events), 'Private transport message retained.');
+});
+
+oras_ai_test('M9 paid transport rejects unrecognized diagnostic strings and malformed request IDs', function (): void {
+	oras_ai_test_site_cost_setup();
+	$response = oras_ai_test_http_response(400, array('error' => array('type' => 'fixture-secret-key', 'code' => 'private-prompt', 'message' => 'private-message')));
+	$response['headers'] = array('x-request-id' => 'req_fixture-secret-key');
+	$GLOBALS['oras_ai_test_remote_responses'][] = $response;
+	(new ORAS_AI_Paid_OpenAI_Transport())->request('domain_classifier', array('model' => 'gpt-5.6-luna', 'max_output_tokens' => 16, 'input' => 'Synthetic question'), 'fixture-secret-key', 20);
+	$events = ORAS_AI_Audit_Log::recent_events();
+	oras_ai_assert_same('other', $events[0]['new_state']['provider_code'] ?? '', 'Unknown provider code must be bounded.');
+	oras_ai_assert_same('other', $events[0]['new_state']['provider_type'] ?? '', 'Unknown provider type must be bounded.');
+	oras_ai_assert_true(!isset($events[0]['new_state']['request_id']), 'Malformed request identifier retained.');
+	foreach (array('fixture-secret-key', 'private-prompt', 'private-message') as $private) { oras_ai_assert_not_contains($private, wp_json_encode($events), 'Unrecognized data retained.'); }
+});
