@@ -51,3 +51,7 @@ Track by member, workflow, model, tool, and period.
 ## Budget exhaustion
 
 Fail closed with a clear service-unavailable/limit message. Do not silently switch to a more expensive model or repeatedly retry.
+
+## Retention and accounting recovery
+
+Daily usage maintenance shares the atomic ledger lock and preserves current-month spend, outstanding maximum reservations and the durable accounting-failure fence. Expired personal metadata is deleted or redacted; necessary non-content recovery state remains in the existing ledger. Unknown usage is never converted into zero cost. Usage & Cost shows the next scheduled event, last successful batch, outcome and bounded record counts. See the [operations runbook](operations-runbook.md#usage-metadata-maintenance-and-idle-sites) for scheduler verification, backlog delay and maintenance-failure handling. Local configuration checks in Settings do not authenticate providers or authorize member enablement.

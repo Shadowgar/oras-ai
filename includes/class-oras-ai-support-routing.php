@@ -18,6 +18,24 @@ final class ORAS_AI_Support_Routing {
 		return is_array( $stored ) ? $stored : array();
 	}
 
+	/** Validate saved format without inspecting provider mailboxes/tags or exposing IDs. */
+	public function local_configuration_status() {
+		$stored = $this->configuration();
+		if ( ! $stored ) {
+			return array( 'general' => 'missing', 'topics' => 'missing' );
+		}
+		$general = $stored;
+		$general['topic_routes'] = array();
+		if ( null === $this->normalize_config( $general ) ) {
+			return array( 'general' => 'invalid', 'topics' => 'invalid' );
+		}
+		$normalized = $this->normalize_config( $stored );
+		return array(
+			'general' => 'configured',
+			'topics' => null === $normalized ? 'invalid_general_fallback' : ( empty( $normalized['topic_routes'] ) ? 'general_fallback' : 'configured' ),
+		);
+	}
+
 	public function save( array $input ) {
 		$config = $this->normalize_config( $input );
 		if ( null === $config || 'available' !== $this->adapter->status()->status() ) {

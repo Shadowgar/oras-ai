@@ -84,6 +84,7 @@ require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-capability-registry.ph
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-url-policy.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-execution-admission.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-usage-ledger.php';
+require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-usage-maintenance.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-paid-openai-transport.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-execution-controls.php';
 require_once ORAS_AI_PLUGIN_DIR . 'includes/class-oras-ai-cost-admin.php';
@@ -149,6 +150,7 @@ final class ORAS_AI_Assistant {
 		$this->sources = new ORAS_AI_Sources();
 		$this->conversations = new ORAS_AI_Conversations();
 		$ledger = new ORAS_AI_Usage_Ledger();
+		new ORAS_AI_Usage_Maintenance( $ledger );
 		$site_host = (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST );
 		$connectors = array(
 			new ORAS_AI_Events_Calendar_Connector(),
@@ -220,6 +222,7 @@ final class ORAS_AI_Assistant {
 	}
 
 	public static function activate() {
+		ORAS_AI_Usage_Maintenance::schedule_cleanup();
 		update_option( 'oras_ai_version', ORAS_AI_VERSION, false );
 		flush_rewrite_rules();
 	}
@@ -466,6 +469,7 @@ final class ORAS_AI_Assistant {
 
 register_activation_hook( __FILE__, array( 'ORAS_AI_Assistant', 'activate' ) );
 
+register_deactivation_hook( __FILE__, array( 'ORAS_AI_Usage_Maintenance', 'deactivate' ) );
 register_deactivation_hook( __FILE__, array( 'ORAS_AI_Conversations', 'deactivate' ) );
 register_deactivation_hook( __FILE__, array( 'ORAS_AI_Pending_Escalations', 'deactivate' ) );
 

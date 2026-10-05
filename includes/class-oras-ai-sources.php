@@ -138,6 +138,25 @@ final class ORAS_AI_Sources {
 		?>
 		<div class="wrap oras-ai-wrap">
 			<h1><?php esc_html_e( 'ORAS AI Settings', 'oras-ai-assistant' ); ?></h1>
+			<div class="oras-ai-panel">
+				<h2><?php esc_html_e( 'Local configuration checks', 'oras-ai-assistant' ); ?></h2>
+				<p><?php esc_html_e( 'Configured means present and locally valid; credentials, support destinations and the contact page are not live-verified. Check Astronomy & Weather, Support Routing, and Usage & Cost before owner-authorized enablement.', 'oras-ai-assistant' ); ?></p>
+				<dl>
+				<?php
+				$labels = array(
+					'openai_key' => 'OpenAI key', 'openai_model' => 'Allowlisted OpenAI model', 'model_pricing' => 'Matching model pricing',
+					'accounting' => 'Usage accounting', 'astronomy_credentials' => 'AstronomyAPI credential pair', 'nws_contact' => 'NWS identifying contact',
+					'observing_site' => 'Fixed ORAS observing site', 'support_general' => 'Support mailbox and General routing', 'support_topics' => 'Topic routing',
+					'contact_fallback' => 'Contact fallback URL', 'member_ai' => 'Member AI switch', 'retention_schedule' => 'Usage retention event',
+				);
+				foreach ( ORAS_AI_Config::local_readiness() as $key => $value ) :
+					if ( ! isset( $labels[ $key ] ) ) { continue; }
+					?>
+					<dt><strong><?php echo esc_html( $labels[ $key ] ); ?></strong></dt><dd><?php echo esc_html( str_replace( '_', ' ', $value ) ); ?></dd>
+				<?php endforeach; ?>
+				</dl>
+			</div>
+
 
 			<?php if ( $saved ) : ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'ORAS AI settings saved.', 'oras-ai-assistant' ); ?></p></div>

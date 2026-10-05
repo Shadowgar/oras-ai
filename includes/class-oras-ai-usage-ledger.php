@@ -12,6 +12,7 @@ final class ORAS_AI_Usage_Ledger {
 	const LOCK_OPTION = 'oras_ai_usage_ledger_lock';
 	const FAULT_OPTION = 'oras_ai_usage_ledger_fault';
 	const RETENTION   = '12 months';
+	const RETENTION_BATCH = 100;
 	const LOCK_TTL    = 30;
 
 	private $clock;
@@ -189,7 +190,7 @@ final class ORAS_AI_Usage_Ledger {
 					$record['actual_output_tokens'],
 					$record['pricing']
 				);
-				$record['resolved_at']               = $this->now();
+				$record['resolved_at']               = $this->resolution_time( $record );
 				$state['reservations'][ $reservation_id ] = $record;
 				$this->store( $state );
 
@@ -220,7 +221,7 @@ final class ORAS_AI_Usage_Ledger {
 				}
 
 				$state['reservations'][ $reservation_id ]['status']      = 'released';
-				$state['reservations'][ $reservation_id ]['resolved_at'] = $this->now();
+				$state['reservations'][ $reservation_id ]['resolved_at'] = $this->resolution_time( $state['reservations'][ $reservation_id ] );
 				$this->store( $state );
 				return true;
 			}
@@ -254,7 +255,7 @@ final class ORAS_AI_Usage_Ledger {
 				$record['actual_input_tokens'] = null;
 				$record['actual_output_tokens'] = null;
 				$record['conservative_cost_microdollars'] = $record['reserved_cost_microdollars'];
-				$record['resolved_at'] = $this->now();
+				$record['resolved_at'] = $this->resolution_time( $record );
 				$state['reservations'][ $reservation_id ] = $record;
 				$this->store( $state );
 				return $record;
@@ -283,7 +284,9 @@ final class ORAS_AI_Usage_Ledger {
 				}
 				$record['reserved_cost_microdollars'] = $cost;
 				$record['status'] = 'dispatched';
-				$record['dispatched_at'] = $this->now();
+				if ( empty( $record['retention_redacted'] ) ) {
+					$record['dispatched_at'] = $this->now();
+				}
 				$state['reservations'][ $reservation_id ] = $record;
 				$this->store( $state );
 				return $record;
@@ -389,13 +392,19 @@ final class ORAS_AI_Usage_Ledger {
 	}
 
 	public function prune() {
-		$result = $this->with_lock(
+		return ! is_wp_error( $this->prune_batch() );
+	}
+
+	/** One bounded batch, using the same atomic mutation boundary as paid calls. */
+	public function prune_batch() {
+		return $this->with_lock(
 			function () {
-				return $this->store( $this->pruned_state( $this->state(), $this->now() ) );
+				$counts = array( 'examined' => 0, 'removed' => 0, 'redacted' => 0 );
+				$state = $this->pruned_state( $this->state(), $this->now(), $counts );
+				$this->store( $state );
+				return $counts;
 			}
 		);
-
-		return ! is_wp_error( $result ) && (bool) $result;
 	}
 
 	private function state() {
@@ -417,42 +426,71 @@ final class ORAS_AI_Usage_Ledger {
 		return true;
 	}
 
-	private function pruned_state( array $state, $now ) {
-		$cutoff       = strtotime( '-' . self::RETENTION, (int) $now );
+	private function pruned_state( array $state, $now, &$counts = null ) {
+		$counts = array( 'examined' => 0, 'removed' => 0, 'redacted' => 0 );
+		$cutoff = strtotime( '-' . self::RETENTION, (int) $now );
 		$cutoff_month = gmdate( 'Y-m', $cutoff );
+		$month = gmdate( 'Y-m', $now );
+		$fault = get_option( self::FAULT_OPTION, array() );
 
-		foreach ( $state['reservations'] as $id => $reservation ) {
-			if ( (int) ( $reservation['created_at'] ?? 0 ) < $cutoff ) {
-				unset( $state['reservations'][ $id ] );
+		// Rotate retained entries so a bounded pass never starves later old records.
+		// The option still requires a whole-value load/store; this bounds record work.
+		foreach ( array_slice( $state['reservations'], 0, self::RETENTION_BATCH, true ) as $id => $record ) {
+			$counts['examined']++;
+			unset( $state['reservations'][ $id ] );
+			if ( (int) ( $record['created_at'] ?? 0 ) < $cutoff ) {
+				$preserve = in_array( $record['status'] ?? '', array( 'open', 'dispatched', 'usage_unknown' ), true )
+					|| $month === gmdate( 'Y-m', (int) ( $record['resolved_at'] ?? 0 ) )
+					|| $id === ( $fault['reservation_id'] ?? '' );
+				if ( ! $preserve ) {
+					$counts['removed']++;
+					continue;
+				}
+				if ( empty( $record['retention_redacted'] ) ) {
+					$counts['redacted']++;
+				}
+				// Recovery data carries no member identity, content or exact activity time.
+				$record = array_intersect_key( $record, array_flip( array(
+					'id', 'source', 'model', 'status', 'estimated_input_tokens', 'maximum_output_tokens',
+					'reserved_cost_microdollars', 'pricing', 'actual_input_tokens', 'actual_output_tokens',
+					'actual_cost_microdollars', 'conservative_cost_microdollars', 'resolved_at',
+				) ) );
+				$record['retention_redacted'] = true;
+				$record['resolved_at'] = empty( $record['resolved_at'] ) ? 0 : strtotime( gmdate( 'Y-m-01', (int) $record['resolved_at'] ) . ' UTC' );
 			}
+			$state['reservations'][ $id ] = $record;
 		}
 
-		foreach ( $state['rejections'] as $user_id => $periods ) {
-			foreach ( $periods as $month => $counts ) {
-				if ( (string) $month < $cutoff_month ) {
-					unset( $state['rejections'][ $user_id ][ $month ] );
+		foreach ( array( 'rejections', 'burst' ) as $bucket ) {
+			$remaining = self::RETENTION_BATCH;
+			foreach ( array_slice( $state[ $bucket ], 0, self::RETENTION_BATCH, true ) as $user_id => $entries ) {
+				unset( $state[ $bucket ][ $user_id ] );
+				$entries = is_array( $entries ) ? $entries : array();
+				foreach ( array_slice( $entries, 0, $remaining, true ) as $key => $value ) {
+					$remaining--;
+					$counts['examined']++;
+					unset( $entries[ $key ] );
+					$expired = 'rejections' === $bucket ? (string) $key < $cutoff_month : (int) $value <= (int) $now - 60;
+					if ( $expired ) {
+						$counts['removed']++;
+					} else {
+						$entries[ $key ] = $value;
+					}
+				}
+				if ( $entries ) {
+					$state[ $bucket ][ $user_id ] = $entries;
+				}
+				if ( $remaining <= 0 ) {
+					break;
 				}
 			}
-			if ( empty( $state['rejections'][ $user_id ] ) ) {
-				unset( $state['rejections'][ $user_id ] );
-			}
 		}
-
-		foreach ( $state['burst'] as $user_id => $timestamps ) {
-			$state['burst'][ $user_id ] = array_values(
-				array_filter(
-					is_array( $timestamps ) ? $timestamps : array(),
-					static function ( $timestamp ) use ( $now ) {
-						return (int) $timestamp > (int) $now - 60;
-					}
-				)
-			);
-			if ( empty( $state['burst'][ $user_id ] ) ) {
-				unset( $state['burst'][ $user_id ] );
-			}
-		}
-
 		return $state;
+	}
+
+	private function resolution_time( array $record ) {
+		$now = $this->now();
+		return empty( $record['retention_redacted'] ) ? $now : strtotime( gmdate( 'Y-m-01', $now ) . ' UTC' );
 	}
 
 	private function reservation_counts( array $state, $user_id, $now ) {

@@ -179,7 +179,7 @@ final class ORAS_AI_Chat_UI {
 				</div>
 			</header>
 			<p class="oras-ai-chat__scope"><?php esc_html_e( 'Ask about ORAS/support or astronomy questions. You can also share a bug report, suggestion, idea, or complaint.', 'oras-ai-assistant' ); ?></p>
-			<p class="oras-ai-chat__privacy"><?php esc_html_e( 'Responses use external AI processing. Conversation text is retained for 30 days.', 'oras-ai-assistant' ); ?></p>
+			<p class="oras-ai-chat__privacy"><?php esc_html_e( 'Responses use external AI processing. Conversation text and local support escalation records are retained for 30 days. Usage metadata, without conversation text, is retained for twelve calendar months. Confirmed ORAS Support tickets follow a separate support retention policy.', 'oras-ai-assistant' ); ?></p>
 			<div class="oras-ai-chat__messages" data-oras-ai-chat-messages role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
 			<div class="oras-ai-chat__status" data-oras-ai-chat-status role="status" aria-live="polite"></div>
 			<form class="oras-ai-chat__form" data-oras-ai-chat-form>

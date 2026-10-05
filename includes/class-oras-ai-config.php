@@ -199,6 +199,39 @@ final class ORAS_AI_Config {
 		return '' === $contact ? '' : sprintf( 'ORAS AI Assistant/%s (%s)', ORAS_AI_VERSION, $contact );
 	}
 
+	/** Local presence/format checks only. Never returns secrets or calls providers. */
+	public static function local_readiness() {
+		$model = get_option( self::OPTION_OPENAI_MODEL, self::DEFAULT_OPENAI_MODEL );
+		$model_valid = in_array( $model, self::allowed_openai_models(), true );
+		$raw_cost = get_option( ORAS_AI_Cost_Config::OPTION, array() );
+		$cost = is_array( $raw_cost ) ? ORAS_AI_Cost_Config::validate( array_replace( ORAS_AI_Cost_Config::defaults(), $raw_cost ) ) : null;
+		$pricing = null === $cost || is_wp_error( $cost ) ? 'invalid' : ( $model_valid && isset( $cost['pricing'][ $model ] ) ? 'configured' : 'missing' );
+		$id = self::get_astronomyapi_application_id();
+		$secret = self::get_astronomyapi_application_secret();
+		$astronomy = '' === $id && '' === $secret ? 'missing' : ( is_wp_error( self::validate_astronomyapi_credentials( $id, $secret ) ) ? 'invalid' : 'configured' );
+		$nws = self::normalize_nws_contact( get_option( self::OPTION_NWS_CONTACT, '' ) );
+		$routing = ( new ORAS_AI_Support_Routing() )->local_configuration_status();
+		// Instantiate the same fixed location used by current-data providers.
+		$site = ORAS_AI_Observing_Site::oras_observatory();
+		$contact = home_url( '/contact-us/' );
+		$maintenance = ORAS_AI_Usage_Maintenance::status();
+		return array(
+			'openai_key' => self::has_openai_api_key() ? 'configured' : 'missing',
+			'openai_model' => $model_valid ? 'configured' : 'invalid',
+			'model_pricing' => $pricing,
+			'accounting' => get_option( ORAS_AI_Usage_Ledger::FAULT_OPTION, false ) ? 'incomplete' : ( get_option( ORAS_AI_Usage_Ledger::LOCK_OPTION, false ) ? 'busy' : 'available' ),
+			'astronomy_credentials' => $astronomy,
+			'nws_contact' => null === $nws ? 'invalid' : ( '' === $nws ? 'missing' : 'configured' ),
+			'observing_site' => $site instanceof ORAS_AI_Observing_Site ? 'configured' : 'invalid',
+			'support_general' => $routing['general'],
+			'support_topics' => $routing['topics'],
+			'contact_fallback' => filter_var( $contact, FILTER_VALIDATE_URL ) && in_array( wp_parse_url( $contact, PHP_URL_SCHEME ), array( 'http', 'https' ), true ) ? 'configured' : 'invalid',
+			'member_ai' => self::member_ai_enabled() ? 'on' : 'off',
+			'retention_schedule' => false === $maintenance['next_scheduled'] ? 'missing' : 'scheduled',
+			'verification' => 'not_live_verified',
+		);
+	}
+
 	private static function invalid_provider_configuration() {
 		return new WP_Error(
 			'oras_ai_invalid_provider_configuration',

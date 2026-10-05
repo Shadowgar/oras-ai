@@ -30,6 +30,16 @@ final class ORAS_AI_Cost_Admin {
 		?>
 		<div class="wrap oras-ai-wrap">
 			<h1><?php esc_html_e( 'Usage & Cost Controls', 'oras-ai-assistant' ); ?></h1>
+			<?php $maintenance = ORAS_AI_Usage_Maintenance::status(); ?>
+			<div class="oras-ai-panel">
+				<h2><?php esc_html_e( 'Usage metadata maintenance', 'oras-ai-assistant' ); ?></h2>
+				<p><?php esc_html_e( 'Daily bounded batches remove expired personal metadata. A scheduled event does not prove that an external scheduler invokes WordPress cron on an idle site. A last successful batch does not mean the entire backlog is clear.', 'oras-ai-assistant' ); ?></p>
+				<p><?php esc_html_e( 'Next scheduled (UTC):', 'oras-ai-assistant' ); ?> <?php echo esc_html( $maintenance['next_scheduled'] ? gmdate( 'Y-m-d H:i:s', $maintenance['next_scheduled'] ) : __( 'Missing', 'oras-ai-assistant' ) ); ?></p>
+				<p><?php esc_html_e( 'Last successful batch (UTC):', 'oras-ai-assistant' ); ?> <?php echo esc_html( $maintenance['last_success'] ? gmdate( 'Y-m-d H:i:s', $maintenance['last_success'] ) : __( 'Never', 'oras-ai-assistant' ) ); ?></p>
+				<p><?php esc_html_e( 'Last outcome:', 'oras-ai-assistant' ); ?> <?php echo esc_html( $maintenance['outcome'] ); ?> · <?php esc_html_e( 'Examined / removed / redacted:', 'oras-ai-assistant' ); ?> <?php echo esc_html( $maintenance['examined'] . ' / ' . $maintenance['removed'] . ' / ' . $maintenance['redacted'] ); ?></p>
+				<p><?php esc_html_e( 'Busy leaves the ledger unchanged for a later attempt. Failed storage keeps accounting blocked; investigate and reconcile before any repair. See the operations runbook.', 'oras-ai-assistant' ); ?></p>
+			</div>
+
 
 			<?php if ( isset( $_GET['settings-updated'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Usage and cost controls saved.', 'oras-ai-assistant' ); ?></p></div>
