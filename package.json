@@ -5,8 +5,9 @@
   "description": "Quality tooling for the ORAS AI Assistant WordPress plugin.",
   "scripts": {
     "lint:php": "php tools/lint-php.php",
-	"lint:js": "node --check assets/scanner.js && node --check assets/chat.js",
-	"test": "php tools/run-tests.php && node tests/frontend-chat-test.js",
-    "quality": "npm run lint:php && npm run lint:js && npm test"
+    "lint:js": "node --check assets/scanner.js && node --check assets/chat.js",
+    "test": "php tools/run-tests.php && node tests/frontend-chat-test.js",
+    "quality": "npm run lint:php && npm run lint:js && npm test",
+    "evaluate:release": "php tools/release-evaluation.php"
   }
 }

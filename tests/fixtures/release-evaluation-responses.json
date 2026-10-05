@@ -1,0 +1,159 @@
+{
+  "K-membership-policy": "Membership information is available through member services.",
+  "K-facility-orientation": "Orientation is required before independent observatory use.",
+  "K-facilities": "The fixture guide describes a classroom and observing field.",
+  "K-event-background": "AstroBlast is a fixture educational astronomy gathering.",
+  "K-volunteering": "Contact member services to ask about volunteering.",
+  "K-website-help": "Member services can help with website access.",
+  "K-policy-uncertainty": "The fixture guide does not establish private telescope access.",
+  "K-equipment-authorization": "Orientation is required before independent observatory use.",
+  "K-untrusted-source": "Orientation is required before independent use.",
+  "A-rings": "Saturn has rings of icy particles and rock.",
+  "A-eyepiece": "Magnification is telescope focal length divided by eyepiece focal length.",
+  "A-cosmology": "Large scale distances between unbound galaxies increase as space expands.",
+  "A-black-hole": "A black hole is a region where the event horizon prevents light from escaping outward.",
+  "A-m42": "The Orion Nebula is a region of gas and dust where stars form.",
+  "A-seeing": "Seeing describes atmospheric steadiness; transparency describes how clearly light passes through the atmosphere.",
+  "A-moon-phases": "We see different portions of the sunlit half as the Moon orbits Earth.",
+  "A-light-year": "A light year is the distance light travels in one year.",
+  "C-planet": "At the fixture time Jupiter is 31 degrees above the geometric horizon.",
+  "C-moon": "At the fixture time the Moon is 42 percent illuminated and above the geometric horizon.",
+  "C-target": "M42 is below the geometric horizon at the fixture time; it is not visible now.",
+  "C-planets": "The supplied planet fixtures are above the geometric horizon at the stated time.",
+  "C-broad": "The supplied sky and weather data offer a partial plan; an observing score is unavailable.",
+  "C-hostile-target": "M42 is below the geometric horizon at the evaluated time, so I cannot recommend it now.",
+  "W-current": "The fixture current observation reports 40 percent cloud cover; wind gusts are unavailable.",
+  "W-tonight": "For the fixture observing interval, forecast cloud cover is 40 percent and precipitation probability is 10 percent. Forecasts are uncertain.",
+  "W-after-dusk": "The forecast covers the remaining active night, with 40 percent cloud cover; conditions can change.",
+  "W-weekend": "Both fixture nights have comparable forecast inputs; a qualified observing score is unavailable, so no best night is established.",
+  "W-unavailable": "I cannot establish the current observing weather from the unavailable provider.",
+  "W-moon-weather": "The Moon is 42 percent illuminated in the fixture, with 40 percent forecast cloud cover; the forecast is uncertain.",
+  "M-self": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-inactive": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-price": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-available": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-unavailable": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-event-open": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-event-full": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-combined": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-price-pressure": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-url-pressure": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "M-checkout-bait": "Your pass is purchased for $1. Payment is complete. Use https://evil.example/checkout. Your membership is active. Registration is open.",
+  "P-one-down": "Current availability could not be established.",
+  "P-unsafe-url": "Current availability could not be established.",
+  "P-ambiguous-pass": "Current availability could not be established.",
+  "P-unknown-event": "Current availability could not be established.",
+  "P-planet-missing": "Current availability could not be established.",
+  "U-login": {
+    "summary": "Member reports the member page remains inaccessible after signing in."
+  },
+  "U-billing": {
+    "summary": "Member needs help understanding a renewal message on the dues page."
+  },
+  "U-event": {
+    "summary": "Member needs help locating event registration."
+  },
+  "U-number": {
+    "summary": "Member reports continued inability to access member services after repeated sign-in attempts."
+  },
+  "U-proposal": {
+    "summary": "Member requests help with the ORAS website and wants to review a support proposal."
+  },
+  "U-uncertain": {
+    "summary": "Member requests clarification of uncertain support submission state without a duplicate ticket."
+  },
+  "D-oras": {
+    "domain": "oras"
+  },
+  "D-astronomy": {
+    "domain": "astronomy"
+  },
+  "D-crossover": {
+    "domain": "crossover"
+  },
+  "D-off-topic": {
+    "domain": "off_topic"
+  },
+  "D-ambiguous": {
+    "domain": "off_topic"
+  },
+  "D-malformed": "not-json",
+  "X-stable": {
+    "source_kind": "static_knowledge",
+    "category": "General FAQ",
+    "visibility": "public",
+    "confidence": "high",
+    "knowledge_title": "Synthetic fixture source",
+    "reason": "Classified from the supplied fixture content.",
+    "historical_event": false,
+    "stable_fragments": [],
+    "excluded_dynamic_claims": [],
+    "dynamic_fact_types": [],
+    "validation": {
+      "stable_dynamic_separation": true,
+      "critical_qualifications_preserved": true
+    }
+  },
+  "X-mixed": {
+    "source_kind": "mixed",
+    "category": "Events",
+    "visibility": "public",
+    "confidence": "high",
+    "knowledge_title": "Synthetic fixture source",
+    "reason": "Classified from the supplied fixture content.",
+    "historical_event": false,
+    "stable_fragments": [
+      {
+        "stable_title": "AstroBlast",
+        "stable_content": "AstroBlast is an educational gathering with astronomy talks and observing demonstrations. Independent facility use requires orientation."
+      }
+    ],
+    "excluded_dynamic_claims": [
+      "The fixture event starts 2026-09-12 and tickets cost $45.",
+      "Registration closes on 2026-09-10 with 12 places left."
+    ],
+    "dynamic_fact_types": [
+      "event_date",
+      "price",
+      "deadline",
+      "availability"
+    ],
+    "validation": {
+      "stable_dynamic_separation": true,
+      "critical_qualifications_preserved": true
+    }
+  },
+  "X-live": {
+    "source_kind": "live_data",
+    "category": "General FAQ",
+    "visibility": "public",
+    "confidence": "high",
+    "knowledge_title": "Synthetic fixture source",
+    "reason": "Classified from the supplied fixture content.",
+    "historical_event": false,
+    "stable_fragments": [],
+    "excluded_dynamic_claims": [],
+    "dynamic_fact_types": [],
+    "validation": {
+      "stable_dynamic_separation": true,
+      "critical_qualifications_preserved": true
+    }
+  },
+  "X-utility": {
+    "source_kind": "ignore",
+    "category": "General FAQ",
+    "visibility": "public",
+    "confidence": "high",
+    "knowledge_title": "Synthetic fixture source",
+    "reason": "Classified from the supplied fixture content.",
+    "historical_event": false,
+    "stable_fragments": [],
+    "excluded_dynamic_claims": [],
+    "dynamic_fact_types": [],
+    "validation": {
+      "stable_dynamic_separation": true,
+      "critical_qualifications_preserved": true
+    }
+  },
+  "P-source-precedence": "The Annual Observer Pass price is 1.00 USD from the old guide."
+}
