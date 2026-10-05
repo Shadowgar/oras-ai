@@ -41,13 +41,24 @@ if (empty($tests)) {
 $failures = 0;
 
 foreach ($tests as $name => $callback) {
+	$warnings = array();
+	set_error_handler(static function ($severity, $message, $file, $line) use (&$warnings): void {
+		$warnings[] = $message . ' in ' . $file . ':' . $line;
+		throw new ErrorException($message, 0, $severity, $file, $line);
+	}, E_WARNING | E_USER_WARNING);
 	try {
 		$callback();
+		// A production catch must not hide an unexpected warning from qualification.
+		if ($warnings) {
+			throw new RuntimeException(implode("\n", $warnings));
+		}
 		echo "PASS {$name}\n";
 	} catch (Throwable $throwable) {
 		$failures++;
 		echo "FAIL {$name}\n";
 		echo $throwable->getMessage() . "\n";
+	} finally {
+		restore_error_handler();
 	}
 }
 

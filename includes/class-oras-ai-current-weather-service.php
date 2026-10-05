@@ -193,8 +193,8 @@ final class ORAS_AI_Current_Weather_Service {
 		$time = '(\d{1,2})(?::([0-5]\d))?\s*(am|pm)?';
 		$date = $this->night_date( $question )->setTimezone( ORAS_AI_Observing_Site::oras_observatory()->timezone() )->format( 'Y-m-d' );
 		if ( preg_match( '/\bfrom\s+' . $time . '\s+to\s+' . $time . '\b/', $question, $match ) ) {
-			$start = $this->local_time( $date, $match[1], $match[2], $match[3] );
-			$end   = $this->local_time( $date, $match[4], $match[5], $match[6] );
+			$start = $this->local_time( $date, $match[1], $match[2] ?? '', $match[3] ?? '' );
+			$end   = $this->local_time( $date, $match[4], $match[5] ?? '', $match[6] ?? '' );
 			if ( null === $start || null === $end ) {
 				return null;
 			}
@@ -204,7 +204,7 @@ final class ORAS_AI_Current_Weather_Service {
 			return array( $start, $end );
 		}
 		if ( preg_match( '/\bat\s+' . $time . '\b/', $question, $match ) ) {
-			$instant = $this->local_time( $date, $match[1], $match[2], $match[3] );
+			$instant = $this->local_time( $date, $match[1], $match[2] ?? '', $match[3] ?? '' );
 			return null === $instant ? null : array( $instant, $instant );
 		}
 		return null;

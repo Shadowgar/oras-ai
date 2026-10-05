@@ -117,7 +117,7 @@ the M8 qualification reruns its confirmation and duplicate-safety regressions.
 ## M8 — Member-aware actions
 **Status:** COMPLETE — frozen development qualification, 2026-10-01.
 
-**Closure decision:** READY TO CLOSE; documentation awaits owner review and is uncommitted.
+**Closure decision:** READY TO CLOSE; closure documentation committed at `56b8ba9`.
 
 **Evidence:** [M8 member-aware actions qualification](../evidence/m8-member-aware-actions/verification.md)
 - [x] RB Member-specific answers use least privilege.
@@ -130,9 +130,17 @@ combined-domain preservation, and fact-scoped partial failure at implementation
 HEAD `816da5adf311049f6a95a288a484d0e3337a417f`. All M1–M7 automated regressions
 remain green. Production product/event mappings, prices, capacity, installed
 versions, and canonical HTTPS handoffs remain deployment verification items.
-Plugin version remains `0.2.1`; ASTRO-007 remains deferred and M9 is unchanged.
+Plugin version remains `0.2.1`; ASTRO-007 remains deferred.
 
 ## M9 — Production release
+**Status:** IN PROGRESS — local baseline qualification; production release gates remain open.
+
+Task 1 site-wide OpenAI accounting is committed at `ea1f9ea8`.
+Task 2 retention and safe configuration is committed at `97c9a707`.
+Local warning-free qualification is recorded in
+[M9 local baseline evidence](../evidence/m9-local-baseline/verification.md).
+These implementation checkpoints do not close the production release.
+
 - [ ] RD Security review.
 - [ ] RD Privacy/retention communication.
 - [ ] RD Backup/rollback tested.

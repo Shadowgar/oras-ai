@@ -138,6 +138,59 @@ oras_ai_test('M6 member explicit twenty-four-hour weather interval uses ORAS loc
 	oras_ai_assert_same('2026-09-10T03:15:00+00:00', $weather->requests[0]->window_end()->format(DATE_ATOM), 'Twenty-four-hour end was not normalized.');
 });
 
+foreach (array(
+	'cloudy at 21:30' => array('2026-09-10T01:30:00+00:00', '2026-09-10T01:30:00+00:00'),
+	'forecast from 20:30 to 23:15' => array('2026-09-10T00:30:00+00:00', '2026-09-10T03:15:00+00:00'),
+	'cloudy at 9 pm' => array('2026-09-10T01:00:00+00:00', '2026-09-10T01:00:00+00:00'),
+	'cloudy at 11 am' => array('2026-09-09T15:00:00+00:00', '2026-09-09T15:00:00+00:00'),
+	'cloudy at 9:30 pm' => array('2026-09-10T01:30:00+00:00', '2026-09-10T01:30:00+00:00'),
+	'forecast from 9 pm to 11 pm' => array('2026-09-10T01:00:00+00:00', '2026-09-10T03:00:00+00:00'),
+	'forecast from 9:15 pm to 11 pm' => array('2026-09-10T01:15:00+00:00', '2026-09-10T03:00:00+00:00'),
+	'forecast from 23:15 to 20:30' => array('2026-09-10T03:15:00+00:00', '2026-09-11T00:30:00+00:00'),
+	'cloudy at 21:30 tomorrow' => array('2026-09-11T01:30:00+00:00', '2026-09-11T01:30:00+00:00'),
+	'cloudy at 21:30 Friday' => array('2026-09-12T01:30:00+00:00', '2026-09-12T01:30:00+00:00'),
+	'cloudy at 21:30 on 2026-09-10' => array('2026-09-11T01:30:00+00:00', '2026-09-11T01:30:00+00:00'),
+) as $question => $expected) {
+	oras_ai_test('M9 weather optional captures are warning-free: ' . $question, static function () use ($question, $expected): void {
+		oras_ai_test_reset();
+		$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable('2026-09-09T12:00:00+00:00'));
+		$weather = oras_ai_test_weather_provider('oras_ai_test_weather_success');
+		$service = new ORAS_AI_Current_Weather_Service($weather, new ORAS_AI_Astronomical_Night_Resolver(oras_ai_test_darkness_provider($clock, true), $clock), $clock);
+		set_error_handler(static function ($severity, $message, $file, $line): void {
+			throw new ErrorException($message, 0, $severity, $file, $line);
+		}, E_WARNING | E_USER_WARNING);
+		try {
+			$result = $service->query(oras_ai_test_authorized_request(966, $question));
+		} finally {
+			restore_error_handler();
+		}
+		oras_ai_assert_true($result->has_facts(), 'Supported time required unavailable default night boundaries.');
+		oras_ai_assert_same(1, count($weather->requests), 'Explicit time did not make one bounded weather request.');
+		oras_ai_assert_same($expected[0], $weather->requests[0]->requested_at()->format(DATE_ATOM), 'Wrong explicit UTC start.');
+		oras_ai_assert_same($expected[1], $weather->requests[0]->window_end()->format(DATE_ATOM), 'Wrong explicit UTC end.');
+	});
+}
+
+foreach (array('cloudy at 21', 'cloudy at 25:30', 'cloudy at 13 pm', 'forecast from 20 to 23') as $question) {
+	oras_ai_test('M9 weather invalid time retains tonight fallback: ' . $question, static function () use ($question): void {
+		oras_ai_test_reset();
+		$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable('2026-09-09T12:00:00+00:00'));
+		$weather = oras_ai_test_weather_provider('oras_ai_test_weather_success');
+		$service = new ORAS_AI_Current_Weather_Service($weather, new ORAS_AI_Astronomical_Night_Resolver(oras_ai_test_darkness_provider($clock), $clock), $clock);
+		set_error_handler(static function ($severity, $message, $file, $line): void {
+			throw new ErrorException($message, 0, $severity, $file, $line);
+		}, E_WARNING | E_USER_WARNING);
+		try {
+			$result = $service->query(oras_ai_test_authorized_request(966, $question));
+		} finally {
+			restore_error_handler();
+		}
+		oras_ai_assert_true($result->has_facts(), 'Invalid explicit time lost the existing tonight fallback.');
+		oras_ai_assert_same('2026-09-10T00:15:00+00:00', $weather->requests[0]->requested_at()->format(DATE_ATOM), 'Invalid time did not fall back to dusk.');
+		oras_ai_assert_same('2026-09-10T09:25:00+00:00', $weather->requests[0]->window_end()->format(DATE_ATOM), 'Invalid time did not fall back to dawn.');
+	});
+}
+
 oras_ai_test('M6 missing astronomical night is a fact-scoped weather uncertainty', function (): void {
 	$clock = new ORAS_AI_Test_Fixed_Clock(new DateTimeImmutable('2026-09-09T12:00:00+00:00'));
 	$weather = oras_ai_test_weather_provider('oras_ai_test_weather_success');
