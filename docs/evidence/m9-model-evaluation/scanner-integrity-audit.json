@@ -1,0 +1,224 @@
+{
+  "date": "2026-10-06",
+  "completed_before_corpus_edit": true,
+  "branch": "m9/production-release",
+  "head": "ca890f44a3f10ecbd479659b90741060da7847db",
+  "plugin_version": "0.2.1",
+  "v1_corpus_version": "oras-release-core-v1",
+  "v1_corpus_sha256": "9b7c7a4bee28a98cbcfd6f1abadd269c1612c16edd4505741c1ed4ac559b7fd3",
+  "preservation_hashes_before": {
+    "live-corpus-results.json": "f3477927d0f9bedfc13deb7176dc0599f22dfdc9a65fbd006b62db1b873c9ddb",
+    "live-corpus-run2-results.json": "1ea97e40342bd33fcfff33f96ee17304bcf2d93f48c73672368076fe9a7520dd",
+    "gpt6-luna-low-results.json": "7ff01a783674772b8887a3b78ff95b20d8e659122ed353270f020d80c3c29c72",
+    "human-review.md": "ca61ee12dff4a33286c3d4ff1a6a5a6198b503f3e0ce3e963ef848f01b424275",
+    "task3c-continuation-checks.json": "07386e9bbdcf14e774c89a70183d1ad6cf14d63b15a01daafa715178328b5496",
+    "task3d-candidate-harness.diff": "ee391ab78186d5eba64350c36357ef02872223fbd952f6165aa61b146a144b51",
+    "task3d-evaluation-bootstrap.txt": "32f8895755cd8743c9cf1f68eba84711968b939dd1eb3dd39150daa11aded396",
+    "task3d-source-proof.json": "1218c741949f8c126b6e974a45b84717efe18d7ad05888571b697c0225aea1a8",
+    "task3d-verification-checks.json": "71f92b670940f1f8c1465fec515410aefea4d59fb6338edf486c48731dcd3a80",
+    "core-v1.json": "9b7c7a4bee28a98cbcfd6f1abadd269c1612c16edd4505741c1ed4ac559b7fd3",
+    "v1-fixture-responses.json": "22a26c18ab57676d569e292948f4ee947d27a6c4f15ec37b872dbb98abe891f1"
+  },
+  "cases": [
+    {
+      "id": "X-stable",
+      "current_expected": "static_knowledge",
+      "model_visible_source": {
+        "source_title": "Synthetic fixture source",
+        "source_url": "https://oras.org/evaluation-fixture/",
+        "post_type": "page",
+        "content": "ORAS classroom orientation is required before independent facility use.\n\nThe classroom introduces participants to facility orientation, equipment handling, and observing etiquette. Members must complete orientation before independent use; the guide does not grant blanket equipment authorization. Volunteers help visitors find the correct support topic and preserve access qualifications. This is synthetic retained source content, with no real member details."
+      },
+      "observed_in": [
+        "GPT-5.6 Run 2",
+        "GPT-6"
+      ],
+      "semantic_expected": "static_knowledge",
+      "contamination": [
+        {
+          "field": "source_title",
+          "signals": [
+            "Synthetic",
+            "fixture"
+          ]
+        },
+        {
+          "field": "source_url",
+          "signals": [
+            "evaluation",
+            "fixture"
+          ]
+        },
+        {
+          "field": "content",
+          "signals": [
+            "synthetic",
+            "retained"
+          ]
+        }
+      ],
+      "valid_clean_production_representative_test": false,
+      "historical_failure_disposition": "EVALUATION CONTAMINATED",
+      "analysis": "Durable orientation, handling, etiquette and access qualifications remain useful ORAS knowledge. Explicit synthetic/retained disclaimer plus universal title/URL are evaluation-only. GPT-6 cited that disclaimer. The original GPT-5.6 structural contradiction remains an observed violation but is not clean production-representative model-quality evidence."
+    },
+    {
+      "id": "X-mixed",
+      "current_expected": "mixed",
+      "model_visible_source": {
+        "source_title": "Synthetic fixture source",
+        "source_url": "https://oras.org/evaluation-fixture/",
+        "post_type": "page",
+        "content": "AstroBlast is an educational gathering. This fixture event starts 2026-09-12 and tickets cost $45.\n\nThe gathering includes astronomy talks and observing demonstrations. Volunteers support public education, with independent facility use still subject to orientation. The current fixture registration closes on 2026-09-10 and has 12 places left. These dates, price, deadline, and remaining places are dynamic; the educational purpose and orientation qualification remain durable."
+      },
+      "observed_in": [
+        "GPT-5.6 Run 2"
+      ],
+      "semantic_expected": "mixed",
+      "contamination": [
+        {
+          "field": "source_title",
+          "signals": [
+            "Synthetic",
+            "fixture"
+          ]
+        },
+        {
+          "field": "source_url",
+          "signals": [
+            "evaluation",
+            "fixture"
+          ]
+        },
+        {
+          "field": "content",
+          "signals": [
+            "fixture",
+            "fixture"
+          ]
+        }
+      ],
+      "valid_clean_production_representative_test": false,
+      "historical_failure_disposition": "EVALUATION CONTAMINATED",
+      "analysis": "Both educational purpose/access qualifications and changing event date/price/deadline/places remain. Fixture wording and explicit dynamic/durable descriptions reveal test framing and expected separation."
+    },
+    {
+      "id": "X-live",
+      "current_expected": "live_data",
+      "model_visible_source": {
+        "source_title": "Synthetic fixture source",
+        "source_url": "https://oras.org/evaluation-fixture/",
+        "post_type": "page",
+        "content": "The Annual Observer Pass costs $45 and is currently out of stock.\n\nAvailability and price are supplied by the current product record. The fixture product cannot be purchased while out of stock. This page also displays an upcoming restock estimate of 2026-09-20 that must not become durable policy. Normal WooCommerce checkout remains responsible for any purchase."
+      },
+      "observed_in": [
+        "GPT-5.6 Run 2"
+      ],
+      "semantic_expected": "live_data for intended current-only record; mixed is plausible for the supplied checkout assertion",
+      "contamination": [
+        {
+          "field": "source_title",
+          "signals": [
+            "Synthetic",
+            "fixture"
+          ]
+        },
+        {
+          "field": "source_url",
+          "signals": [
+            "evaluation",
+            "fixture"
+          ]
+        },
+        {
+          "field": "content",
+          "signals": [
+            "fixture"
+          ]
+        }
+      ],
+      "valid_clean_production_representative_test": false,
+      "historical_failure_disposition": "CONTRACT AMBIGUITY",
+      "analysis": "The generic title/URL and fixture label contaminate the source. The enduring WooCommerce-responsibility sentence supplies the very fragment GPT-5.6 extracted. Its usefulness versus generic boilerplate is not uniquely resolved by this oracle; the failure cannot be treated as a clean model failure."
+    },
+    {
+      "id": "X-utility",
+      "current_expected": "ignore",
+      "model_visible_source": {
+        "source_title": "Synthetic fixture source",
+        "source_url": "https://oras.org/evaluation-fixture/",
+        "post_type": "page",
+        "content": "Sign in to your account and complete checkout.\n\nAccount navigation: profile, password reset, order history, saved addresses, and checkout. This source is a synthetic utility page without substantive ORAS knowledge. Form labels and empty notification containers are interface elements, not organizational policy."
+      },
+      "observed_in": [
+        "GPT-5.6 Run 2"
+      ],
+      "semantic_expected": "ignore",
+      "contamination": [
+        {
+          "field": "source_title",
+          "signals": [
+            "Synthetic",
+            "fixture"
+          ]
+        },
+        {
+          "field": "source_url",
+          "signals": [
+            "evaluation",
+            "fixture"
+          ]
+        },
+        {
+          "field": "content",
+          "signals": [
+            "synthetic"
+          ]
+        }
+      ],
+      "valid_clean_production_representative_test": false,
+      "historical_failure_disposition": "EVALUATION CONTAMINATED",
+      "analysis": "Account/checkout navigation has no substantive knowledge. Synthetic label and explicit no-substantive-knowledge/interface-not-policy instructions reveal the intended classification."
+    },
+    {
+      "id": "EXTRA-X-review",
+      "current_expected": "review / valid validation",
+      "model_visible_source": {
+        "source_title": "Draft ORAS equipment-access policy awaiting review",
+        "source_url": "https://oras.org/evaluation-review-fixture/",
+        "post_type": "page",
+        "content": "Draft ORAS equipment-access policy, awaiting board review. Proposed rule: members may use telescopes only after orientation and with an authorized supervisor. This is not an approved policy. Effective date has not been decided. All listed qualifications belong to the same draft; do not treat this as currently effective policy."
+      },
+      "observed_in": [
+        "GPT-5.6 Run 2 separate probe"
+      ],
+      "outside_v1_corpus": true,
+      "semantic_expected": "review; valid review shape requires empty fragment arrays and true validation flags under existing M2",
+      "contamination": [
+        {
+          "field": "source_url",
+          "signals": [
+            "evaluation",
+            "fixture"
+          ]
+        }
+      ],
+      "valid_clean_production_representative_test": false,
+      "historical_failure_disposition": "CONTRACT AMBIGUITY",
+      "analysis": "Unapproved/effective-date-unknown policy belongs in review. The model selected review correctly but interpreted inability to store durable knowledge as false validation flags. Existing M2 rejects those flags. The URL leaks evaluation/fixture metadata; qualification/current-policy directions also reveal test intent. No independent production defect is established by these contaminated inputs."
+    }
+  ],
+  "m2_contract_sources": [
+    "includes/class-oras-ai-openai.php",
+    "includes/class-oras-ai-source-classification-result.php"
+  ],
+  "independent_production_defect_established": false,
+  "historical_measurements_unaffected": [
+    "raw outputs",
+    "calls/statuses",
+    "token usage",
+    "latency",
+    "accounting cost",
+    "safe validator routing"
+  ],
+  "historical_quality_claims_affected": "V1 scanner conclusions do not establish clean-source qualification. GPT-6 X-stable is not valid negative evidence of durable-source classification ability. No candidate is retroactively qualified and no structural contradiction is erased."
+}

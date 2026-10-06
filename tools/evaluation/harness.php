@@ -5,20 +5,28 @@ require_once __DIR__ . '/fixtures.php';
 /** Development-only qualification tooling. Never loaded by the plugin. */
 final class ORAS_AI_Release_Evaluation {
 	const MODEL = 'gpt-5.6-luna';
-	const CORPUS = __DIR__ . '/../../docs/quality/release-evaluation/core-v1.json';
+	const CORPUS_VERSION = 'oras-release-core-v2';
+	const CORPUS = __DIR__ . '/../../docs/quality/release-evaluation/core-v2.json';
+	const FIXTURES = __DIR__ . '/../../tests/fixtures/release-evaluation-responses-v2.json';
 
 	public static function corpus(): array {
 		$data = json_decode((string) file_get_contents(self::CORPUS), true, 64, JSON_THROW_ON_ERROR);
 		self::validate($data);
+		if (self::CORPUS_VERSION !== $data['version']) { throw new InvalidArgumentException('Corpus path and version disagree.'); }
 		return $data;
 	}
 
 	public static function validate(array $corpus): void {
-		if ('synthetic_only' !== ($corpus['data_class'] ?? '') || 'oras-release-core-v1' !== ($corpus['version'] ?? '') || !is_array($corpus['cases'] ?? null) || count($corpus['cases']) < 60 || count($corpus['cases']) > 100) { throw new InvalidArgumentException('Invalid bounded synthetic corpus.'); }
+		if ('synthetic_only' !== ($corpus['data_class'] ?? '') || !in_array($corpus['version'] ?? '', array('oras-release-core-v1', self::CORPUS_VERSION), true) || !is_array($corpus['cases'] ?? null) || count($corpus['cases']) < 60 || count($corpus['cases']) > 100) { throw new InvalidArgumentException('Invalid bounded synthetic corpus.'); }
 		$ids = array();
 		foreach ($corpus['cases'] as $case) {
 			if (!is_array($case) || !preg_match('/^[A-Z]-[a-z0-9-]{2,48}$/', $case['id'] ?? '') || isset($ids[$case['id']]) || !is_string($case['prompt'] ?? null) || strlen($case['prompt']) > 4000 || !in_array($case['workflow'] ?? '', array('answer', 'summary', 'classifier', 'scanner', 'support_state'), true) || empty($case['requirements'])) { throw new InvalidArgumentException('Invalid case identity or workflow.'); }
 			if (!in_array($case['category'] ?? '', array('knowledge', 'general_astronomy', 'current_astronomy', 'weather', 'member', 'support', 'security', 'partial_failure'), true) || !in_array($case['execution_class'] ?? '', array('live_eligible', 'fixture_only_fault', 'fixture_only_contract'), true) || !is_string($case['profile'] ?? null)) { throw new InvalidArgumentException('Invalid case classification.'); }
+			if ('scanner' === $case['workflow']) {
+				if (!in_array($case['profile'], ORAS_AI_Source_Classification_Result::supported_source_kinds(), true)) { throw new InvalidArgumentException('Invalid scanner expectation.'); }
+				if (self::CORPUS_VERSION === $corpus['version']) { self::scanner_source($case); }
+				elseif (array_key_exists('source', $case)) { throw new InvalidArgumentException('V2 source envelope mislabeled v1.'); }
+			}
 			$ids[$case['id']] = true;
 			$expected = $case['expected'] ?? array();
 			foreach (array('domain', 'status', 'source_behavior', 'side_effect_proposal', 'qualitative') as $key) {
@@ -28,6 +36,31 @@ final class ORAS_AI_Release_Evaluation {
 			foreach (array('refusal', 'uncertainty') as $key) { if (!is_bool($expected[$key] ?? null)) { throw new InvalidArgumentException('Invalid Boolean dimension.'); } }
 		}
 		if (preg_match('/\bsk-[A-Za-z0-9_-]{12,}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', json_encode($corpus))) { throw new InvalidArgumentException('Secret or personal identifier in corpus.'); }
+	}
+
+	/** Only these four authored fields enter the production scanner. */
+	public static function scanner_source(array $case): array {
+		$source = $case['source'] ?? null;
+		if (!is_array($source)) { throw new InvalidArgumentException('Explicit scanner source required.'); }
+		$keys = array_keys($source); sort($keys);
+		if ($keys !== array('content', 'post_type', 'source_title', 'source_url')) { throw new InvalidArgumentException('Scanner source contains missing or internal fields.'); }
+		foreach (array('source_title' => 1000, 'source_url' => 2048, 'post_type' => 64, 'content' => 4000) as $field => $limit) {
+			if (!is_string($source[$field]) || '' === trim($source[$field]) || strlen($source[$field]) > $limit) { throw new InvalidArgumentException('Invalid scanner source field.'); }
+			if (preg_match('/\b(?:synthetic|fixture|retained|evaluation|test|mock)\b/i', rawurldecode($source[$field]))) { throw new InvalidArgumentException('Evaluation metadata in scanner source.'); }
+		}
+		$url = parse_url($source['source_url']);
+		if (!is_array($url) || ($url['scheme'] ?? '') !== 'https' || ($url['host'] ?? '') !== 'oras.org' || empty($url['path']) || isset($url['user']) || isset($url['pass']) || isset($url['query']) || isset($url['fragment']) || isset($url['port'])) { throw new InvalidArgumentException('Invalid authored ORAS source URL.'); }
+		if (!in_array($source['post_type'], array('page', 'post', 'product', 'tribe_events'), true)) { throw new InvalidArgumentException('Invalid authored WordPress type.'); }
+		return $source;
+	}
+
+	/** Scripted responses are version-bound and never generated from expectations. */
+	public static function fixture_responses(array $fixture, array $corpus): array {
+		if (($fixture['corpus_version'] ?? '') !== $corpus['version'] || ($fixture['data_class'] ?? '') !== 'synthetic_only' || !is_array($fixture['responses'] ?? null)) { throw new InvalidArgumentException('Fixture/corpus identity mismatch.'); }
+		foreach ($corpus['cases'] as $case) {
+			if ('scanner' === $case['workflow'] && !is_array($fixture['responses'][$case['id']] ?? null)) { throw new InvalidArgumentException('Scanner scripted response missing.'); }
+		}
+		return $fixture['responses'];
 	}
 
 	public static function safe_text(string $text, array $secrets = array()): string {
@@ -102,7 +135,8 @@ final class ORAS_AI_Release_Evaluation {
 				$value = (new ORAS_AI_OpenAI_Domain_Classifier())->classify($case['prompt']);
 				if ($value instanceof ORAS_AI_Domain_Result) { $result['status'] = 'classified'; $result['domain'] = $value->outcome(); $result['answer'] = $value->outcome(); }
 			} elseif ('scanner' === $case['workflow']) {
-				$value = (new ORAS_AI_OpenAI_Source_Classifier())->classify_source('Synthetic fixture source', 'https://oras.org/evaluation-fixture/', 'page', $case['prompt']);
+				$source = self::scanner_source($case);
+				$value = (new ORAS_AI_OpenAI_Source_Classifier())->classify_source($source['source_title'], $source['source_url'], $source['post_type'], $source['content']);
 				if ($value instanceof ORAS_AI_Source_Classification_Result) { $result['status'] = 'classified'; $result['source_kind'] = $value->source_kind(); $result['validation_status'] = $value->validation_status(); $result['answer'] = json_encode(array('source_kind' => $value->source_kind(), 'stable_fragments' => $value->stable_fragments(), 'excluded_dynamic_claims' => $value->excluded_dynamic_claims())); }
 			} else {
 				$gateway = new ORAS_AI_Request_Gateway(new ORAS_AI_PMPro_Membership_Authorizer(static function () { return true; }));
@@ -133,7 +167,7 @@ final class ORAS_AI_Release_Evaluation {
 
 	public static function fixture_run(): array {
 		if (!defined('ORAS_AI_TESTING')) { throw new RuntimeException('Fixture bootstrap required.'); }
-		$corpus = self::corpus(); $results = array(); $responses = json_decode((string) file_get_contents(__DIR__ . '/../../tests/fixtures/release-evaluation-responses.json'), true, 64, JSON_THROW_ON_ERROR);
+		$corpus = self::corpus(); $results = array(); $responses = self::fixture_responses(json_decode((string) file_get_contents(self::FIXTURES), true, 64, JSON_THROW_ON_ERROR), $corpus);
 		foreach ($corpus['cases'] as $case) {
 			oras_ai_test_reset();
 			$GLOBALS['oras_ai_test_default_capability'] = false;
@@ -173,7 +207,7 @@ final class ORAS_AI_Release_Evaluation {
 
 	public static function source_fingerprint(): string {
 		$root = dirname(__DIR__, 2);
-		$paths = array_merge(glob($root . '/includes/*.php'), glob(__DIR__ . '/*.php'), glob(__DIR__ . '/*.js'), array($root . '/assets/chat.js', $root . '/oras-ai-assistant.php', $root . '/tools/release-evaluation.php', self::CORPUS, $root . '/tests/fixtures/release-evaluation-responses.json'));
+		$paths = array_merge(glob($root . '/includes/*.php'), glob(__DIR__ . '/*.php'), glob(__DIR__ . '/*.js'), array($root . '/assets/chat.js', $root . '/oras-ai-assistant.php', $root . '/tools/release-evaluation.php', self::CORPUS, self::FIXTURES));
 		sort($paths); $hashes = array();
 		foreach ($paths as $path) { $hashes[substr($path, strlen($root) + 1)] = hash_file('sha256', $path); }
 		return hash('sha256', json_encode($hashes));

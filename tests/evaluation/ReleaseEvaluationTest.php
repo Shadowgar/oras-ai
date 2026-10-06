@@ -122,7 +122,7 @@ oras_ai_test('M9 evaluation reports metrics by evidence class without inventing 
 	oras_ai_assert_same('simulated_not_billing_or_latency_evidence', $report['metrics']['class'], 'Fixture costs or time labeled live.');
 	oras_ai_assert_same(null, $report['metrics']['provider_latency']['p95_seconds'], 'Fixture milliseconds treated as provider latency.');
 	oras_ai_assert_same(6, $report['metrics']['workflows']['classifier']['cases'], 'Specialized classifier cases dropped.');
-	oras_ai_assert_same(4, $report['metrics']['workflows']['scanner']['cases'], 'Scanner cases dropped.');
+	oras_ai_assert_same(5, $report['metrics']['workflows']['scanner']['cases'], 'Scanner cases dropped.');
 });
 
 oras_ai_test('M9 evaluation native bootstrap never executes without the explicit disposable marker', function (): void {

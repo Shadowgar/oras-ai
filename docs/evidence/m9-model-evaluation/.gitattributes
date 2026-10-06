@@ -1,0 +1,2 @@
+# Preserve exact unified-diff context whitespace in the historical patch artifact.
+task3d-candidate-harness.diff whitespace=-blank-at-eol,-space-before-tab

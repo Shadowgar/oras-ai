@@ -1,0 +1,77 @@
+{
+  "task": "M9 Task3E offline verification",
+  "head": "ca890f44a3f10ecbd479659b90741060da7847db",
+  "checks": [
+    {
+      "command": "npm run lint:php",
+      "exit_code": 0,
+      "log_sha256": "8949dbebd42625e61f948841bdfec73e9d291abec043352716303b7bc402f6f1",
+      "warnings": 0,
+      "stdout_tail": [
+        "OK   tools/evaluation/live.php",
+        "OK   tools/lint-php.php",
+        "OK   tools/release-evaluation.php",
+        "OK   tools/run-tests.php",
+        "219 PHP file(s) passed lint."
+      ]
+    },
+    {
+      "command": "npm run lint:js",
+      "exit_code": 0,
+      "log_sha256": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+      "warnings": 0,
+      "stdout_tail": [
+        "",
+        "> oras-ai-assistant@0.2.1 lint:js",
+        "> node --check assets/scanner.js && node --check assets/chat.js",
+        ""
+      ]
+    },
+    {
+      "command": "npm test",
+      "exit_code": 0,
+      "log_sha256": "7ee93613351cb5918096fd570eeb8cc4e6badcc400e45d4c926cf0297052a373",
+      "warnings": 0,
+      "stdout_tail": [
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "792 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    {
+      "command": "npm run quality",
+      "exit_code": 0,
+      "log_sha256": "e13258a6ab22a183ca38a040ac8a7cdc9e59eb120eb274c913f7bb24833afd5d",
+      "warnings": 0,
+      "stdout_tail": [
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "792 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "stdout": ""
+    }
+  ],
+  "php_tests_passed": 792,
+  "frontend_assertions_passed": 78,
+  "php_files_linted": 219,
+  "warning_count": 0,
+  "integrity_tdd": {
+    "test_count": 11,
+    "red_exit_code": 1,
+    "red_stdout": "FAIL M9 integrity defaults to v2 and preserves every non scanner case and v1 bytes\nContaminated v1 still selected. Expected 'oras-release-core-v2', got 'oras-release-core-v1'.\nFAIL M9 integrity scanner sources contain four clean realistic fields and all five meanings\nExplicit scanner input boundary missing.\nFAIL M9 integrity actual classifier receives only explicit source fields without expected labels or notes\nStructured model-visible source missing.\nFAIL M9 integrity rejects evaluation contamination in source_title\nModel-visible contamination admitted: source_title/synthetic\nFAIL M9 integrity rejects evaluation contamination in source_url\nModel-visible contamination admitted: source_url/synthetic\nFAIL M9 integrity rejects evaluation contamination in post_type\nModel-visible contamination admitted: post_type/synthetic\nFAIL M9 integrity rejects evaluation contamination in content\nModel-visible contamination admitted: content/synthetic\nFAIL M9 integrity rejects incomplete or metadata carrying source envelopes and personal data\nUnsafe scanner source envelope accepted: missing\nFAIL M9 integrity corpus and fixture versions cannot be confused\nNew corpus identity missing. Expected 'oras-release-core-v2', got 'oras-release-core-v1'.\nFAIL M9 integrity v2 preserves static mixed current utility and policy ambiguity distinctions\nReview outcome missing from permanent corpus.\nFAIL M9 integrity v2 offline fixture pipeline covers every case without live execution\nOffline test is still exercising v1. Expected 'oras-release-core-v2', got 'oras-release-core-v1'.\nFocused: 0 passed; 11 failed.\n",
+    "green_exit_code": 0,
+    "green_stdout": "PASS M9 integrity defaults to v2 and preserves every non scanner case and v1 bytes\nPASS M9 integrity scanner sources contain four clean realistic fields and all five meanings\nPASS M9 integrity actual classifier receives only explicit source fields without expected labels or notes\nPASS M9 integrity rejects evaluation contamination in source_title\nPASS M9 integrity rejects evaluation contamination in source_url\nPASS M9 integrity rejects evaluation contamination in post_type\nPASS M9 integrity rejects evaluation contamination in content\nPASS M9 integrity rejects incomplete or metadata carrying source envelopes and personal data\nPASS M9 integrity corpus and fixture versions cannot be confused\nPASS M9 integrity v2 preserves static mixed current utility and policy ambiguity distinctions\nPASS M9 integrity v2 offline fixture pipeline covers every case without live execution\nFocused: 11 passed; 0 failed.\n"
+  },
+  "fixture_command": "php tools/release-evaluation.php --output=/tmp/oras-ai-m9-task3e-fixture",
+  "fixture_exit_code": 0,
+  "provider_attempts": 0,
+  "paid_calls": 0
+}

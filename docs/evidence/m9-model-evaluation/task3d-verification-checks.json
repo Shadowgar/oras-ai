@@ -1,0 +1,149 @@
+{
+  "date": "2026-10-06",
+  "source_commit": "ca890f44a3f10ecbd479659b90741060da7847db",
+  "php_tests": 781,
+  "frontend_assertions": 78,
+  "php_lint_files": 218,
+  "commands": {
+    "baseline-lint-php": {
+      "exit_code": 0,
+      "unexpected_warnings_or_failures": [],
+      "log_sha256": "212cabf11c7790e99d45729a9a18bde3686ef9dac31c42c5100de8c2afd10710",
+      "tail": [
+        "OK   tools/evaluation/harness.php",
+        "OK   tools/evaluation/live.php",
+        "OK   tools/lint-php.php",
+        "OK   tools/release-evaluation.php",
+        "OK   tools/run-tests.php",
+        "218 PHP file(s) passed lint."
+      ]
+    },
+    "baseline-lint-js": {
+      "exit_code": 0,
+      "unexpected_warnings_or_failures": [],
+      "log_sha256": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+      "tail": [
+        "",
+        "> oras-ai-assistant@0.2.1 lint:js",
+        "> node --check assets/scanner.js && node --check assets/chat.js",
+        ""
+      ]
+    },
+    "baseline-test": {
+      "exit_code": 0,
+      "unexpected_warnings_or_failures": [],
+      "log_sha256": "eae50e294d370bd9a021c3a12bb185bea7429a613dcce8ae14e7f8194cbcf4a8",
+      "tail": [
+        "PASS M6 correction half-open NWS point at end",
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "781 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    "baseline-quality": {
+      "exit_code": 0,
+      "unexpected_warnings_or_failures": [],
+      "log_sha256": "23ca301e3cbde83226f65ee03796193d35b0bd21b2b02ed157e013b15dc697a8",
+      "tail": [
+        "PASS M6 correction half-open NWS point at end",
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "781 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    "final-lint-php": {
+      "exit_code": 0,
+      "unexpected_warnings_or_failures": [],
+      "log_sha256": "212cabf11c7790e99d45729a9a18bde3686ef9dac31c42c5100de8c2afd10710",
+      "tail": [
+        "OK   tools/evaluation/harness.php",
+        "OK   tools/evaluation/live.php",
+        "OK   tools/lint-php.php",
+        "OK   tools/release-evaluation.php",
+        "OK   tools/run-tests.php",
+        "218 PHP file(s) passed lint."
+      ]
+    },
+    "final-lint-js": {
+      "exit_code": 0,
+      "unexpected_warnings_or_failures": [],
+      "log_sha256": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+      "tail": [
+        "",
+        "> oras-ai-assistant@0.2.1 lint:js",
+        "> node --check assets/scanner.js && node --check assets/chat.js",
+        ""
+      ]
+    },
+    "final-test": {
+      "exit_code": 0,
+      "unexpected_warnings_or_failures": [],
+      "log_sha256": "eae50e294d370bd9a021c3a12bb185bea7429a613dcce8ae14e7f8194cbcf4a8",
+      "tail": [
+        "PASS M6 correction half-open NWS point at end",
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "781 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    "final-quality": {
+      "exit_code": 0,
+      "unexpected_warnings_or_failures": [],
+      "log_sha256": "23ca301e3cbde83226f65ee03796193d35b0bd21b2b02ed157e013b15dc697a8",
+      "tail": [
+        "PASS M6 correction half-open NWS point at end",
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "781 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    }
+  },
+  "local_specialized_matrix_passes": [
+    "PASS M9 specialized domain matrix oras",
+    "PASS M9 specialized domain matrix astronomy",
+    "PASS M9 specialized domain matrix crossover-observing",
+    "PASS M9 specialized domain matrix crossover-purchase",
+    "PASS M9 specialized domain matrix crossover-planets",
+    "PASS M9 specialized domain matrix crossover-facilities",
+    "PASS M9 specialized domain matrix off-topic",
+    "PASS M9 specialized domain ambiguous policy stays fail closed",
+    "PASS M9 specialized scanner matrix static_knowledge",
+    "PASS M9 specialized scanner matrix live_data",
+    "PASS M9 specialized scanner matrix mixed",
+    "PASS M9 specialized scanner matrix mixed-claims-only",
+    "PASS M9 specialized scanner matrix mixed-types-only",
+    "PASS M9 specialized scanner matrix ignore",
+    "PASS M9 specialized scanner matrix review",
+    "PASS M9 specialized scanner matrix stable-illegal",
+    "PASS M9 specialized scanner matrix live-illegal",
+    "PASS M9 specialized scanner matrix mixed-missing",
+    "PASS M9 specialized scanner matrix unknown",
+    "PASS M9 specialized scanner strict schema prevents contradictory class fragments",
+    "PASS M9 specialized scanner rejects malformed envelope without deleting contradictory data"
+  ],
+  "candidate_admission_red": "Candidate allowlist: FAIL\nCandidate pricing validation: FAIL\n",
+  "candidate_admission_green": {
+    "candidate": "gpt-6-luna",
+    "pricing_valid": true,
+    "million_input_cost_microdollars": 100000,
+    "million_output_cost_microdollars": 500000,
+    "openai_guard_permits": true,
+    "unrelated_guard_blocks": true
+  },
+  "independent_bounded_support_review": "No material correctness defect. All source/support hashes and stop logic verified; no reviewer changes or provider calls.",
+  "source_preserved": true,
+  "historical_live_json_preserved": true,
+  "post_run_persistent_model_verified": "gpt-5.6-luna",
+  "two_disposable_containers_restored_to_original_stopped_state": true,
+  "post_run_commits": 0,
+  "post_run_evidence_staged": false,
+  "normal_product_files_changed_after_commit": false
+}

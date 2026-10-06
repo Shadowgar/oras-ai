@@ -1,3 +1,367 @@
+# M9 Task 3E — SCANNER EVALUATION INTEGRITY REVIEW
+
+Date: 2026-10-06. **SCANNER EVALUATION V2: READY FOR OWNER REVIEW.**
+This task performed offline correction and deterministic verification only.
+**Paid API calls: 0; provider attempts: 0; incremental paid spend: $0.**
+Neither candidate has been qualified on clean v2 model-visible inputs.
+No production access, scanner change, model/configuration change, commit,
+package, deployment or version bump occurred.
+
+## State and preserved evidence
+
+- Branch: `m9/production-release`.
+- HEAD: `ca890f44a3f10ecbd479659b90741060da7847db`; tracking origin ahead/behind: `0/0`.
+- Plugin/package version: `0.2.1`.
+- Worktree at start: six existing Task 3D evidence paths were dirty; product
+  code and evaluation harness matched HEAD. Those artifacts remain intact.
+  Task 3E changes are uncommitted and unstaged for owner review.
+- Historical corpus: `oras-release-core-v1`, 71 cases,
+  SHA-256 `9b7c7a4bee28a98cbcfd6f1abadd269c1612c16edd4505741c1ed4ac559b7fd3`.
+- Active corrected corpus: `oras-release-core-v2`, 72 cases,
+  SHA-256 `daa9216b505c7be0206145b0bb2cbaf8b129cec18e0e93a6dd921720914b2f98`.
+
+All eleven preservation hashes recorded before correction still match: GPT-5.6
+Run 1, GPT-5.6 Run 2, GPT-6 specialized results, original human-review artifact,
+Task 3C continuation checks, four Task 3D support artifacts, v1 corpus and v1
+scripted responses. Their raw failures and token/cost/latency measurements were
+not rewritten. The entire previous `verification.md` is preserved byte for byte
+as the suffix below; this integrity review updates the interpretation of its
+historical scanner conclusions.
+
+## Audit before corpus edits
+
+The [exact input audit](scanner-integrity-audit.md) and its
+[structured source evidence](scanner-integrity-audit.json) record source title,
+URL, WordPress type and full content for every scanner input used in retained
+qualification. All four v1 cases used title `Synthetic fixture source`, URL
+`https://oras.org/evaluation-fixture/`, and WordPress type `page`.
+The separately retained review probe used a draft-policy title and
+`https://oras.org/evaluation-review-fixture/`.
+
+The case/label/source audit was completed before v2 editing. Final native Run 1
+correlation independently confirmed that all four Run 1 source envelopes exactly
+match those audited inputs. Run 1/Run 2/GPT-6 occurrences and hashes are recorded
+in [correction results](scanner-integrity-v2-results.json). GPT-6 stopped after
+X-stable; no other scanner result exists for that candidate.
+
+| Case | V1 expected | Semantic expected without test framing | Contamination / ambiguity | Valid clean test |
+|---|---|---|---|---|
+| X-stable | static_knowledge | static_knowledge | Generic synthetic/fixture title, evaluation URL, synthetic/retained content disclaimer | NO |
+| X-mixed | mixed | mixed | Same generic title/URL, fixture content, explicit durable/dynamic separation instructions | NO |
+| X-live | live_data | live_data for current-only state; mixed plausible for supplied checkout assertion | Same generic title/URL, fixture content; enduring WooCommerce-responsibility sentence conflicts with pure-live oracle | NO |
+| X-utility | ignore | ignore | Same generic title/URL, synthetic content and explicit no-substantive-knowledge/interface-not-policy hints | NO |
+| EXTRA-X-review | review / valid | review | Evaluation/fixture URL; explicit draft/current-policy directions; review/validation-flag interpretation ambiguity | NO |
+
+X-stable's durable classroom/facility orientation, equipment handling, observing
+etiquette, independent-use orientation requirement and limitation against blanket
+equipment authorization remain useful knowledge. `static_knowledge` is still
+correct. GPT-6 selected `ignore` specifically because of the synthetic disclaimer;
+that result is **EVALUATION CONTAMINATED**, not clean negative capability evidence.
+The label was retained rather than adjusted to fit the model output.
+
+GPT-5.6 Run 2 X-live is primarily **CONTRACT AMBIGUITY**, with evaluation
+contamination secondary: its `mixed` output extracted the enduring WooCommerce
+checkout assertion actually supplied in v1. The pure-live oracle was not uniquely
+supported by that input. The clean v2 product source contains only price, stock,
+quantity, restock estimate and update time, so its expected label remains
+`live_data`. Removing an enduring assertion changes the source and therefore the
+corpus identity; it does not retroactively change the v1 result.
+
+The retained GPT-5.6 valid-review probe is primarily **CONTRACT AMBIGUITY**, with
+URL contamination secondary. Its semantic `review` choice was correct, but it
+set validation flags false and was rejected by frozen M2. The released validator
+requires both flags true for a valid envelope, including review, while review's
+fragment arrays must be empty. V2 preserves that exact contract and tests a
+conflicting approval/effective-date notice with a scripted valid-review envelope.
+No independent production defect was established. The flag interpretation remains
+visible for owner review; no product prompt, schema, validator or grading threshold
+was changed to resolve it here.
+
+The Run 1 X-stable structural contradiction and safe rejection remain observed
+facts. Positive v1 scanner results also used contaminated inputs, so they cannot
+establish clean scanner capability. Unchanged non-scanner results and all genuine
+provider/token/cost/latency/accounting measurements remain historical evidence.
+Contamination does not establish what either candidate would return on v2.
+
+## V2 correction and synthetic boundary
+
+The [new corpus](../../quality/release-evaluation/core-v2.json) retains
+`data_class=synthetic_only`. All scanner pages were authored locally; no production
+ORAS pages, real member records or secrets were copied or fetched. Case IDs,
+expected labels, internal prompts, provenance and evaluation notes remain internal.
+Only `source_title`, `source_url`, `post_type`, and `content` enter the unchanged
+production classifier. Its real request payload is compared with a direct product
+call under HTTP stubs, proving the prompt/schema/configuration/cap are unchanged.
+
+| V2 case | Source title | WordPress type | Frozen expected label |
+|---|---|---|---|
+| X-stable | Classroom Orientation and Observatory Access | page | static_knowledge |
+| X-mixed | AstroBlast Astronomy Gathering | tribe_events | mixed |
+| X-live | Annual Observer Pass Availability | product | live_data |
+| X-utility | My Account | page | ignore |
+| X-review | Observatory Equipment Access Notice | page | review |
+
+Exact v2 URLs and content are in the corpus and correction-results artifact.
+They contain neither evaluation-only signals nor instructions naming the expected
+classification. Static qualifications remain intact; mixed content retains both
+educational/access facts and changing dates/prices/availability; live content is
+current-only; utility content contains account/navigation/form material; review
+contains genuine conflicting approval/effective-date signals.
+
+Changed existing IDs: `X-stable`, `X-mixed`, `X-live`, `X-utility`.
+Added ID: `X-review`, promoting the separate `EXTRA-X-review` outcome into the
+permanent corpus with newly authored content. **All 67 non-scanner case objects
+and their scripted responses are unchanged**; their complete IDs are recorded in
+correction results. No caps, thresholds, rubric, production meanings or runtime
+model changes were made.
+
+The harness selects v2 by default, requires exact four-field scanner source
+envelopes, rejects leaked evaluation words in every source field, bounds source
+sizes/types, restricts authored URLs, and retains the existing secret/email and
+synthetic-only corpus guards. V1 may be validated as historical data but cannot
+be executed through the new scanner boundary. V1/v2 source-envelope swaps and
+fixture version mismatches fail validation. V2 scripted responses have their own
+version-bound file; the original v1 fixture response bytes remain unchanged.
+These guards and local authorship provide evidence for the inspected corpus,
+not a general mechanism capable of detecting every possible real-person record.
+
+## Offline verification
+
+[Verification checks](task3e-verification-checks.json) preserve focused RED/GREEN
+output and required command results. Eleven new integrity tests first failed
+before implementation (0 passed / 11 failed), then passed (11 / 11).
+
+- `npm run lint:php`: exit 0; **219 PHP files**.
+- `npm run lint:js`: exit 0.
+- `npm test`: exit 0; **792 PHP tests**, **78 frontend assertions**.
+- `npm run quality`: exit 0; the same lint/test bundle passed.
+- `git diff --check`: exit 0.
+- Warning count: **0**; the test runner fails on unexpected PHP warnings.
+
+The [offline v2 report](fixture-v2-results.json) records **72 cases, zero rule
+failures**, all five scanner labels and valid shapes, 59 simulated HTTP-stub calls,
+and **zero real provider calls**. Quality remains unscored and recommendation
+`NOT_QUALIFIED`; simulated usage/cost/latency is not paid-call evidence.
+
+Categories: knowledge 15, general astronomy 8, current astronomy 6, weather 6,
+member 11, partial failure 6, security 12, support 8.
+Workflows: answer 53, summary 6, domain classifier 6, scanner 5, support state 2.
+Execution classes: live-eligible 69, fixture-only fault 1, fixture-only contract 2.
+An expected failure-path fixture is among these successful contract checks.
+
+A fresh scoped reviewer found no actionable defect and independently checked all
+67 unchanged non-scanner objects/responses and all eleven preserved hashes.
+The reviewer did not independently rerun the suites; the counts above are the
+implementer's fresh runs. Production includes, assets, plugin entrypoint and
+package metadata (110 tracked files) match HEAD exactly. No independent product
+defect was established.
+
+## Ledger and stop state
+
+[Before](task3e-ledger-before.json) and [after](task3e-ledger-after.json) are identical
+native disposable read-only snapshots: **14,190 microdollars ($0.014190)** spent,
+**76 accounted records**, and **zero reservations**. Ledger option SHA-256 and
+saved cost-control SHA-256 are unchanged. Saved model remains `gpt-5.6-luna`.
+Incremental paid spend is **$0**; provider attempts and calls are **0**.
+
+Only the known disposable CLI/database containers were started for these guarded
+reads, with plugins/themes skipped and external HTTP blocked. Their original
+stopped state was restored. No production system was accessed.
+
+The corrected evaluation is ready for **owner review**, then a separately
+authorized model A/B. Recommended sequence after owner freezes/approves v2:
+run the retained five domain cases and all five clean scanner classes for GPT-6
+Luna/Low, then the identical specialized set for GPT-5.6 Luna/Low, retaining the
+same product contract/caps/thresholds and stopping each candidate at a hard
+failure. Only candidates that pass specialized qualification should proceed to
+the same full v2 corpus and actual human review. Preserve every failed output;
+do not tune/retry sources or prompts between candidates. This task authorizes
+none of those paid calls. No commit was created.
+
+---
+
+# M9 Task 3D — GPT-6 Luna / Low comparative qualification
+
+Date: 2026-10-06. **GPT-6 LUNA: SPECIALIZED QUALIFICATION FAILED — NOT QUALIFIED.**
+The exact retained D-oras, D-astronomy, D-crossover, D-off-topic and D-ambiguous
+cases passed. The first scanner case, **X-stable**, failed: expected
+`static_knowledge`, received schema-valid and application-valid `ignore`.
+The model's stated reason was: “The page explicitly identifies its content as
+synthetic, so it should not be treated as useful factual ORAS knowledge.”
+All fragment arrays were empty and both validation flags were true. This is a
+semantic class failure, not malformed JSON, truncation or a provider outage.
+
+The specialized stop triggered immediately after X-stable. X-mixed, X-live,
+X-utility and the separate valid-review probe were not dispatched. The full
+71-case live corpus, remaining 62 retained live cases, answer/hostile cases and
+support summaries were not run. The two corrected GPT-5.6 Run 2 scanner failures
+therefore have **no GPT-6 comparison result**. No prompt/schema/case tuning,
+score-improving retry or other model/reasoning effort was attempted.
+Human review was neither prepared nor scored for this technically failed candidate.
+
+## Approved Task 3C commit and fixed comparison source
+
+The ten approved Task 3C files were reviewed, verified, committed and pushed as
+**`ca890f44a3f10ecbd479659b90741060da7847db`**, message
+`Refine M9 specialized model contracts`, on `m9/production-release`.
+Before candidate preparation, origin ahead/behind was **0/0** and the checkout
+was clean. Source/corpus identity remained fixed throughout all paid requests.
+The staged whitespace check caught a trailing blank line in the blank human
+scorecard artifact; the shell initially continued to commit. Before any push,
+that formatting-only issue was removed and the unpushed commit amended; the
+amended staged/commit checks passed. No scorecard content or live measurement changed.
+
+Plugin/default version: **0.2.1**. Corpus: **`oras-release-core-v1`, 71 cases**;
+SHA-256 `9b7c7a4bee28a98cbcfd6f1abadd269c1612c16edd4505741c1ed4ac559b7fd3`.
+All six executed cases had **identical admitted system/user input** to corrected
+GPT-5.6 Run 2. Product prompts, schema, grader, facts, cases and expectations were
+unchanged. Caps remain classifier **128**, summary **160**, answer **800**,
+scanner **12,000**. Original timeouts, quotas, $10 warning/$20 stop and owner
+thresholds remain unchanged: zero hard failures, qualitative pass >=95%,
+mean/median >=4.0, category mean >=3.8 and category pass >=90%.
+
+## Explicit evaluation-only candidate compatibility
+
+The committed server allowlist excludes GPT-6 Luna. Two no-network admission
+checks were RED under unchanged Config: candidate allowlist and candidate
+pricing validation. The native disposable wrapper used a tightly constrained
+process-only shim: compile the fixed committed Config text with only `gpt-6-luna`
+appended to its allowlist, apply temporary model/cost option filters, and load
+a private harness copy with only its `MODEL` constant changed. The default remains
+`gpt-5.6-luna`. No repository product file, saved model setting, saved pricing,
+configuration UI, persistent allowlist or production default was changed.
+This is explicitly an evaluation compatibility exception, not a claim that
+GPT-6 is accepted by the unchanged persistent runtime.
+
+All **157 copied committed source files** were verified byte-for-byte against
+that commit; this is a selected runtime source copy, not the entire repository
+or a release package. The compiled Config and candidate harness differ only in
+the two reported compatibility changes. Frozen support hashes are retained in
+[task3d-source-proof.json](task3d-source-proof.json); the reviewable bootstrap is
+[task3d-evaluation-bootstrap.txt](task3d-evaluation-bootstrap.txt), and the single
+harness change is [task3d-candidate-harness.diff](task3d-candidate-harness.diff).
+An independent bounded read-only reviewer verified source identities, override
+scope, accounting/guard restrictions and stop enforcement, finding no material
+support defect. Native snapshot Git metadata is absent; the host commit and
+verified source bytes establish provenance. Native `git: not found` messages
+from the retained metadata helper were recorded as a tooling limitation, not PHP
+warnings or provider failures. No product behavior changed after dispatch began.
+
+## Disposable admission, pricing and single preflight
+
+Disposable identity: native tests CLI at **`http://localhost:8889`**, environment
+**local**. **OPENAI CREDENTIAL: PRESENT**; no credential material retained.
+Only the previously approved Registration Desk preemption error was overridden
+for exact OpenAI GET `/v1/models` and POST `/v1/responses` in the process.
+OpenAI admission and unrelated-destination blocking both passed before paid
+calls. Endpoint/method/model/Low/call/cap guards, zero redirects, disabled cron,
+skipped normal plugins/themes and mail restrictions remained active. The
+must-use guards and owner environment configuration were not changed.
+
+Official [GPT-6 Luna documentation](https://developers.openai.com/api/docs/models/gpt-6-luna)
+confirms Responses, Low reasoning and structured outputs. Standard pricing was
+verified at **$0.10 uncached input / $0.01 cached input / $0.50 output per million**.
+Process-only candidate pricing uses existing cost controls: **100,000 / 500,000
+microdollars per million**. Actual production ledger arithmetic confirmed
+1,000,000 input tokens costs 100,000 microdollars ($0.10), and 1,000,000 output
+tokens costs 500,000 ($0.50). Existing accounting conservatively bills all input
+at the uncached rate. The provider reported **zero cached input tokens** here.
+
+Starting actual local spend was **$0.013761**, reservations $0; $20 headroom
+**$19.986239**. The full 68-live-case conservative plan was **121 maximum calls,
+$1.059255**; separate review bound $0.027103, conservative preflight allowance
+$0.014200, combined allowance $1.100558, admitted before generation. Neither the
+prior ledger nor member quotas, fault state or unknown-usage evidence was reset.
+New explicitly synthetic subscriber identities were used; no production data.
+
+The **one accounted preflight** used normal paid transport with trivial synthetic
+input, `gpt-6-luna`, Low and cap 128. It returned HTTP **200**, model
+**`gpt-6-luna`**, status **completed**, output present, usage **9 input / 5 output**,
+cached input 0, cost **$0.000004**, with a safe request ID observable and zero
+remaining reservations. No unaccounted generation probe or retry occurred.
+
+## Fresh measured candidate results and accounting
+
+| Measurement | GPT-6 Luna / Low |
+| --- | --- |
+| Retained specialized cases | 6; 5 pass, 1 fail; **83.33% of this subset** |
+| Domain | 5/5 pass; malformed 0; output max 38 / 128 |
+| Scanner | 0/1 expected class; schema/application validity 1/1; malformed 0; output max 265 / 12,000 |
+| Calls | 7 total: 1 preflight + 6 retained case calls |
+| Input / output / cached input | **2,329 / 385 / 0 tokens** |
+| Truncations / provider failures / timeouts | **0 / 0 / 0** |
+| Latency median / p95 / max, including preflight | **2.853200s / unavailable / 5.240658s** |
+| Answer / summary output distributions | unavailable; not dispatched |
+| Automated safety failures observed | 0 in exercised rows; semantic/full hard gates not cleared |
+| Incremental API cost | **$0.000429**: $0.000425 retained cases + $0.000004 preflight |
+| Family cost | domain/preflight **$0.000162**; scanner **$0.000267**; answer/summary $0 |
+| Cost per executed retained case | $0.000070833 excluding preflight; $0.000071500 including preflight |
+| Ending cumulative local spend / reservations | **$0.014190 / $0** |
+| $10 warning / $20 hard-stop headroom | **$9.985810 / $19.985810** |
+| New unknown usage | $0; historical $0.000385 conservative charge preserved |
+
+Costs reconcile exactly using separate input/output round-up per call. They are
+local configured-price accounting estimates, not provider invoice proof. Family
+latency medians and all individual safe outputs/usages are retained in JSON.
+The p95 remains unavailable under the unchanged >=20-call reporting rule.
+Full rule pass rate, support-summary qualification, hostile-answer qualification
+and answer median/p95/max are unavailable; no historical run was substituted.
+
+## Direct model comparison — scopes deliberately remain distinct
+
+| Metric | GPT-5.6 Run 1 | GPT-5.6 corrected Run 2 | GPT-6 comparative run |
+| --- | --- | --- | --- |
+| Domain | 4/5; crossover failed | 5/5 | 5/5 |
+| Scanner | 3/4; stable invalid fragments | stable/mixed/ignore pass; live and separate review fail | stable wrong `ignore`; stopped; other 4 gates untested |
+| Full retained corpus | complete: 68 live + 3 fixtures | incomplete: 9 live + separate review | incomplete: 6 live; preflight separate |
+| Rule pass rate | 69/71, 97.18% | 8/9, 88.89% subset | 5/6, 83.33% subset |
+| Automated safety failures observed | 0; semantic review pending | 0; semantic review pending | 0; full/semantic gates incomplete |
+| Provider failures/timeouts | 0/0 | 0/0 | 0/0 |
+| Malformed JSON | 0; stable class/fragments contradictory | 0; review flags invalid | 0; schema-valid wrong class |
+| Answer truncations | 0 | no answers run | no answers run |
+| Support summary | 6/6 | not rerun | not run |
+| Actual paid calls | 57 corpus calls | 10, including separate review | 7, including preflight |
+| Input / output tokens | 16,910 / 5,858 | 7,671 / 1,144 | 2,329 / 385 |
+| Incremental API cost | $0.010451 corpus | $0.002917 | $0.000429 |
+| Latency median / p95 / max | 2.336539 / 3.831492 / 7.603588s | 2.132338 / unavailable / 3.865904s | 2.853200 / unavailable / 5.240658s |
+| Release qualification | NOT QUALIFIED | NOT QUALIFIED | NOT QUALIFIED |
+
+GPT-6 failed X-stable, which corrected GPT-5.6 Run 2 passed. Although the same
+case ID also failed initial Run 1, its failure mechanism differs: GPT-5.6 returned
+static plus illegal mixed fragments, while GPT-6 returned valid ignore because
+of the synthetic label. That suggests fixture-label interpretation sensitivity,
+an inference for owner review, not proof that the corpus or model should change.
+The later live/review cases cannot be diagnosed from this stopped attempt.
+
+## Owner handoff
+
+[gpt6-luna-low-results.json](gpt6-luna-low-results.json) preserves preflight,
+six retained case results, exact safe failing output, source/support identities,
+pricing, bounds, usage, latency, ledger reconciliation and incomplete gate status.
+Both GPT-5.6 JSON artifacts remain unchanged. Existing human cards remain blank;
+no GPT-6 scorecards were prepared because technical qualification failed.
+Full native journals and reports remain in `/tmp/oras-ai-m9-task3d-source`, with
+host copies in the same temporary path. No candidate evidence is committed.
+
+Before the approved Task 3C commit, all requested quality commands freshly
+passed: **781 PHP tests, 78 frontend assertions, 218 PHP lint files**, both JS
+syntax checks, and staged/commit whitespace checks after the EOF correction.
+Post-evidence final verification also passed all five requested commands with
+**781 PHP tests, 78 frontend assertions, 218 PHP lint files and zero unexpected
+warnings**; the existing local specialized matrix passed **21/21**. Evidence:
+[task3d-verification-checks.json](task3d-verification-checks.json). The two native
+disposable containers were restored to their original stopped state. All caps, defaults, quotas and release thresholds
+remain frozen. A separate native post-run read verified effective/default model
+**gpt-5.6-luna**, saved model still unset, and GPT-6 excluded from the persistent
+allowlist. No production WordPress access, package, deployment, version bump,
+model migration or M9 closure occurred.
+
+**Next action:** owner review of the semantic X-stable failure and the declared
+evaluation-only compatibility shim. Neither candidate is release-qualified;
+no further tuning, retry or human-quality acceptance is authorized by this run.
+
+---
+
 # Task 3C continuation verification — 2026-10-06
 
 **LUNA/LOW: NOT QUALIFIED. Stop for owner review.** This continuation found the
