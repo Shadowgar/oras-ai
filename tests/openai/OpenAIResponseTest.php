@@ -81,10 +81,12 @@ oras_ai_test('OpenAI structured schema exposes exactly five outcomes and mixed e
 	ORAS_AI_OpenAI::classify_source('AstroBlast', 'https://oras.org/astroblast/', 'page', 'Mixed content');
 
 	$payload = json_decode($GLOBALS['oras_ai_test_remote_calls'][0]['args']['body'], true);
-	$schema = $payload['text']['format']['schema'];
+	$schema = $payload['text']['format']['schema']['properties']['classification']['anyOf'][0];
+	$kinds = array_merge($schema['properties']['source_kind']['enum'], $payload['text']['format']['schema']['properties']['classification']['anyOf'][2]['properties']['source_kind']['enum']);
+	sort($kinds);
 	oras_ai_assert_same(
-		array('static_knowledge', 'live_data', 'mixed', 'ignore', 'review'),
-		$schema['properties']['source_kind']['enum'],
+		array('ignore', 'live_data', 'mixed', 'review', 'static_knowledge'),
+		$kinds,
 		'OpenAI schema source dispositions changed.'
 	);
 	foreach (array('historical_event', 'stable_fragments', 'excluded_dynamic_claims', 'dynamic_fact_types', 'validation') as $field) {

@@ -15,10 +15,25 @@ final class ORAS_AI_Domain_Guard {
 
 	public function classify( $question ) {
 		$classifier_question = trim( wp_strip_all_tags( (string) $question, true ) );
-		$question            = $this->normalize( $classifier_question );
+		$rule_result = $this->classify_by_rules( $classifier_question );
+		if ( $rule_result instanceof ORAS_AI_Domain_Result ) {
+			return $this->recorded( $rule_result );
+		}
+
+		$result = $this->classifier->classify( $classifier_question );
+		if ( ! $result instanceof ORAS_AI_Domain_Result ) {
+			$result = ORAS_AI_Domain_Result::ambiguous();
+		}
+
+		return $this->recorded( $result );
+	}
+
+	/** Existing rules only; no provider call or observability side effect. */
+	public function classify_by_rules( $question ) {
+		$question = $this->normalize( $question );
 
 		if ( $this->contains_any( $question, $this->off_topic_phrases() ) || $this->contains_unsafe_directive( $question ) ) {
-			return $this->recorded( ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::OFF_TOPIC ) );
+			return ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::OFF_TOPIC );
 		}
 
 		$has_oras      = $this->contains_any( $question, $this->oras_phrases() );
@@ -32,23 +47,18 @@ final class ORAS_AI_Domain_Guard {
 		}
 
 		if ( $has_oras && $has_astronomy ) {
-			return $this->recorded( ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::CROSSOVER ) );
+			return ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::CROSSOVER );
 		}
 
 		if ( $has_oras ) {
-			return $this->recorded( ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::ORAS ) );
+			return ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::ORAS );
 		}
 
 		if ( $has_astronomy ) {
-			return $this->recorded( ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::ASTRONOMY ) );
+			return ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::ASTRONOMY );
 		}
 
-		$result = $this->classifier->classify( $classifier_question );
-		if ( ! $result instanceof ORAS_AI_Domain_Result ) {
-			$result = ORAS_AI_Domain_Result::ambiguous();
-		}
-
-		return $this->recorded( $result );
+		return null;
 	}
 
 	private function recorded( ORAS_AI_Domain_Result $result ) {

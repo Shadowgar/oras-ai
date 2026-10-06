@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-06",
+  "evidence_class": "fresh_local_fixture_and_source_verification_of_retained_live_runs",
+  "branch": "m9/production-release",
+  "head": "b9670982030e8c439bab0df3ec8cab94226ae728",
+  "starting_git_status": [
+    " M docs/evidence/m9-model-evaluation/verification.md",
+    " M includes/class-oras-ai-domain-guard.php",
+    " M includes/class-oras-ai-openai-domain-classifier.php",
+    " M includes/class-oras-ai-openai.php",
+    " M tests/openai/OpenAIResponseTest.php",
+    "?? docs/evidence/m9-model-evaluation/human-review.md",
+    "?? docs/evidence/m9-model-evaluation/live-corpus-results.json",
+    "?? docs/evidence/m9-model-evaluation/live-corpus-run2-results.json",
+    "?? tests/domain/SpecializedContractTest.php"
+  ],
+  "retained_artifact_sha256": {
+    "live-corpus-results.json": "f3477927d0f9bedfc13deb7176dc0599f22dfdc9a65fbd006b62db1b873c9ddb",
+    "live-corpus-run2-results.json": "1ea97e40342bd33fcfff33f96ee17304bcf2d93f48c73672368076fe9a7520dd",
+    "human-review.md": "823159f5fe70a13f4c51959f6b5262730bd48de5f5acd088eccbdb7b78ac66c3"
+  },
+  "product_patch_sha256": "5364cd8aeef2996ea640b064cc5a819a4ef2ad3529c3e355563c348c708fbd6f",
+  "source_fingerprint_sha256": "a0220d1387459a3a5dcb817649f47d6d314224b5fb695b9e8284f9da5d6128db",
+  "corpus_version": "oras-release-core-v1",
+  "corpus_sha256": "9b7c7a4bee28a98cbcfd6f1abadd269c1612c16edd4505741c1ed4ac559b7fd3",
+  "grader_sha256": "50c11d6b2ccd561626bb16cc877800571a5ed208e4309e3a2240be8cf77d47ec",
+  "rubric_document_sha256": "935561a4f765406f5ebb9fda51d410e804bb133ded145ec6ab6d9846b57269be",
+  "checks": {
+    "lint-php": {
+      "exit_code": 0,
+      "log_sha256": "212cabf11c7790e99d45729a9a18bde3686ef9dac31c42c5100de8c2afd10710",
+      "unexpected_warnings": [],
+      "result": "OK   tools/evaluation/harness.php\nOK   tools/evaluation/live.php\nOK   tools/lint-php.php\nOK   tools/release-evaluation.php\nOK   tools/run-tests.php\n218 PHP file(s) passed lint."
+    },
+    "lint-js": {
+      "exit_code": 0,
+      "log_sha256": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+      "unexpected_warnings": [],
+      "result": "\n> oras-ai-assistant@0.2.1 lint:js\n> node --check assets/scanner.js && node --check assets/chat.js\n"
+    },
+    "test": {
+      "exit_code": 0,
+      "log_sha256": "eae50e294d370bd9a021c3a12bb185bea7429a613dcce8ae14e7f8194cbcf4a8",
+      "unexpected_warnings": [],
+      "result": "PASS M6 correction half-open NWS point at end\nPASS M6 correction adjacent NWS periods have a single boundary owner for fields and points\nPASS M6 correction expired boundary forecast cannot reach the answer model\nPASS M6 correction cached NWS forecast obeys the same half-open requested window\n781 test(s) passed.\n78 frontend chat assertions passed."
+    },
+    "quality": {
+      "exit_code": 0,
+      "log_sha256": "23ca301e3cbde83226f65ee03796193d35b0bd21b2b02ed157e013b15dc697a8",
+      "unexpected_warnings": [],
+      "result": "PASS M6 correction half-open NWS point at end\nPASS M6 correction adjacent NWS periods have a single boundary owner for fields and points\nPASS M6 correction expired boundary forecast cannot reach the answer model\nPASS M6 correction cached NWS forecast obeys the same half-open requested window\n781 test(s) passed.\n78 frontend chat assertions passed."
+    },
+    "red": {
+      "exit_code": 1,
+      "log_sha256": "232a08aa86a57ec9eec80875f852089b2e71130a4efa1a0cc117b5d30b86b503",
+      "unexpected_warnings": [],
+      "result": "PASS M9 specialized domain matrix oras\nPASS M9 specialized domain matrix astronomy\nFAIL M9 specialized domain matrix crossover-observing\nValid enum must respect clear existing crossover evidence. Expected 'crossover', got 'oras'.\nFAIL M9 specialized domain matrix crossover-purchase\nValid enum must respect clear existing crossover evidence. Expected 'crossover', got 'oras'.\nFAIL M9 specialized domain matrix crossover-planets\nValid enum must respect clear existing crossover evidence. Expected 'crossover', got 'oras'.\nFAIL M9 specialized domain matrix crossover-facilities\nValid enum must respect clear existing crossover evidence. Expected 'crossover', got 'oras'.\nPASS M9 specialized domain matrix off-topic\nPASS M9 specialized domain ambiguous policy stays fail closed\nFAIL M9 specialized scanner matrix static_knowledge\nScanner class invariant changed. Expected 'valid', got 'invalid'.\nFAIL M9 specialized scanner matrix live_data\nScanner class invariant changed. Expected 'valid', got 'invalid'.\nFAIL M9 specialized scanner matrix mixed\nScanner class invariant changed. Expected 'valid', got 'invalid'.\nFAIL M9 specialized scanner matrix mixed-claims-only\nScanner class invariant changed. Expected 'valid', got 'invalid'.\nFAIL M9 specialized scanner matrix mixed-types-only\nScanner class invariant changed. Expected 'valid', got 'invalid'.\nFAIL M9 specialized scanner matrix ignore\nScanner class invariant changed. Expected 'valid', got 'invalid'.\nFAIL M9 specialized scanner matrix review\nScanner class invariant changed. Expected 'valid', got 'invalid'.\nPASS M9 specialized scanner matrix stable-illegal\nPASS M9 specialized scanner matrix live-illegal\nPASS M9 specialized scanner matrix mixed-missing\nPASS M9 specialized scanner matrix unknown\nFAIL M9 specialized scanner strict schema prevents contradictory class fragments\nProvider schema must constrain the mixed versus non-mixed invariant. Expected 3, got 0.\nFAIL M9 specialized scanner rejects malformed envelope without deleting contradictory data\nMalformed envelope must not be normalized by dropping extra data. Expected WP_Error.\nFocused: 8 passed; 13 failed.\n"
+    },
+    "green": {
+      "exit_code": 0,
+      "log_sha256": "939fde3b4dcb1969cd91d1b715a39e22aaa729c2ad326f3a4207e80d1510df3d",
+      "unexpected_warnings": [],
+      "result": "PASS M9 specialized domain matrix oras\nPASS M9 specialized domain matrix astronomy\nPASS M9 specialized domain matrix crossover-observing\nPASS M9 specialized domain matrix crossover-purchase\nPASS M9 specialized domain matrix crossover-planets\nPASS M9 specialized domain matrix crossover-facilities\nPASS M9 specialized domain matrix off-topic\nPASS M9 specialized domain ambiguous policy stays fail closed\nPASS M9 specialized scanner matrix static_knowledge\nPASS M9 specialized scanner matrix live_data\nPASS M9 specialized scanner matrix mixed\nPASS M9 specialized scanner matrix mixed-claims-only\nPASS M9 specialized scanner matrix mixed-types-only\nPASS M9 specialized scanner matrix ignore\nPASS M9 specialized scanner matrix review\nPASS M9 specialized scanner matrix stable-illegal\nPASS M9 specialized scanner matrix live-illegal\nPASS M9 specialized scanner matrix mixed-missing\nPASS M9 specialized scanner matrix unknown\nPASS M9 specialized scanner strict schema prevents contradictory class fragments\nPASS M9 specialized scanner rejects malformed envelope without deleting contradictory data\nFocused: 21 passed; 0 failed.\n"
+    }
+  },
+  "fixture_cases": 71,
+  "fixture_failed_cases": 0,
+  "php_tests": 781,
+  "frontend_assertions": 78,
+  "php_lint_files": 218,
+  "focused_red_note": "Retrospective comparison: HEAD product files plus all current specialized tests in a temporary source copy. Not a newly performed original test-first implementation; historical 11-failure RED log unavailable. Final matrix has two additional mixed OR-rule tests, hence 13 failures.",
+  "new_paid_calls_this_continuation": 0,
+  "retained_run2_accounting_rederived": {
+    "calls": 10,
+    "input_tokens": 7671,
+    "output_tokens": 1144,
+    "cost_microdollars": 2917,
+    "recorded_cumulative_local_microdollars": 13761,
+    "rounding": "Input and output separately rounded upward per call, as in the production ledger."
+  },
+  "human_scoring_complete": false,
+  "qualification": "NOT_QUALIFIED",
+  "limitations": [
+    "Retained live JSON is historical evidence; no provider/WordPress/production configuration was accessed or changed in this continuation.",
+    "Original temporary private journals and quality logs cited in verification.md are absent from the current host. Retained repository artifacts remain intact.",
+    "The second live run was already present at turn start; another paid attempt would be a retry after the specialist failure stop."
+  ]
+}

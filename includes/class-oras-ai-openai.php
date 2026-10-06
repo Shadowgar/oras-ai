@@ -144,6 +144,27 @@ final class ORAS_AI_OpenAI {
 			'additionalProperties' => false,
 		);
 
+		// Nested anyOf is supported by Responses; root-level unions/if-then are not.
+		$mixed_claims = $schema;
+		$mixed_claims['properties']['source_kind']['enum'] = array( 'mixed' );
+		$mixed_claims['properties']['stable_fragments']['minItems'] = 1;
+		$mixed_claims['properties']['excluded_dynamic_claims']['minItems'] = 1;
+		$mixed_types = $mixed_claims;
+		unset( $mixed_types['properties']['excluded_dynamic_claims']['minItems'] );
+		$mixed_types['properties']['dynamic_fact_types']['minItems'] = 1;
+		$non_mixed = $schema;
+		$non_mixed['properties']['source_kind']['enum'] = array( 'static_knowledge', 'live_data', 'ignore', 'review' );
+		foreach ( array( 'stable_fragments', 'excluded_dynamic_claims', 'dynamic_fact_types' ) as $field ) {
+			$non_mixed['properties'][ $field ]['maxItems'] = 0;
+		}
+		$schema = array(
+			'type' => 'object',
+			'properties' => array( 'classification' => array( 'anyOf' => array( $mixed_claims, $mixed_types, $non_mixed ) ) ),
+			'required' => array( 'classification' ),
+			'additionalProperties' => false,
+		);
+		$system .= ' Return one classification envelope. Inside classification, ONLY mixed may contain fragments: mixed requires nonempty stable_fragments and at least one excluded_dynamic_claim or dynamic_fact_type. For static_knowledge, live_data, ignore and review, ALL three fragment arrays MUST be empty. Keep ordinary stable source content in the original source; do not copy it into mixed-only arrays.';
+
 		$payload = array(
 			'model'     => get_option( ORAS_AI_Config::OPTION_OPENAI_MODEL, ORAS_AI_Config::DEFAULT_OPENAI_MODEL ),
 			'max_output_tokens' => ORAS_AI_Paid_OpenAI_Transport::SCANNER_OUTPUT_TOKENS,
@@ -192,6 +213,13 @@ final class ORAS_AI_OpenAI {
 
 		if ( strlen( $output_text ) > 96000 || ! is_array( $classification ) ) {
 			return new WP_Error( 'oras_ai_invalid_json', __( 'OpenAI returned an invalid classification payload.', 'oras-ai-assistant' ) );
+		}
+
+		if ( array_key_exists( 'classification', $classification ) ) {
+			if ( array_keys( $classification ) !== array( 'classification' ) || ! is_array( $classification['classification'] ) ) {
+				return new WP_Error( 'oras_ai_invalid_json', __( 'OpenAI returned an invalid classification payload.', 'oras-ai-assistant' ) );
+			}
+			$classification = $classification['classification'];
 		}
 
 		return $classification;
