@@ -1,0 +1,131 @@
+{
+  "freeze": [
+    {
+      "command": "npm run lint:php",
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "8949dbebd42625e61f948841bdfec73e9d291abec043352716303b7bc402f6f1",
+      "stdout_tail": [
+        "OK   tools/evaluation/live.php",
+        "OK   tools/lint-php.php",
+        "OK   tools/release-evaluation.php",
+        "OK   tools/run-tests.php",
+        "219 PHP file(s) passed lint."
+      ]
+    },
+    {
+      "command": "npm run lint:js",
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+      "stdout_tail": [
+        "",
+        "> oras-ai-assistant@0.2.1 lint:js",
+        "> node --check assets/scanner.js && node --check assets/chat.js",
+        ""
+      ]
+    },
+    {
+      "command": "npm test",
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "7ee93613351cb5918096fd570eeb8cc4e6badcc400e45d4c926cf0297052a373",
+      "stdout_tail": [
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "792 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    {
+      "command": "npm run quality",
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "e13258a6ab22a183ca38a040ac8a7cdc9e59eb120eb274c913f7bb24833afd5d",
+      "stdout_tail": [
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "792 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "stdout": ""
+    },
+    {
+      "command": "git diff --cached --check",
+      "exit_code": 0,
+      "artifact_whitespace_rule": "task3d-candidate-harness.diff only; original bytes preserved"
+    }
+  ],
+  "final": [
+    {
+      "command": "npm run lint:php",
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "8949dbebd42625e61f948841bdfec73e9d291abec043352716303b7bc402f6f1",
+      "stdout_tail": [
+        "OK   tools/evaluation/live.php",
+        "OK   tools/lint-php.php",
+        "OK   tools/release-evaluation.php",
+        "OK   tools/run-tests.php",
+        "219 PHP file(s) passed lint."
+      ]
+    },
+    {
+      "command": "npm run lint:js",
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+      "stdout_tail": [
+        "",
+        "> oras-ai-assistant@0.2.1 lint:js",
+        "> node --check assets/scanner.js && node --check assets/chat.js",
+        ""
+      ]
+    },
+    {
+      "command": "npm test",
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "7ee93613351cb5918096fd570eeb8cc4e6badcc400e45d4c926cf0297052a373",
+      "stdout_tail": [
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "792 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    {
+      "command": "npm run quality",
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "e13258a6ab22a183ca38a040ac8a7cdc9e59eb120eb274c913f7bb24833afd5d",
+      "stdout_tail": [
+        "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+        "PASS M6 correction expired boundary forecast cannot reach the answer model",
+        "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+        "792 test(s) passed.",
+        "78 frontend chat assertions passed."
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "stdout": ""
+    }
+  ],
+  "source_commit": "c8456caf955f27ee9c0348eca30d91a7f9444b0f",
+  "php_tests_passed": 792,
+  "frontend_assertions_passed": 78,
+  "php_files_linted": 219,
+  "unexpected_warnings": 0,
+  "paid_calls_during_quality": 0,
+  "api_schema_check": "Local Draft202012 JSON Schema validation against the exact submitted schemas; all20 valid",
+  "advancement_decision": "NEITHER CANDIDATE ADVANCES"
+}

@@ -1,0 +1,112 @@
+{
+    "stage": "preflight",
+    "candidate": {
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "low"
+    },
+    "pass": true,
+    "calls": [
+        {
+            "adapter": "domain_classifier",
+            "model": "gpt-5.6-luna",
+            "reasoning_effort": "low",
+            "max_output_tokens": 128,
+            "request_input_bytes": 39,
+            "request_sha256": "2b54c033b2620e6287b35f0704e2f26777fda0fd4691cc6b541edf883a5ffeb7",
+            "admitted_input_redacted": "[{\"role\":\"user\",\"content\":\"Reply OK.\"}]",
+            "status": "completed",
+            "http_status": 200,
+            "input_tokens": 9,
+            "output_tokens": 5,
+            "provider_seconds": 2.456444025039673,
+            "timeout": false,
+            "truncated": false,
+            "raw_model_output_redacted": "OK",
+            "sensitive_output_detected": false,
+            "cached_input_tokens": 0,
+            "returned_model": "gpt-5.6-luna",
+            "request_id": "req_1a88484f7f0544b5a9980947f9f0b3fb",
+            "response_schema": null,
+            "request_without_model_sha256": "db2a81f38d1139218fd55de011ce2788f645fac5f0d5310f47860e11d3c8a012",
+            "timeout_seconds": 20
+        }
+    ],
+    "accounting_verified": true,
+    "before_budget": {
+        "accounting_available": true,
+        "member_day_allowed": 0,
+        "member_month_allowed": 0,
+        "site_month_actual_microdollars": 15492,
+        "site_month_reserved_microdollars": 0,
+        "site_month_allowed": 87,
+        "site_month_input_tokens": 34524,
+        "site_month_output_tokens": 8463,
+        "site_month_models": {
+            "gpt-5.6-luna": 69,
+            "gpt-6-luna": 18
+        },
+        "site_month_sources": {
+            "domain_classifier": {
+                "calls": 24,
+                "accounted_microdollars": 1352
+            },
+            "answer": {
+                "calls": 42,
+                "accounted_microdollars": 8084
+            },
+            "support_summary": {
+                "calls": 6,
+                "accounted_microdollars": 411
+            },
+            "scanner_classification": {
+                "calls": 15,
+                "accounted_microdollars": 5645
+            }
+        },
+        "site_month_unknown_microdollars": 385,
+        "rejections": []
+    },
+    "ending_budget": {
+        "accounting_available": true,
+        "member_day_allowed": 0,
+        "member_month_allowed": 0,
+        "site_month_actual_microdollars": 15500,
+        "site_month_reserved_microdollars": 0,
+        "site_month_allowed": 88,
+        "site_month_input_tokens": 34533,
+        "site_month_output_tokens": 8468,
+        "site_month_models": {
+            "gpt-5.6-luna": 70,
+            "gpt-6-luna": 18
+        },
+        "site_month_sources": {
+            "domain_classifier": {
+                "calls": 25,
+                "accounted_microdollars": 1360
+            },
+            "answer": {
+                "calls": 42,
+                "accounted_microdollars": 8084
+            },
+            "support_summary": {
+                "calls": 6,
+                "accounted_microdollars": 411
+            },
+            "scanner_classification": {
+                "calls": 15,
+                "accounted_microdollars": 5645
+            }
+        },
+        "site_month_unknown_microdollars": 385,
+        "rejections": []
+    },
+    "accounted_microdollars": 8,
+    "side_effects": 0,
+    "source_commit": "c8456caf955f27ee9c0348eca30d91a7f9444b0f",
+    "source_tree_uncommitted": false,
+    "fixed_source_manifest_sha256": "4c713b4ff7a3f4f5b13ac1b8b32cca306c5a1dd05b0bf4c43d8154b5c2b07104",
+    "common_candidate_harness_sha256": "dba15c33528ea3d3ecefb4cce928870d50513e968f7b696d31071a06957ff130",
+    "compiled_config_sha256": "7c0ab67fc7e970da121d4ac745527f456220a697fc78234e3eb64fdc40f5e00f",
+    "persistent_guard_sha256": "d41408136cb63c53d9167f3becb958a36e1066d753de401c11e0e01e997d219c",
+    "candidate_override": "Identical process-only allowlist, candidate-constant harness, model and qualified cost option filters. Frozen committed bytes unchanged."
+}

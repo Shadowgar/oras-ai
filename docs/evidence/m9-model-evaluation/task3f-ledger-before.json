@@ -1,0 +1,43 @@
+{
+  "evidence_class": "native_disposable_before_paid_ab",
+  "home": "http://localhost:8889",
+  "environment": "local",
+  "summary": {
+    "accounting_available": true,
+    "member_day_allowed": 0,
+    "member_month_allowed": 0,
+    "site_month_actual_microdollars": 14190,
+    "site_month_reserved_microdollars": 0,
+    "site_month_allowed": 76,
+    "site_month_input_tokens": 26920,
+    "site_month_output_tokens": 7392,
+    "site_month_models": {
+      "gpt-5.6-luna": 69,
+      "gpt-6-luna": 7
+    },
+    "site_month_sources": {
+      "domain_classifier": {
+        "calls": 18,
+        "accounted_microdollars": 1168
+      },
+      "answer": {
+        "calls": 42,
+        "accounted_microdollars": 8084
+      },
+      "support_summary": {
+        "calls": 6,
+        "accounted_microdollars": 411
+      },
+      "scanner_classification": {
+        "calls": 10,
+        "accounted_microdollars": 4527
+      }
+    },
+    "site_month_unknown_microdollars": 385,
+    "rejections": []
+  },
+  "persistent_effective_model": "gpt-5.6-luna",
+  "raw_saved_model_option": "[unset]",
+  "cost_controls_sha256": "12096e0b7edbcb92f5fd34290640b15c8da2cae2dae62df59969623d58c88d3e",
+  "provider_calls_before_candidate_runs": 0
+}

@@ -1,0 +1,102 @@
+<?php
+// Task3F disposable-only wrapper. No production file or persistent model/cost changes.
+umask(0077);
+$root='/tmp/oras-ai-m9-task3f-source';
+function task3f_require($condition,$reason){if(!$condition){$GLOBALS['task3f_last_gate']=$reason;throw new RuntimeException($reason);}}
+function task3f_write($path,$data){task3f_require(file_put_contents($path,json_encode($data,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n",LOCK_EX)!==false,'evidence_write_failed');}
+function task3f_stage_dir($path){task3f_require(!file_exists($path),'stage_already_started_no_retry');task3f_require(mkdir($path,0700,true),'evidence_directory_failed');}
+try{
+ task3f_require(home_url()==='http://localhost:8889'&&wp_get_environment_type()==='local','disposable_identity_rejected');
+ task3f_require(defined('ORAS_REGISTRATION_DESK_TEST_GUARD_ACTIVE')&&ORAS_REGISTRATION_DESK_TEST_GUARD_ACTIVE,'persistent_guard_missing');
+ $plan=json_decode(file_get_contents($root.'/plan.json'),true,512,JSON_THROW_ON_ERROR);
+ foreach($plan['files_sha256']as$path=>$hash)task3f_require(hash_file('sha256',$root.'/'.$path)===$hash,'fixed_source_changed');
+ task3f_require(hash_file('sha256',$root.'/tools/evaluation/candidate-harness.php')===$plan['common_candidate_harness_sha256'],'common_harness_changed');
+ $candidate=getenv('ORAS_AB_CANDIDATE')?:'gpt-6-luna';$mode=getenv('ORAS_AB_STAGE')?:'prepare';
+ task3f_require(in_array($candidate,$plan['candidates'],true)&&in_array($mode,array('prepare','budget','preflight','specialized'),true),'stage_or_candidate_not_admitted');
+ define('ORAS_AI_EVALUATION_CANDIDATE',$candidate);define('ORAS_AI_PLUGIN_DIR',$root.'/');define('ORAS_AI_VERSION','0.2.1');
+ $config=file_get_contents($root.'/includes/class-oras-ai-config.php');$needle="return array( 'gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol' );";
+ task3f_require(substr_count($config,$needle)===1,'allowlist_substitution_not_exact');
+ $compiled=str_replace($needle,"return array( 'gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol', 'gpt-6-luna' );",$config);eval(substr($compiled,5));
+ preg_match_all("~require_once ORAS_AI_PLUGIN_DIR \\. '([^']+)';~",file_get_contents($root.'/oras-ai-assistant.php'),$includes);
+ foreach($includes[1]as$path)if(str_starts_with($path,'includes/')&&$path!=='includes/class-oras-ai-config.php')require_once $root.'/'.$path;
+ require_once $root.'/tools/evaluation/candidate-harness.php';require_once $root.'/tools/evaluation/live.php';
+ $saved_model=get_option(ORAS_AI_Config::OPTION_OPENAI_MODEL,'[unset]');$saved_controls=get_option(ORAS_AI_Cost_Config::OPTION,array());
+ $controls=ORAS_AI_Cost_Config::get();foreach($plan['pricing']as$model=>$rates)$controls['pricing'][$model]=$rates;
+ $validated=ORAS_AI_Cost_Config::validate($controls);task3f_require(!is_wp_error($validated),'qualified_pricing_rejected');
+ $model_filter=static function()use($candidate){return $candidate;};$cost_filter=static function()use($validated){return $validated;};
+ $guard_file=ABSPATH.'wp-content/mu-plugins/oras-registration-desk-test-guard.php';$guard_sha=hash_file('sha256',$guard_file);
+ $baseline_block=apply_filters('pre_http_request',false,array('method'=>'POST'),'https://api.openai.com/v1/responses');
+ task3f_require(is_wp_error($baseline_block)&&$baseline_block->get_error_code()==='oras_registration_desk_external_http_blocked','original_guard_not_blocking');
+ $exception=static function($pre,$args,$url){$allowed=($url==='https://api.openai.com/v1/models'&&($args['method']??'GET')==='GET')||($url==='https://api.openai.com/v1/responses'&&($args['method']??'')==='POST');return $allowed&&is_wp_error($pre)&&$pre->get_error_code()==='oras_registration_desk_external_http_blocked'?false:$pre;};
+ add_filter('pre_http_request',$exception,PHP_INT_MAX-1,3);add_filter('pre_option_'.ORAS_AI_Config::OPTION_OPENAI_MODEL,$model_filter,PHP_INT_MAX);add_filter('pre_option_'.ORAS_AI_Cost_Config::OPTION,$cost_filter,PHP_INT_MAX);
+ $extras=array();
+ $extra_observer=static function($response,$context,$class,$args,$url)use(&$extras){
+  if($context!=='response'||$url!=='https://api.openai.com/v1/responses')return;
+  $body=is_wp_error($response)?null:json_decode(wp_remote_retrieve_body($response),true);$payload=json_decode($args['body']??'',true);$canonical=$payload;unset($canonical['model']);
+  $headers=is_wp_error($response)?array():($response['headers']??array());$id=(is_array($headers)||$headers instanceof ArrayAccess)?($headers['x-request-id']??null):null;
+  $extras[]=array('cached_input_tokens'=>$body['usage']['input_tokens_details']['cached_tokens']??null,'returned_model'=>$body['model']??null,'request_id'=>is_string($id)&&preg_match('/^[A-Za-z0-9_-]{1,128}$/',$id)?$id:null,'response_schema'=>$payload['text']['format']['schema']??null,'request_without_model_sha256'=>hash('sha256',json_encode($canonical)),'timeout_seconds'=>$args['timeout']??null);
+ };
+ add_action('http_api_debug',$extra_observer,PHP_INT_MAX-1,5);
+ $ledger=new ORAS_AI_Usage_Ledger();$all=array_column(ORAS_AI_Release_Evaluation::corpus()['cases'],null,'id');
+ task3f_require(hash_file('sha256',ORAS_AI_Release_Evaluation::CORPUS)===$plan['corpus_sha256'],'approved_corpus_changed');
+ $selected=array_map(static function($id)use($all){return $all[$id];},$plan['specialized_case_ids']);$rates=$plan['pricing'][$candidate];
+ $cost_method=new ReflectionMethod(ORAS_AI_Usage_Ledger::class,'calculate_cost');$cost_method->setAccessible(true);
+ $decorate=static function($report)use($plan,$compiled,$guard_sha){$report['source_commit']=$plan['source_commit'];$report['source_tree_uncommitted']=false;$report['fixed_source_manifest_sha256']=$plan['manifest_sha256'];$report['common_candidate_harness_sha256']=$plan['common_candidate_harness_sha256'];$report['compiled_config_sha256']=hash('sha256',$compiled);$report['persistent_guard_sha256']=$guard_sha;$report['candidate_override']='Identical process-only allowlist, candidate-constant harness, model and qualified cost option filters. Frozen committed bytes unchanged.';return $report;};
+ try{
+  if($mode==='prepare'){
+   task3f_require(!file_exists($root.'/preparation.json'),'preparation_already_started_no_retry');
+   $guard=array('original_openai_blocked'=>true,'openai_get_permitted'=>apply_filters('pre_http_request',false,array('method'=>'GET'),'https://api.openai.com/v1/models')===false,'openai_post_permitted'=>apply_filters('pre_http_request',false,array('method'=>'POST'),'https://api.openai.com/v1/responses')===false,'unrelated_blocked'=>is_wp_error(apply_filters('pre_http_request',false,array('method'=>'GET'),'https://example.com/outside-evaluation')),'wrong_openai_endpoint_blocked'=>is_wp_error(apply_filters('pre_http_request',false,array('method'=>'GET'),'https://api.openai.com/v1/responses')),'persistent_guard_sha256'=>$guard_sha);
+   foreach($guard as$key=>$value)if($key!=='persistent_guard_sha256')task3f_require($value===true,'guard_boundary_failed');
+   $starting=$ledger->summary();task3f_require(ORAS_AI_Config::has_openai_api_key()&&$starting['accounting_available']&&$starting['site_month_reserved_microdollars']===0&&$starting['site_month_actual_microdollars']===$plan['minimum_preserved_start_spend_microdollars'],'credential_or_ledger_preparation_failed');
+   $bounds=array();foreach($plan['pricing']as$model=>$pricing){$bounds[$model]=ORAS_AI_Release_Evaluation::paid_plan($selected,$pricing);task3f_require($bounds[$model]['maximum_calls']===10&&$bounds[$model]['maximum_microdollars']<$plan['max_microdollars_per_candidate'],'specialized_bound_rejected');}
+   task3f_require($starting['site_month_actual_microdollars']+2*$plan['max_microdollars_per_candidate']<$validated['warning_microdollars'],'budget_headroom_rejected');
+   $safe=$decorate(array('credential'=>'PRESENT','home'=>home_url(),'environment'=>wp_get_environment_type(),'saved_model'=>$saved_model,'saved_cost_controls_sha256'=>hash('sha256',wp_json_encode($saved_controls)),'guard'=>$guard,'starting_budget'=>$starting,'candidate_pricing'=>$plan['pricing'],'specialized_case_ids'=>$plan['specialized_case_ids'],'bounds'=>$bounds,'limits'=>array_diff_key($validated,array('pricing'=>true)),'full_corpus_forbidden'=>true));
+   $ids=array();foreach($plan['specialized_case_ids']as$id){$login='oras-ai-eval-m9-3f-20261006-'.strtolower($id);task3f_require(!get_user_by('login',$login),'synthetic_identity_already_exists');$uid=wp_insert_user(array('user_login'=>$login,'user_pass'=>wp_generate_password(32,true,true),'role'=>'subscriber','display_name'=>'Synthetic ORAS AI evaluation'));task3f_require(!is_wp_error($uid),'synthetic_identity_creation_failed');update_user_meta($uid,'oras_ai_evaluation_synthetic','1');$ids[$id]=(int)$uid;}
+   task3f_write($root.'/synthetic-identities.json',$ids);task3f_write($root.'/preparation.json',$safe);echo "PREPARATION PASS; CREDENTIAL PRESENT; NO PAID CALLS\n";
+  }elseif($mode==='budget'){
+   task3f_write($root.'/final-budget.json',array('summary'=>$ledger->summary(),'saved_model'=>$saved_model,'saved_controls_sha256'=>hash('sha256',wp_json_encode($saved_controls)),'persistent_guard_sha256'=>$guard_sha));echo "BUDGET SNAPSHOT SAVED\n";
+  }elseif($mode==='preflight'){
+   task3f_require(is_file($root.'/preparation.json'),'preparation_required');$directory=$root.'/'.$candidate.'/preflight';task3f_stage_dir($directory);
+   $before=$ledger->summary();$attempts=0;$active=null;$started=null;$calls=array();$side_effects=0;
+   $guard=static function($pre,$args,$url)use($candidate,&$attempts,&$active,&$started,&$side_effects){$payload=json_decode($args['body']??'',true);if($pre!==false||$url!=='https://api.openai.com/v1/responses'||($args['method']??'')!=='POST'||$attempts!==0||($payload['model']??'')!==$candidate||($payload['reasoning']['effort']??'')!=='low'||($payload['max_output_tokens']??0)!==128||isset($payload['tools'])||($args['timeout']??0)!==20){$side_effects++;return new WP_Error('evaluation_network_blocked','Evaluation blocked.');}$attempts++;$active=$payload;$started=microtime(true);return false;};
+   $observer=static function($response,$context,$class,$args,$url)use(&$calls,&$active,&$started){if($context==='response'&&$url==='https://api.openai.com/v1/responses'&&$active!==null){$calls[]=ORAS_AI_Release_Evaluation::call_record($active,$response,microtime(true)-$started);$active=null;}};
+   $mail=static function()use(&$side_effects){$side_effects++;return false;};add_filter('pre_http_request',$guard,PHP_INT_MAX,3);add_action('http_api_debug',$observer,PHP_INT_MAX,5);add_filter('pre_wp_mail',$mail,PHP_INT_MAX,2);
+   try{$payload=array('model'=>$candidate,'reasoning'=>array('effort'=>'low'),'max_output_tokens'=>128,'input'=>array(array('role'=>'user','content'=>'Reply OK.')));$response=(new ORAS_AI_Paid_OpenAI_Transport())->request('domain_classifier',$payload,ORAS_AI_Config::get_openai_api_key(),20);
+    if($active!==null){$calls[]=ORAS_AI_Release_Evaluation::call_record($active,new WP_Error('unknown','Unavailable.'),microtime(true)-$started);$active=null;}
+    foreach($calls as$i=>&$call)$call=array_merge($call,$extras[$i]??array());unset($call);$ending=$ledger->summary();$call=$calls[0]??array();
+    $known=is_int($call['input_tokens']??null)&&is_int($call['output_tokens']??null);$expected=$known?$cost_method->invoke($ledger,$call['input_tokens'],$call['output_tokens'],$rates):null;
+    $accounting=$known&&$ending['accounting_available']&&$ending['site_month_reserved_microdollars']===0&&$ending['site_month_actual_microdollars']-$before['site_month_actual_microdollars']===$expected&&$ending['site_month_allowed']-$before['site_month_allowed']===1;
+    $pass=!is_wp_error($response)&&count($calls)===1&&($call['status']??'')==='completed'&&($call['returned_model']??'')===$candidate&&!empty($call['raw_model_output_redacted'])&&empty($call['sensitive_output_detected'])&&$side_effects===0&&$accounting;
+    task3f_write($directory.'/report.json',$decorate(array('stage'=>'preflight','candidate'=>array('model'=>$candidate,'reasoning_effort'=>'low'),'pass'=>$pass,'calls'=>$calls,'accounting_verified'=>$accounting,'before_budget'=>$before,'ending_budget'=>$ending,'accounted_microdollars'=>$ending['site_month_actual_microdollars']-$before['site_month_actual_microdollars'],'side_effects'=>$side_effects)));
+    echo 'PREFLIGHT '.($pass?'PASS':'FAIL')."\n";
+   }finally{remove_filter('pre_http_request',$guard,PHP_INT_MAX);remove_action('http_api_debug',$observer,PHP_INT_MAX);remove_filter('pre_wp_mail',$mail,PHP_INT_MAX);}
+  }else{
+   $preflight=json_decode((string)@file_get_contents($root.'/'.$candidate.'/preflight/report.json'),true);task3f_require(($preflight['pass']??false)===true,'candidate_preflight_not_passed');
+   $directory=$root.'/'.$candidate.'/specialized';task3f_stage_dir($directory);$journal=fopen($directory.'/events.jsonl','x');task3f_require($journal!==false,'journal_failed');$rows=array();$offset=0;$before=$ledger->summary();$previous=$before;$stop=null;
+   $checkpoint=static function($record)use($journal,&$rows,&$offset,&$extras,&$previous,$ledger,$candidate,$rates,$cost_method){
+    if(($record['type']??'')==='case'){
+     $row=$record['result'];foreach($row['calls']as&$call)$call=array_merge($call,$extras[$offset++]??array());unset($call);
+     $now=$ledger->summary();$row['ledger_before']=$previous;$row['ledger_after']=$now;$call=$row['calls'][0]??array();$known=is_int($call['input_tokens']??null)&&is_int($call['output_tokens']??null);$expected=$known?$cost_method->invoke($ledger,$call['input_tokens'],$call['output_tokens'],$rates):null;
+     $row['accounting_verified']=$known&&$now['accounting_available']&&$now['site_month_reserved_microdollars']===0&&$now['site_month_actual_microdollars']-$previous['site_month_actual_microdollars']===$expected&&$now['site_month_allowed']-$previous['site_month_allowed']===1&&$now['site_month_unknown_microdollars']===$previous['site_month_unknown_microdollars'];
+     $hard=null;
+     if(!empty($row['sensitive_output_detected'])||!empty($call['sensitive_output_detected'])||$row['side_effects']!==0)$hard='security_privacy_or_side_effect';
+     elseif(count($row['calls'])!==1||($call['status']??'')!=='completed'||($call['returned_model']??'')!==$candidate)$hard='provider_or_unsafe_transport_failure';
+     elseif(!$row['accounting_verified'])$hard='accounting_failure';
+     $row['hard_technical_failure']=$hard;$rows[]=$row;$previous=$now;$record['result']=$row;
+     task3f_require(fwrite($journal,json_encode($record)."\n")!==false&&fflush($journal),'journal_write_failed');echo 'CASE '.$row['id'].' '.($row['grade']['pass']?'RULE_PASS':'RULE_FAIL').($hard?' HARD_STOP':'')."\n";
+     if($hard)throw new RuntimeException($hard);
+    }else{task3f_require(fwrite($journal,json_encode($record)."\n")!==false&&fflush($journal),'journal_write_failed');}
+   };
+   $ids=json_decode(file_get_contents($root.'/synthetic-identities.json'),true);
+   $options=array('opt_in'=>'I_AUTHORIZE_DISPOSABLE_PAID_EVALUATION','bootstrap'=>ABSPATH.'wp-load.php','pricing_qualified'=>true,'case_ids'=>$plan['specialized_case_ids'],'user_ids'=>array_map(static function($id)use($ids){return $ids[$id];},$plan['specialized_case_ids']),'max_calls'=>10,'max_microdollars'=>$plan['max_microdollars_per_candidate']);
+   try{ORAS_AI_Evaluation_Live::run($options,$checkpoint);}catch(Throwable$error){$known=array('security_privacy_or_side_effect','provider_or_unsafe_transport_failure','accounting_failure','candidate_api_unavailable_or_discovery_failed');$stop=in_array($error->getMessage(),$known,true)?$error->getMessage():'execution_blocked';echo "SPECIALIZED HARD TECHNICAL STOP\n";}finally{fclose($journal);}
+   $report=$decorate(ORAS_AI_Release_Evaluation::report($rows,'live'));$report['before_budget']=$before;$report['ending_budget']=$ledger->summary();$report['incremental_cost_microdollars']=$report['ending_budget']['site_month_actual_microdollars']-$before['site_month_actual_microdollars'];$report['hard_technical_stop']=$stop;$report['specialized_case_ids']=$plan['specialized_case_ids'];$report['full_corpus_run']=false;
+   task3f_write($directory.'/report.json',$report);echo 'SPECIALIZED COMPLETE '.count($rows).' cases; '.$report['live_calls'].' calls; '.$report['failed_cases']." rule failures\n";
+  }
+ }finally{
+  remove_filter('pre_http_request',$exception,PHP_INT_MAX-1);remove_action('http_api_debug',$extra_observer,PHP_INT_MAX-1);remove_filter('pre_option_'.ORAS_AI_Config::OPTION_OPENAI_MODEL,$model_filter,PHP_INT_MAX);remove_filter('pre_option_'.ORAS_AI_Cost_Config::OPTION,$cost_filter,PHP_INT_MAX);
+  task3f_require(get_option(ORAS_AI_Config::OPTION_OPENAI_MODEL,'[unset]')===$saved_model&&get_option(ORAS_AI_Cost_Config::OPTION,array())===$saved_controls,'persistent_configuration_changed');
+  task3f_require(hash_file('sha256',$guard_file)===$guard_sha,'persistent_guard_changed');
+  $blocked=apply_filters('pre_http_request',false,array('method'=>'POST'),'https://api.openai.com/v1/responses');task3f_require(is_wp_error($blocked)&&$blocked->get_error_code()==='oras_registration_desk_external_http_blocked','persistent_guard_not_restored');
+ }
+}catch(Throwable$error){if(isset($root)&&is_dir($root))task3f_write($root.'/last-blocked.json',array('gate'=>$GLOBALS['task3f_last_gate']??null,'exception_class'=>get_class($error)));$known=array('stage_already_started_no_retry','candidate_preflight_not_passed');echo 'TASK3F BLOCKED '.(in_array($error->getMessage(),$known,true)?$error->getMessage():'configuration_or_execution_gate')."; NO RETRY\n";WP_CLI::halt(2);}

@@ -1,0 +1,44 @@
+{
+  "evidence_class": "native_disposable_read_only_ledger",
+  "home": "http://localhost:8889",
+  "environment": "local",
+  "summary": {
+    "accounting_available": true,
+    "member_day_allowed": 0,
+    "member_month_allowed": 0,
+    "site_month_actual_microdollars": 18126,
+    "site_month_reserved_microdollars": 0,
+    "site_month_allowed": 98,
+    "site_month_input_tokens": 42128,
+    "site_month_output_tokens": 9383,
+    "site_month_models": {
+      "gpt-5.6-luna": 80,
+      "gpt-6-luna": 18
+    },
+    "site_month_sources": {
+      "domain_classifier": {
+        "calls": 30,
+        "accounted_microdollars": 1657
+      },
+      "scanner_classification": {
+        "calls": 20,
+        "accounted_microdollars": 7974
+      },
+      "answer": {
+        "calls": 42,
+        "accounted_microdollars": 8084
+      },
+      "support_summary": {
+        "calls": 6,
+        "accounted_microdollars": 411
+      }
+    },
+    "site_month_unknown_microdollars": 385,
+    "rejections": []
+  },
+  "ledger_option_sha256": "9955c77978b310bfb9bf63043ebedfcaee4740ddb18c1ee840593a0fdd78181f",
+  "saved_model": "gpt-5.6-luna",
+  "cost_controls_sha256": "12096e0b7edbcb92f5fd34290640b15c8da2cae2dae62df59969623d58c88d3e",
+  "provider_attempts_this_read": 0,
+  "total_task_paid_provider_calls": 22
+}

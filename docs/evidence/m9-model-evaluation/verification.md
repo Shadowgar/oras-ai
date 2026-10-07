@@ -1,3 +1,180 @@
+# M9 Task 3F — V2 SPECIALIZED A/B
+
+Date: 2026-10-06. **NEITHER CANDIDATE ADVANCES.**
+Both candidates completed all ten cases: **domain 5/5, scanner 4/5, total 9/10**.
+All raw classifications matched the expected labels and all responses satisfied
+the actual submitted API schemas. Both failed the frozen application contract
+on **X-review**: `review` with both validation flags false. There was no retry,
+source/prompt/schema/cap/threshold tuning, full live corpus or human scoring.
+
+## Frozen source and commit
+
+Approved v2 correction committed and pushed as
+`c8456caf955f27ee9c0348eca30d91a7f9444b0f`
+(`Correct M9 scanner evaluation fixtures`) on `m9/production-release`.
+Origin was verified 0/0 and the worktree clean before paid testing.
+Fresh pre-commit checks passed: 219 PHP lint files, 792 PHP tests, 78 frontend
+assertions, JavaScript lint, normal quality, and unstaged/staged whitespace checks.
+
+The commit contains only evaluation corpus/harness/tests/evidence plus an
+artifact-specific whitespace attribute: the retained Task 3D unified diff has
+intentional context whitespace, so its bytes were preserved using a rule scoped
+to that file. Existing GPT-5.6/GPT-6 v1 evidence was committed unchanged.
+No production file, model default or plugin/package version changed (`0.2.1`).
+
+Corpus: **oras-release-core-v2**, 72 cases; SHA-256
+`daa9216b505c7be0206145b0bb2cbaf8b129cec18e0e93a6dd921720914b2f98`.
+Only these ten were dispatched per candidate, in the same order:
+`D-oras`, `D-astronomy`, `D-crossover`, `D-off-topic`, `D-ambiguous`,
+`X-stable`, `X-mixed`, `X-live`, `X-utility`, `X-review`.
+The ambiguous wording case's frozen expected outcome is `off_topic`.
+
+A native source archive was hash-verified against the same source manifest at
+every stage. The [source proof](task3f-source-proof.json),
+[common harness substitution](task3f-candidate-harness.txt), and
+[disposable bootstrap](task3f-evaluation-bootstrap.txt) retain the support used.
+Both used byte-identical wrappers and compiled allowlist support; the common
+harness uses a process-defined candidate constant. Persistent settings were
+unchanged. **All ten request payloads match after removing only `model`**,
+including inputs, prompts, schemas, caps and reasoning. Timeout policy remained
+20 seconds for domain requests and 60 seconds for scanner requests.
+
+## Credential, network and preparation
+
+**OPENAI CREDENTIAL: PRESENT.** Its value was never printed or included in evidence.
+The previously approved process-only Registration Desk exception permits only
+`GET https://api.openai.com/v1/models` and
+`POST https://api.openai.com/v1/responses`. Unrelated destinations and a wrong
+method/endpoint combination remained blocked. The persistent guard originally
+blocked OpenAI, remained byte-identical, and blocked it again after the exception
+was removed. Redirects stayed disabled. Only the known native disposable CLI/DB
+were used; no production system was accessed.
+
+Two configuration-only preparation checks rejected temporary settings before
+any provider call: the local price representation needed its required unit, and
+the conservative serialized-byte planner exceeded the initial temporary monetary
+bound. Both were corrected before the candidate runs. The same prior approved
+$2 disposable bound was then used for both, with unchanged $10 warning/$20 stop,
+25/day, 150/month, 5/minute, token caps and cost architecture. No retained case
+was dispatched during those checks or rerun afterward.
+
+Each candidate passed one minimal accounted `Reply OK.` preflight: exact model,
+Low reasoning, completed response, returned usage, reconciled cost, no leakage,
+and zero outstanding reservations. There were ten subsequent paid specialized
+calls per model. Qualified rates stayed GPT-6 $0.10 input/$0.50 output per million;
+GPT-5.6 $0.20/$1.20. Cached tokens remained conservatively charged at full input
+rates, with separate upward rounding for input and output on each call.
+
+## Exact specialized comparison
+
+| Case | Expected | GPT-6 Luna / Low | GPT-5.6 Luna / Low |
+|---|---|---|---|
+| D-oras | oras | oras — PASS | oras — PASS |
+| D-astronomy | astronomy | astronomy — PASS | astronomy — PASS |
+| D-crossover | crossover | crossover — PASS | crossover — PASS |
+| D-off-topic | off_topic | off_topic — PASS | off_topic — PASS |
+| D-ambiguous | off_topic | off_topic — PASS | off_topic — PASS |
+| X-stable | static_knowledge | static_knowledge — PASS | static_knowledge — PASS |
+| X-mixed | mixed | mixed — PASS | mixed — PASS |
+| X-live | live_data | live_data — PASS | live_data — PASS |
+| X-utility | ignore | ignore — PASS | ignore — PASS |
+| X-review | review / valid envelope | review / invalid — FAIL | review / invalid — FAIL |
+
+| Layer | GPT-6 | GPT-5.6 |
+|---|---:|---:|
+| Domain schema valid / application valid / label correct | 5 / 5 / 5 | 5 / 5 / 5 |
+| Scanner schema valid / application valid / label correct | 5 / 4 / 5 | 5 / 4 / 5 |
+| Required domain outcomes | 5/5 | 5/5 |
+| Required scanner outcomes | 4/5 | 4/5 |
+| Total required outcomes | 9/10 | 9/10 |
+| Malformed JSON / API schema failures | 0 / 0 | 0 / 0 |
+
+API/schema validity was checked independently with a local JSON Schema validator
+against the exact schema captured from each submitted request. Boolean false is
+schema-valid. The existing grader assertion named `schema_valid` actually checks
+application validation status; those layers are separated in the
+[structured A/B review](v2-specialized-ab-results.json).
+
+Both review outputs contain empty fragment arrays and:
+
+```json
+"validation": {
+  "stable_dynamic_separation": false,
+  "critical_qualifications_preserved": false
+}
+```
+
+The production validator safely returns `review` with invalid validation status
+because the frozen valid-envelope contract requires both flags true. The source
+was correctly sent to review, but neither candidate supplied the required valid
+shape. The clean-input result reproduces the review/flag disagreement for
+separate owner contract review. No production fix, normalization, changed oracle
+or threshold exception was made.
+
+Both review reasons additionally describe the effective date as future/future-
+dated. The request supplies no comparison clock; that relative-time assertion
+is unsupported and conflicts with the internal fixed corpus date and task date.
+This is retained as a factual observation for owner review, separate from the
+application-validation failure. No numerical human quality score was assigned.
+
+The mixed outputs preserve the supplied educational/volunteer/access content,
+including independent-use orientation, and separate the supplied date, price,
+registration deadline and remaining places. Other classes preserve empty
+fragment arrays. Complete exact outputs, usage and request evidence are retained
+in [GPT-6 results](v2-gpt-6-luna-specialized-results.json) and
+[GPT-5.6 results](v2-gpt-5.6-luna-specialized-results.json).
+
+## Usage, cost and latency
+
+| Measurement | GPT-6 Luna / Low | GPT-5.6 Luna / Low |
+|---|---:|---:|
+| Paid calls: specialized + preflight | 10 + 1 | 10 + 1 |
+| Input tokens including preflight | 7,604 | 7,604 |
+| Cached input reported (included in input total) | 4,936 | 4,936 |
+| Output tokens including preflight | 1,071 | 920 |
+| Specialized input / output tokens | 7,595 / 1,066 | 7,595 / 915 |
+| Preflight accounted cost | $0.000004 | $0.000008 |
+| Specialized accounted cost | $0.001298 | $0.002626 |
+| Total candidate accounted cost | $0.001302 | $0.002634 |
+| Cost per specialized case, excluding preflight | $0.0001298 | $0.0002626 |
+| Median specialized provider latency | 3.545 s | 2.412 s |
+| Maximum specialized provider latency | 4.831 s | 3.404 s |
+| Starting / ending cumulative ledger | $0.014190 / $0.015492 | $0.015492 / $0.018126 |
+| Outstanding reservations | 0 | 0 |
+| Provider failures / timeouts / network errors | 0 / 0 / 0 | 0 / 0 / 0 |
+
+Per-model p95 is omitted: ten specialized samples are below the frozen twenty-
+sample reporting minimum. These are single-run measurements, not a statistical
+quality/latency comparison. Cost is ledger-accounted under conservative local
+rates, not a provider invoice total.
+
+Total task paid calls: **22**. Incremental accounted cost: **$0.003936**.
+[Before ledger](task3f-ledger-before.json) and [after ledger](task3f-ledger-after.json)
+show **$0.014190 → $0.018126**, 76 → 98 accounted records, no new unknown-usage
+charge, no reset between candidates and **zero reservations**. Per-case usage
+and cost deltas were checked against the durable ledger after every request.
+Saved cost-control hash remained unchanged; the final guarded read confirmed
+effective model **gpt-5.6-luna** (the raw saved option remains unset and uses that
+default). The original stopped disposable container state was restored.
+
+## Decision and owner stop
+
+Both candidates fail the required domain 5/5 AND scanner 5/5 gate.
+**NEITHER CANDIDATE ADVANCES.** No remaining live v2 corpus was dispatched.
+No model substitution, prompt tuning, majority vote, score-improving retry,
+production access, package/deployment/version bump, or human quality scoring.
+
+All eleven original historical preservation hashes remain unchanged. V1 scanner
+pass rates were not compared with v2 as if the inputs were identical. This full
+prior verification document is preserved byte for byte below.
+
+The live A/B evidence remains uncommitted for owner review. Final normal-quality checks passed: **219 PHP lint files, 792 PHP tests,
+78 frontend assertions, zero unexpected warnings**, JavaScript lint,
+`npm run quality`, and `git diff --check`. Results are recorded separately in
+[verification checks](task3f-verification-checks.json).
+
+---
+
 # M9 Task 3E — SCANNER EVALUATION INTEGRITY REVIEW
 
 Date: 2026-10-06. **SCANNER EVALUATION V2: READY FOR OWNER REVIEW.**
