@@ -1,3 +1,17 @@
+# M9 Task 3G — fresh v3 specialized A/B (2026-10-07)
+
+**ADVANCE GPT-5.6 LUNA ONLY** to the next evaluation stage. The verified contract fix was pushed as `439c93eee5450453124fcc7f7bed901dc9ac0386`; worktree was clean and origin0/0 before fresh calls. All prior evidence below is preserved unchanged.
+
+Fresh disposable run: GPT-6 Luna/Low domain5/5, raw scanner labels5/5, API schema5/5, application-valid4/5. Its X-review now passes, but X-utility returned ignore plus false/false; the unchanged non-review validation safely rejected it to review. GPT-5.6 Luna/Low domain5/5, scanner labels5/5, API schema5/5, application-valid5/5. No tuning or retries.
+
+Exactly20 paid calls, no paid preflight; all reconciled. GPT-6:7595 input/1172 output, $0.001352 accounted, median3.796s/p954.930s. GPT-5.6:7595 input/924 output, $0.002638 accounted, median2.370s/p954.070s. Cumulative ledger$0.022116,118 calls, reservations0, new unknown usage0. Zero provider failures/timeouts/truncations or technical/safety failures. All requests match retained v2 model-independent hashes; same committed source, source content, prompts, schemas, caps, timeouts and thresholds.
+
+Both historical unsupported future-date reasons remain a **HUMAN SEMANTIC REVIEW ITEM**; fresh GPT-6 repeats that assertion. Fresh GPT-5.6 does not. Human quality scores remain blank. Production default gpt-5.6-luna/Low, saved controls, persistent guard and version0.2.1 unchanged. Both disposable containers restored to stopped state. Full live72case corpus NOT RUN. Fresh evidence remains uncommitted for owner review.
+
+See `task3g-final-report.md` for all36 requested report items; `v3-specialized-ab-results.json` for comparison, and the two `v3-*-specialized-results.json` files for exact raw outputs and accounting. Next action is owner review and a separate full-v3-corpus authorization for GPT-5.6 Luna/Low.
+
+---
+
 # M9 Task 3G — review validation contract correction (2026-10-07)
 
 Task 3F evidence was preserved and pushed in `99fe42df2fdab94ddc607aa0378a3c4314a99212`; its historical 9/10 results remain unchanged. The M0/M2 audit found no explicit frozen requirement for both flags to be true on review. The prompt already routes unresolved separation/qualifications to review, but the application rejected either false Boolean flag for every class.
