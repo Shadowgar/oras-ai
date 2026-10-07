@@ -1,0 +1,18 @@
+{
+  "corpus_version": "oras-release-core-v3",
+  "v2_sha256": "daa9216b505c7be0206145b0bb2cbaf8b129cec18e0e93a6dd921720914b2f98",
+  "v3_sha256": "360b93db97999563182018f2a858ad28d107605298d2f44b96fa1272a41b1411",
+  "exact_changed_corpus_fields": [
+    "/version",
+    "/cases/id=X-review/evaluation_notes"
+  ],
+  "model_visible_content_changed": false,
+  "fixture_changes": [
+    "/corpus_version",
+    "/responses/X-review/validation/stable_dynamic_separation",
+    "/responses/X-review/validation/critical_qualifications_preserved"
+  ],
+  "production_prompt_changed": false,
+  "production_schema_changed": false,
+  "historical_v2_results_rewritten": false
+}

@@ -1,0 +1,44 @@
+{
+  "task": "M9 Task3G requirements and contradiction audit",
+  "date": "2026-10-07",
+  "task3f_evidence_commit": "99fe42df2fdab94ddc607aa0378a3c4314a99212",
+  "audit_completed_before_implementation": true,
+  "explicit_frozen_requirement_review_flags_both_true": false,
+  "requirements": {
+    "KB-007": "Ambiguous sources may use structured AI classification.",
+    "KB-008": "Mixed sources extract stable knowledge while dynamic facts remain live.",
+    "KB-012": "Auto-approval requires safe source class plus configured validation/confidence.",
+    "KB-014": "Current/live values are not stored as durable authoritative facts.",
+    "KB-013": "Lifecycle includes approved, needs-review, draft/manual, retired."
+  },
+  "contradiction": {
+    "confirmed": true,
+    "prompt": "review means content that cannot be safely classified or separated, has policy/effective-date ambiguity, would lose critical qualifications, has low confidence, or fails stable/dynamic validation.",
+    "validator": "from_array rejects either Boolean flag false unconditionally for every source kind; type/presence checks remain mandatory.",
+    "finding": "A schema-valid review can describe unsafe separation/qualification with false flags yet is marked application-invalid."
+  },
+  "lifecycle_safety_boundaries": {
+    "requires_review": "Explicit review always requires review, independently of confidence.",
+    "auto_approval": "should_auto_approve only permits static_knowledge; review is excluded before confidence checks.",
+    "scanner_review": "Review processing persists a review-state artifact, not mixed fragments or approved knowledge.",
+    "retrieval": "is_active_artifact excludes review, draft, retired and unknown states."
+  },
+  "frozen_source_sha256": {
+    "docs/requirements/functional-requirements.md": "f721aa8a8dca3357d0410cd032f5bc62a2dbbc0e1d64880e4a91a2a6b0020e0e",
+    "docs/knowledge/classification-and-mixed-sources.md": "84b657623ff6eb73266ecda6b622ff97ef12d5f1d7c5eb2920a71f8ce0dfe3f6",
+    "docs/knowledge/ingestion-and-sync.md": "72852ef9acc4799169e6a55c2d6e6915fa0d31a4dd989786032492e610504a71",
+    "docs/knowledge/retrieval-and-citations.md": "b6b5bdbaa616a12547b3d9988ac0b374b3645f0eced2bcae236fc31290319a9b",
+    "docs/adr/ADR-0007.md": "58497e70905f0f1562438e66903bcd791b076b2f68084b4716c103b9f7ecc617",
+    "docs/evidence/m0-architecture/owner-approval.md": "fd9ee596a5beed0eb06881f72a34097cda4ee74489085b7382db46e5fd275574",
+    "docs/evidence/m2-knowledge-platform/verification.md": "7add77eede0876055ab0313a3aca3627b3e7bb536c6c7795d0510de6b3581151",
+    "tests/classification/SourceClassificationResultTest.php": "95acbf93a2802b24a5b6c3f8473219e520e49a16361f3f1d6e611515de89289a",
+    "tests/scanner/ManagedLifecycleTest.php": "859fb9a3cb2d263bf789da75841ba38e39794d58cf76c839729315c671eea320",
+    "tests/scanner/ClassificationTest.php": "bbf30f970b35967181b3dedfbea5c501fdbc718123766ab5c829acc801ad6f38",
+    "tests/knowledge/ActiveArtifactLifecycleTest.php": "cc9fd08fa8380a869944b4bb99345473d282e685ec69ae30f8d86dc8086cb7a5",
+    "includes/class-oras-ai-openai.php": "37cbdd785d1f0ae96925956752c1e72b7b00a9b79ebc83b3ff5461ad183d0145",
+    "includes/class-oras-ai-source-classification-result.php": "e1f5ce833e3402f314112b1e55c56e2807421ceaeaa1792748931a7255500447",
+    "includes/class-oras-ai-sources.php": "39ba4411532ce04d8c18c09eba0d1e3b2a3ad27101368fe48def81593c5e5713"
+  },
+  "paid_provider_calls_before_audit": 0,
+  "implementation_authorized": "Two false-value branches conditional on source_kind != review; no prompt/schema change."
+}

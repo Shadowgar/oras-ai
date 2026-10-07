@@ -143,13 +143,13 @@ final class ORAS_AI_Source_Classification_Result {
 
 		if ( ! array_key_exists( 'stable_dynamic_separation', $validation ) || ! is_bool( $validation['stable_dynamic_separation'] ) ) {
 			$errors[] = 'invalid_stable_dynamic_separation';
-		} elseif ( ! $separated ) {
+		} elseif ( 'review' !== $source_kind && ! $separated ) {
 			$errors[] = 'stable_dynamic_separation_failed';
 		}
 
 		if ( ! array_key_exists( 'critical_qualifications_preserved', $validation ) || ! is_bool( $validation['critical_qualifications_preserved'] ) ) {
 			$errors[] = 'invalid_critical_qualifications';
-		} elseif ( ! $qualified ) {
+		} elseif ( 'review' !== $source_kind && ! $qualified ) {
 			$errors[] = 'critical_qualifications_missing';
 		}
 

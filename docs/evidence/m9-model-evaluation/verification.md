@@ -1,3 +1,19 @@
+# M9 Task 3G — review validation contract correction (2026-10-07)
+
+Task 3F evidence was preserved and pushed in `99fe42df2fdab94ddc607aa0378a3c4314a99212`; its historical 9/10 results remain unchanged. The M0/M2 audit found no explicit frozen requirement for both flags to be true on review. The prompt already routes unresolved separation/qualifications to review, but the application rejected either false Boolean flag for every class.
+
+The production correction changes only two conditions in `ORAS_AI_Source_Classification_Result::from_array()`: false flag rejection applies when `source_kind != review`. Both flags must still exist and be Boolean. Other classes, required dimensions and extraction restrictions retain validation. No production prompt, schema, model, pricing, caps, version, or deployment changed.
+
+Tests first: the 12-test review matrix showed four expected failures before implementation; all 12 then passed. Lifecycle regressions exercise high-confidence review with all four Boolean combinations, demote an existing scanner-approved artifact to review, forbid auto-approval, extract no durable fragments and prove exclusion from approved retrieval. The review queue may retain the source body for a human; that artifact is not authoritative knowledge.
+
+`oras-release-core-v3` changes only corpus version and X-review evaluation notes. All 72 case prompts and all scanner source fields equal v2. Historical v2 bytes remain unchanged. The new scripted review fixture uses false/false to exercise the corrected validator. See `task3g-corpus-proof.json` for exact hashes/fields.
+
+Zero paid calls preceded retained-output replay. All 20 exact Task 3F raw outputs passed their captured JSON schemas, expected labels and current production adapters: GPT-6 Luna 10/10; GPT-5.6 Luna 10/10. Input and schema identity were checked against each retained call. This is offline contract evidence, not fresh model qualification. Both retained X-review unsupported "future-dated" reasons remain a **HUMAN SEMANTIC REVIEW ITEM**. See `task3g-retained-output-replay.json`; the reproducible application replay is recorded in `task3g-offline-replay.txt`.
+
+Fresh lint:php, lint:js, npm test, quality and diff check passed: 805 PHP tests, 78 frontend assertions, 220 PHP files, zero warnings. Full live corpus remains forbidden; fresh specialized v3 A/B is gated on committing/pushing this verified contract change and a clean synchronized checkout. Fresh live A/B evidence will remain uncommitted for owner review.
+
+---
+
 # M9 Task 3F — V2 SPECIALIZED A/B
 
 Date: 2026-10-06. **NEITHER CANDIDATE ADVANCES.**

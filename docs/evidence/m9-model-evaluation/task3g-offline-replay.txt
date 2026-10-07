@@ -1,0 +1,34 @@
+<?php
+declare(strict_types=1);
+$root = '/home/rocco/projects/oras-ai';
+require $root . '/tests/bootstrap.php';
+$files = array();
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/tests', FilesystemIterator::SKIP_DOTS)) as $file) { if ($file->isFile() && preg_match('/Test\.php$/', $file->getFilename())) { $files[] = $file->getPathname(); } }
+sort($files); foreach ($files as $file) { require_once $file; }
+require $root . '/tools/evaluation/harness.php';
+set_error_handler(static function ($severity, $message, $file, $line): void { throw new ErrorException($message, 0, $severity, $file, $line); });
+$cases = array_column(ORAS_AI_Release_Evaluation::corpus()['cases'], null, 'id');
+$report = array('evidence_class' => 'offline_retained_output_replay_not_fresh_model_qualification', 'corpus_version' => ORAS_AI_Release_Evaluation::CORPUS_VERSION, 'paid_provider_calls' => 0, 'models' => array());
+foreach (array('gpt-6-luna', 'gpt-5.6-luna') as $model) {
+ $file = $root . '/docs/evidence/m9-model-evaluation/v2-' . $model . '-specialized-results.json';
+ $historical = json_decode(file_get_contents($file), true, 64, JSON_THROW_ON_ERROR); $rows = array();
+ foreach ($historical['results'] as $row) {
+  $call = $row['calls'][0]; $raw = $call['raw_model_output_redacted']; $decoded = json_decode($raw, true, 64, JSON_THROW_ON_ERROR); $case = $cases[$row['id']];
+  oras_ai_test_site_cost_setup();
+  $GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(200, array('status' => 'completed', 'output_text' => $raw, 'usage' => array('input_tokens' => $call['input_tokens'], 'output_tokens' => $call['output_tokens'])));
+  $result = ORAS_AI_Release_Evaluation::execute($case);
+  oras_ai_assert_same(1, count($GLOBALS['oras_ai_test_remote_calls']), 'Replay did not exercise one adapter request.');
+  $payload = json_decode($GLOBALS['oras_ai_test_remote_calls'][0]['args']['body'], true);
+  oras_ai_assert_same(json_decode($call['admitted_input_redacted'], true), $payload['input'], 'Replay changed model-visible input.');
+  oras_ai_assert_same($call['response_schema'], $payload['text']['format']['schema'], 'Replay changed schema.');
+  $scanner = 'scanner' === $case['workflow'];
+  $expected = $scanner ? $case['profile'] : $case['expected']['domain'];
+  $raw_label = $scanner ? $decoded['classification']['source_kind'] : $decoded['domain'];
+  $actual = $scanner ? ($result['source_kind'] ?? null) : ($result['domain'] ?? null);
+  $valid = 'classified' === $result['status'] && (!$scanner || 'valid' === ($result['validation_status'] ?? null));
+  $rows[] = array('id' => $row['id'], 'workflow' => $case['workflow'], 'retained_raw_sha256' => hash('sha256', $raw), 'schema_valid' => null, 'expected_label' => $expected, 'raw_label' => $raw_label, 'semantic_expected_label_pass' => $raw_label === $expected, 'application_label' => $actual, 'application_valid' => $valid, 'application_validation_status' => $scanner ? $result['validation_status'] : ($valid ? 'valid' : 'invalid'), 'application_pass' => $valid && $actual === $expected, 'original_schema_and_model_visible_input_unchanged' => true);
+ }
+ $report['models'][$model] = array('historical_artifact_sha256' => hash_file('sha256', $file), 'historical_pass_count' => 9, 'results' => $rows);
+}
+file_put_contents('/tmp/oras-ai-m9-task3g-replay-application.json', json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+echo "OFFLINE APPLICATION REPLAY COMPLETE; PAID CALLS 0\n";

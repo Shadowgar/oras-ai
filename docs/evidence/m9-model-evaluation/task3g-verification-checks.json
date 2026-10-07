@@ -1,0 +1,107 @@
+{
+  "task": "M9 Task3G pre-live contract verification",
+  "task3f_evidence_commit": "99fe42df2fdab94ddc607aa0378a3c4314a99212",
+  "production_changes": [
+    "from_array false separation rejection only when source_kind != review",
+    "from_array false qualification rejection only when source_kind != review"
+  ],
+  "production_prompt_changed": false,
+  "production_schema_changed": false,
+  "red": {
+    "exit_code": 1,
+    "focused_tests": 12,
+    "failures": 4,
+    "expected_failures": [
+      "review false/false",
+      "review false/true",
+      "review true/false",
+      "application-valid review lifecycle"
+    ]
+  },
+  "green": {
+    "review_semantics_tests": 12,
+    "review_and_integrity_tests": 24,
+    "php_tests": 805,
+    "frontend_assertions": 78,
+    "php_lint_files": 220,
+    "warnings": 0
+  },
+  "quality": {
+    "npm run lint:php": {
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "8b77f328ab6fade55650b1a772cf7028fc179ad53449cc60bda38821f32d54d8"
+    },
+    "npm run lint:js": {
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a"
+    },
+    "npm test": {
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "52c6c496e65fc59b9cede431908662d4c10525df20d18ac4017947f33ad914a6"
+    },
+    "npm run quality": {
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "5ab6fc7ff22ece72b8d7672a4122bf95bf20ce26a4c973701535afd786059461"
+    },
+    "git diff --check": {
+      "exit_code": 0,
+      "warnings": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "offline_retained_output_replay": {
+    "gpt-6-luna": "10/10",
+    "gpt-5.6-luna": "10/10",
+    "schema_semantic_application_all_pass": true
+  },
+  "paid_calls_before_replay": 0,
+  "historical_artifacts_preserved_sha256": {
+    "docs/evidence/m9-model-evaluation/.gitattributes": "5887e08d6b7aafe7280c7c4b3464d7b0e4ffa69428f51c78e0479d9107625608",
+    "docs/evidence/m9-model-evaluation/fixture-results.json": "c3ee3eaf9c14cd80cdc4fdbf7ea0ad95f4c8ad7b4e6f1726226a83b9b115826d",
+    "docs/evidence/m9-model-evaluation/fixture-v2-results.json": "606885ecf6372c3287c69ed3046d0bd425b6a271b3e51f5777ca80a1b195cc11",
+    "docs/evidence/m9-model-evaluation/gpt6-luna-low-results.json": "7ff01a783674772b8887a3b78ff95b20d8e659122ed353270f020d80c3c29c72",
+    "docs/evidence/m9-model-evaluation/human-review.md": "ca61ee12dff4a33286c3d4ff1a6a5a6198b503f3e0ce3e963ef848f01b424275",
+    "docs/evidence/m9-model-evaluation/live-corpus-results.json": "f3477927d0f9bedfc13deb7176dc0599f22dfdc9a65fbd006b62db1b873c9ddb",
+    "docs/evidence/m9-model-evaluation/live-corpus-run2-results.json": "1ea97e40342bd33fcfff33f96ee17304bcf2d93f48c73672368076fe9a7520dd",
+    "docs/evidence/m9-model-evaluation/live-preflight.json": "27e4f2582d1edd42d8266598abdfb65767158788d494a7af0b928e976d1e01e7",
+    "docs/evidence/m9-model-evaluation/scanner-integrity-audit.json": "9366cd4e96180752b6ae5c0ad2b1f281f4a0d8c9a9a0a606a356d867d99766f9",
+    "docs/evidence/m9-model-evaluation/scanner-integrity-audit.md": "7a668d3eb0c39c9be607a0802e321f6fa3f29c1d1f09e1e84f02efdfaf6789c5",
+    "docs/evidence/m9-model-evaluation/scanner-integrity-v2-results.json": "c7372224c214b7b7c69605868e9b90e9c432a36890fdc7838399b697cc5e5670",
+    "docs/evidence/m9-model-evaluation/task3c-continuation-checks.json": "07386e9bbdcf14e774c89a70183d1ad6cf14d63b15a01daafa715178328b5496",
+    "docs/evidence/m9-model-evaluation/task3d-candidate-harness.diff": "ee391ab78186d5eba64350c36357ef02872223fbd952f6165aa61b146a144b51",
+    "docs/evidence/m9-model-evaluation/task3d-evaluation-bootstrap.txt": "32f8895755cd8743c9cf1f68eba84711968b939dd1eb3dd39150daa11aded396",
+    "docs/evidence/m9-model-evaluation/task3d-source-proof.json": "1218c741949f8c126b6e974a45b84717efe18d7ad05888571b697c0225aea1a8",
+    "docs/evidence/m9-model-evaluation/task3d-verification-checks.json": "71f92b670940f1f8c1465fec515410aefea4d59fb6338edf486c48731dcd3a80",
+    "docs/evidence/m9-model-evaluation/task3e-ledger-after.json": "06fd35556341fdef8654c04d41dbc3dee93d87d2f068f8d62c1c1b1aac714fc6",
+    "docs/evidence/m9-model-evaluation/task3e-ledger-before.json": "06fd35556341fdef8654c04d41dbc3dee93d87d2f068f8d62c1c1b1aac714fc6",
+    "docs/evidence/m9-model-evaluation/task3e-verification-checks.json": "5dfe29f56bb9af41c50e3348cfac11f30aee1c9910e86f3b0b66830516115fe0",
+    "docs/evidence/m9-model-evaluation/task3f-candidate-harness.txt": "c911687d34b284333a5ffb9d734586fae69c06eae84566f5707b3d870ce0fa57",
+    "docs/evidence/m9-model-evaluation/task3f-evaluation-bootstrap.txt": "f715e68680d09c1535b80a7cdf5059500e7c3b456f9b685d0aed32cd15a7e68c",
+    "docs/evidence/m9-model-evaluation/task3f-ledger-after.json": "f247403dcd94fbd4c65696287e82eeefdaab296679d69ddddb0e708ca36f4641",
+    "docs/evidence/m9-model-evaluation/task3f-ledger-before.json": "80ac694435654d0e3330e1e67e68608974eda3f9eef737ea6594f4adf540a840",
+    "docs/evidence/m9-model-evaluation/task3f-source-proof.json": "4c2fb52af25926e986e1dd63b5576205187eb6493f5306a162320b5dd155f1bf",
+    "docs/evidence/m9-model-evaluation/task3f-verification-checks.json": "7f2599bc8589bee36c33377f0f654a71c6e2a0cf5fcd6531c8c0e0247c0e8d2d",
+    "docs/evidence/m9-model-evaluation/transport-debug.json": "ce85b283445dcdcad8a4adecac486b96401adebdf38c404fba13aa0d874a2c3c",
+    "docs/evidence/m9-model-evaluation/v2-gpt-5.6-luna-preflight-results.json": "e6043388a2f71fc3ff41d9fa70117e1a20364856ee024e0e6b2638689be24a9f",
+    "docs/evidence/m9-model-evaluation/v2-gpt-5.6-luna-specialized-results.json": "67f77e2e157586df2c1e3ad4ffbb4e891975af776bccc3f44adc2499a94dd8d6",
+    "docs/evidence/m9-model-evaluation/v2-gpt-6-luna-preflight-results.json": "46c10e526a9ef01ef7d9159ccc81e54408453bb5ce42461cac5d652e0784176f",
+    "docs/evidence/m9-model-evaluation/v2-gpt-6-luna-specialized-results.json": "1d0ea9189eceb1762c4120b2b54f683be953af58a59dd329b2213060cdf551f8",
+    "docs/evidence/m9-model-evaluation/v2-specialized-ab-results.json": "bd0c6e881dd39bd51e17e6d9d26fea38b6368e0881ed962f37dbcca31258de14",
+    "docs/evidence/m9-model-evaluation/verification.md": "d0c70579a48353a64c21d57c8b4ded9f654492c6a8d2ce339b08e5635fa31f22",
+    "docs/quality/release-evaluation/core-v2.json": "daa9216b505c7be0206145b0bb2cbaf8b129cec18e0e93a6dd921720914b2f98",
+    "tests/fixtures/release-evaluation-responses-v2.json": "dc2fd8d0fdc208c62933043c1ed08b1c029240648d072bd9357d34989b917b94"
+  },
+  "full_live_corpus_run": false,
+  "version": "0.2.1",
+  "independent_scoped_review": {
+    "material_findings": 0,
+    "fresh_focused_tests": 24,
+    "independent_retained_output_replay": "20/20",
+    "schema_and_raw_hashes_verified": true,
+    "paid_calls": 0
+  }
+}

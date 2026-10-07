@@ -5,9 +5,9 @@ require_once __DIR__ . '/fixtures.php';
 /** Development-only qualification tooling. Never loaded by the plugin. */
 final class ORAS_AI_Release_Evaluation {
 	const MODEL = 'gpt-5.6-luna';
-	const CORPUS_VERSION = 'oras-release-core-v2';
-	const CORPUS = __DIR__ . '/../../docs/quality/release-evaluation/core-v2.json';
-	const FIXTURES = __DIR__ . '/../../tests/fixtures/release-evaluation-responses-v2.json';
+	const CORPUS_VERSION = 'oras-release-core-v3';
+	const CORPUS = __DIR__ . '/../../docs/quality/release-evaluation/core-v3.json';
+	const FIXTURES = __DIR__ . '/../../tests/fixtures/release-evaluation-responses-v3.json';
 
 	public static function corpus(): array {
 		$data = json_decode((string) file_get_contents(self::CORPUS), true, 64, JSON_THROW_ON_ERROR);
@@ -17,15 +17,15 @@ final class ORAS_AI_Release_Evaluation {
 	}
 
 	public static function validate(array $corpus): void {
-		if ('synthetic_only' !== ($corpus['data_class'] ?? '') || !in_array($corpus['version'] ?? '', array('oras-release-core-v1', self::CORPUS_VERSION), true) || !is_array($corpus['cases'] ?? null) || count($corpus['cases']) < 60 || count($corpus['cases']) > 100) { throw new InvalidArgumentException('Invalid bounded synthetic corpus.'); }
+		if ('synthetic_only' !== ($corpus['data_class'] ?? '') || !in_array($corpus['version'] ?? '', array('oras-release-core-v1', 'oras-release-core-v2', self::CORPUS_VERSION), true) || !is_array($corpus['cases'] ?? null) || count($corpus['cases']) < 60 || count($corpus['cases']) > 100) { throw new InvalidArgumentException('Invalid bounded synthetic corpus.'); }
 		$ids = array();
 		foreach ($corpus['cases'] as $case) {
 			if (!is_array($case) || !preg_match('/^[A-Z]-[a-z0-9-]{2,48}$/', $case['id'] ?? '') || isset($ids[$case['id']]) || !is_string($case['prompt'] ?? null) || strlen($case['prompt']) > 4000 || !in_array($case['workflow'] ?? '', array('answer', 'summary', 'classifier', 'scanner', 'support_state'), true) || empty($case['requirements'])) { throw new InvalidArgumentException('Invalid case identity or workflow.'); }
 			if (!in_array($case['category'] ?? '', array('knowledge', 'general_astronomy', 'current_astronomy', 'weather', 'member', 'support', 'security', 'partial_failure'), true) || !in_array($case['execution_class'] ?? '', array('live_eligible', 'fixture_only_fault', 'fixture_only_contract'), true) || !is_string($case['profile'] ?? null)) { throw new InvalidArgumentException('Invalid case classification.'); }
 			if ('scanner' === $case['workflow']) {
 				if (!in_array($case['profile'], ORAS_AI_Source_Classification_Result::supported_source_kinds(), true)) { throw new InvalidArgumentException('Invalid scanner expectation.'); }
-				if (self::CORPUS_VERSION === $corpus['version']) { self::scanner_source($case); }
-				elseif (array_key_exists('source', $case)) { throw new InvalidArgumentException('V2 source envelope mislabeled v1.'); }
+				if ('oras-release-core-v1' !== $corpus['version']) { self::scanner_source($case); }
+				elseif (array_key_exists('source', $case)) { throw new InvalidArgumentException('Structured source envelope mislabeled v1.'); }
 			}
 			$ids[$case['id']] = true;
 			$expected = $case['expected'] ?? array();

@@ -6,9 +6,9 @@ function oras_ai_integrity_corpus(): array {
 	return ORAS_AI_Release_Evaluation::corpus();
 }
 
-oras_ai_test('M9 integrity defaults to v2 and preserves every non scanner case and v1 bytes', function (): void {
+oras_ai_test('M9 integrity defaults to v3 and preserves every non scanner case and v1 bytes', function (): void {
 	$v2 = oras_ai_integrity_corpus();
-	oras_ai_assert_same('oras-release-core-v2', $v2['version'], 'Contaminated v1 still selected.');
+	oras_ai_assert_same('oras-release-core-v3', $v2['version'], 'Contaminated v1 still selected.');
 	oras_ai_assert_same('synthetic_only', $v2['data_class'], 'Synthetic-only guard lost.');
 	oras_ai_assert_same(72, count($v2['cases']), 'Retained review case was not promoted.');
 	$path = __DIR__ . '/../../docs/quality/release-evaluation/core-v1.json';
@@ -93,22 +93,22 @@ oras_ai_test('M9 integrity rejects incomplete or metadata carrying source envelo
 
 oras_ai_test('M9 integrity corpus and fixture versions cannot be confused', function (): void {
 	$v2 = oras_ai_integrity_corpus();
-	oras_ai_assert_same('oras-release-core-v2', $v2['version'], 'New corpus identity missing.');
+	oras_ai_assert_same('oras-release-core-v3', $v2['version'], 'New corpus identity missing.');
 	$v1 = json_decode((string) file_get_contents(__DIR__ . '/../../docs/quality/release-evaluation/core-v1.json'), true);
-	foreach (array(array_replace($v2, array('version' => 'oras-release-core-v1')), array_replace($v1, array('version' => 'oras-release-core-v2')), array_replace($v2, array('version' => 'oras-release-core-v3')), array_replace($v2, array('data_class' => 'production'))) as $bad) {
+	foreach (array(array_replace($v2, array('version' => 'oras-release-core-v1')), array_replace($v1, array('version' => 'oras-release-core-v2')), array_replace($v2, array('version' => 'oras-release-core-v4')), array_replace($v2, array('data_class' => 'production'))) as $bad) {
 		$rejected = false;
 		try { ORAS_AI_Release_Evaluation::validate($bad); } catch (InvalidArgumentException $error) { $rejected = true; }
 		oras_ai_assert_true($rejected, 'Corpus identity/provenance confusion accepted.');
 	}
 	oras_ai_assert_true(method_exists(ORAS_AI_Release_Evaluation::class, 'fixture_responses'), 'Version-bound fixture loading missing.');
-	$fixture = json_decode((string) file_get_contents(__DIR__ . '/../fixtures/release-evaluation-responses-v2.json'), true);
+	$fixture = json_decode((string) file_get_contents(__DIR__ . '/../fixtures/release-evaluation-responses-v3.json'), true);
 	$fixture['corpus_version'] = 'oras-release-core-v1';
 	$rejected = false;
 	try { ORAS_AI_Release_Evaluation::fixture_responses($fixture, $v2); } catch (InvalidArgumentException $error) { $rejected = true; }
 	oras_ai_assert_true($rejected, 'Old fixture responses were mislabeled v2.');
 });
 
-oras_ai_test('M9 integrity v2 preserves static mixed current utility and policy ambiguity distinctions', function (): void {
+oras_ai_test('M9 integrity v3 preserves static mixed current utility and policy ambiguity distinctions', function (): void {
 	$cases = array_column(oras_ai_integrity_corpus()['cases'], null, 'id');
 	oras_ai_assert_true(isset($cases['X-review']['source']), 'Review outcome missing from permanent corpus.');
 	$static = $cases['X-stable']['source']['content']; $mixed = $cases['X-mixed']['source']['content']; $live = $cases['X-live']['source']['content']; $review = $cases['X-review']['source']['content'];
@@ -123,12 +123,12 @@ oras_ai_test('M9 integrity v2 preserves static mixed current utility and policy 
 	oras_ai_assert_contains('Effective', $review, 'Genuine effective-date ambiguity removed.');
 });
 
-oras_ai_test('M9 integrity v2 offline fixture pipeline covers every case without live execution', function (): void {
+oras_ai_test('M9 integrity v3 offline fixture pipeline covers every case without live execution', function (): void {
 	$corpus = oras_ai_integrity_corpus();
-	oras_ai_assert_same('oras-release-core-v2', $corpus['version'], 'Offline test is still exercising v1.');
+	oras_ai_assert_same('oras-release-core-v3', $corpus['version'], 'Offline test is still exercising v1.');
 	$report = ORAS_AI_Release_Evaluation::fixture_run();
-	oras_ai_assert_same(72, count($report['results']), 'Offline v2 case disappeared.');
-	oras_ai_assert_same(0, $report['failed_cases'], 'Offline v2 contract failed.');
+	oras_ai_assert_same(72, count($report['results']), 'Offline v3 case disappeared.');
+	oras_ai_assert_same(0, $report['failed_cases'], 'Offline v3 contract failed.');
 	oras_ai_assert_same(0, $report['live_calls'], 'Fixture output treated as live execution.');
 	oras_ai_assert_same('fixture_pipeline_not_model_quality', $report['evidence_class'], 'Offline evidence overclaimed.');
 	$rows = array_column($report['results'], null, 'id');
@@ -136,4 +136,27 @@ oras_ai_test('M9 integrity v2 offline fixture pipeline covers every case without
 		oras_ai_assert_same($kind, $rows[$id]['source_kind'], 'Scripted M2 outcome failed: ' . $id);
 		oras_ai_assert_same('valid', $rows[$id]['validation_status'], 'Valid review/static/live fixture safely rejected instead of admitted.');
 	}
+});
+
+oras_ai_test('M9 integrity v3 changes only review evaluation semantics and corpus identity', function (): void {
+	$v3 = oras_ai_integrity_corpus();
+	$path = __DIR__ . '/../../docs/quality/release-evaluation/core-v2.json';
+	oras_ai_assert_same('daa9216b505c7be0206145b0bb2cbaf8b129cec18e0e93a6dd921720914b2f98', hash_file('sha256', $path), 'Historical v2 bytes changed.');
+	$v2 = json_decode((string) file_get_contents($path), true);
+	foreach ($v2['cases'] as $index => $old) {
+		$new = $v3['cases'][$index];
+		oras_ai_assert_same($old['prompt'], $new['prompt'], 'Model-visible prompt changed.');
+		oras_ai_assert_same($old['source'] ?? null, $new['source'] ?? null, 'Model-visible source changed.');
+		if ('X-review' === $old['id']) {
+			oras_ai_assert_contains('Boolean', $new['evaluation_notes'], 'Corrected review semantics missing.');
+			unset($old['evaluation_notes'], $new['evaluation_notes']);
+		}
+		oras_ai_assert_same($old, $new, 'Unapproved case change.');
+	}
+	unset($v2['version'], $v3['version'], $v2['cases'], $v3['cases']);
+	oras_ai_assert_same($v2, $v3, 'Unapproved corpus metadata change.');
+	$old_fixture = json_decode((string) file_get_contents(__DIR__ . '/../fixtures/release-evaluation-responses-v2.json'), true);
+	$rejected = false;
+	try { ORAS_AI_Release_Evaluation::fixture_responses($old_fixture, oras_ai_integrity_corpus()); } catch (InvalidArgumentException $error) { $rejected = true; }
+	oras_ai_assert_true($rejected, 'Historical v2 fixtures silently admitted as v3.');
 });
