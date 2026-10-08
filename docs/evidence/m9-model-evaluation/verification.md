@@ -1,3 +1,19 @@
+# GPT-5.6 LUNA / LOW — FULL V3 RELEASE CORPUS (2026-10-07)
+
+**TECHNICALLY QUALIFIED — HUMAN QUALITY REVIEW PENDING**. Source and Task 3G evidence baseline:`d93aa8ec236c9aa40f95b51d99fed0cc8c415c15`. Corpus:`oras-release-core-v3`,SHA-256`360b93db97999563182018f2a858ad28d107605298d2f44b96fa1272a41b1411`. One coherent 72-case qualification:69 live cases executed once against GPT-5.6 Luna/Low and 3 deterministic fixture-only cases. All 72 rule gates pass; no confirmed released-output hard failure in agent contract review. Human qualitative scores remain blank.
+
+Complete preflight bound:122 calls, 10,308,928 input tokens, 110,784 output tokens, $2.194774 maximum local cost. Starting$0.022116,reservations0; full campaign fit before dispatch. Unchanged bounded runner used disjoint35/34-case batches from one frozen commit/hash/model. Actual58 paid calls,all completed/reconciled; zero HTTP/network failures,timeouts,malformed successes or truncations. Fresh domain5/5;scanner labels/schema/application validity5/5;support summaries6/6.
+
+Provider usage:20,588 input, 4,936 cached input, 5,538 output. Local incremental$0.010809;ending$0.032925,reservations0,remaining$20headroom$19.967075,$10warning not reached. Main answer output median91.5,p95210,max278 against unchanged800cap;scanner max247 against12,000cap. Deterministic pipeline changed30 generated answers exactly, 15 beyond whitespace, 12 with semantic enrichment;seven raw answers omitted required released state/checkout guidance that the pipeline supplied. Raw safety compliance is reported independently;formatting replacement is not a model safety failure.
+
+**HUMAN SEMANTIC REVIEW ITEM:**fresh X-review again claims a "future effective date" though 2026-09-01 precedes the frozen 2026-09-09 clock. The result stays valid review with empty fragments and admits no approved policy. Exact reason and blank reviewer fields are prominent in `human-review-v3-full-gpt-5.6-luna-low.md`.
+
+Full results:`v3-gpt-5.6-luna-full-results.json`;metrics,hard gates,hostile raw/final results and corrections:`v3-gpt-5.6-luna-full-summary.json`;all 43 report items:`task3h-final-report.md`. Fresh lint:php, lint:js, npm test, npm quality and diff check passed: 805 PHP tests, 78 frontend assertions, 220 PHP files, zero warnings. No product/corpus/prompt/schema/model/cap/timeout/accounting changes,no production WordPress,no packaging/deployment/version change or M9 closure. Version 0.2.1. Both disposable containers stopped again;full-run evidence remains uncommitted.
+
+Next owner action:score all 69 live-case cards and semantic hard-gate concerns using frozen thresholds,starting with X-review;then decide remaining release gates. No full release qualification claimed from technical checks.
+
+---
+
 # M9 Task 3G — fresh v3 specialized A/B (2026-10-07)
 
 **ADVANCE GPT-5.6 LUNA ONLY** to the next evaluation stage. The verified contract fix was pushed as `439c93eee5450453124fcc7f7bed901dc9ac0386`; worktree was clean and origin0/0 before fresh calls. All prior evidence below is preserved unchanged.

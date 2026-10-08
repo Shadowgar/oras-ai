@@ -1,0 +1,43 @@
+{
+    "summary": {
+        "accounting_available": true,
+        "member_day_allowed": 0,
+        "member_month_allowed": 0,
+        "site_month_actual_microdollars": 32925,
+        "site_month_reserved_microdollars": 0,
+        "site_month_allowed": 176,
+        "site_month_input_tokens": 77906,
+        "site_month_output_tokens": 17017,
+        "site_month_models": {
+            "gpt-5.6-luna": 148,
+            "gpt-6-luna": 28
+        },
+        "site_month_sources": {
+            "domain_classifier": {
+                "calls": 45,
+                "accounted_microdollars": 2436
+            },
+            "support_summary": {
+                "calls": 12,
+                "accounted_microdollars": 888
+            },
+            "answer": {
+                "calls": 84,
+                "accounted_microdollars": 15786
+            },
+            "scanner_classification": {
+                "calls": 35,
+                "accounted_microdollars": 13815
+            }
+        },
+        "site_month_unknown_microdollars": 385,
+        "rejections": []
+    },
+    "saved_model_raw": "[unset]",
+    "effective_model": "gpt-5.6-luna",
+    "default_model": "gpt-5.6-luna",
+    "saved_controls_sha256": "12096e0b7edbcb92f5fd34290640b15c8da2cae2dae62df59969623d58c88d3e",
+    "ledger_option_sha256": "cd2349b5f5a407f1c9e5b241ae0e8406fb7e52c34bcdbcdd154bdee59ae2df69",
+    "persistent_guard_sha256": "d41408136cb63c53d9167f3becb958a36e1066d753de401c11e0e01e997d219c",
+    "version": "0.2.1"
+}
