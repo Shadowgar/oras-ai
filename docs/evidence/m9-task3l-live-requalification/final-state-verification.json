@@ -1,0 +1,21 @@
+{
+  "head": "62daea2e99f0557328642d29e529ed0942bf74cf",
+  "branch": "m9/production-release",
+  "origin_ahead_behind": [
+    0,
+    0
+  ],
+  "remote_branch_sha_read_only_verified": "62daea2e99f0557328642d29e529ed0942bf74cf",
+  "porcelain": "?? docs/evidence/m9-task3l-live-requalification/\n",
+  "staged_paths": [],
+  "new_evidence_committed": false,
+  "new_evidence_pushed": false,
+  "post_evidence_diff_check_exit": 0,
+  "prior_evidence_files_verified": 153,
+  "committed_source_files_verified": 463,
+  "git_info_attributes_restored": true,
+  "credential_pattern_scan": "No API-key or Authorization Bearer token patterns found in new artifacts.",
+  "disposable_containers": "CLI and MySQL independently inspected exited after campaign",
+  "human_scoring_complete": false,
+  "version": "0.2.1"
+}

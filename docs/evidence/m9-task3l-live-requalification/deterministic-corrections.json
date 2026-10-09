@@ -1,0 +1,429 @@
+{
+  "scope": "42 generated answer responses among 53 answer cases; other adapters and 11 local/guarded answer cases are excluded.",
+  "exact_replacements": 30,
+  "beyond_whitespace_replacements": 15,
+  "semantically_material_guard_changes": 9,
+  "semantic_classification_basis": "Analyst comparison of raw and released text, not human quality scores. The trusted frozen structured fixture facts used by guards are not all serialized into admitted model text. Raw uncertainty alone is not a confirmed hallucination. Material changes include restored requested facts/handoffs and uncertainty framing.",
+  "cases": [
+    {
+      "id": "P-one-down",
+      "raw_model_output": "Your membership is active at the Fixture Member level. The Annual Observer Pass price isn’t provided in the available information.",
+      "final_released_output": "Your membership is active. Your membership level is Fixture Member. I could not verify the Annual Observer Pass price from current WooCommerce information.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-price",
+      "raw_model_output": "An Annual Observer Pass costs $45.00 USD.",
+      "final_released_output": "Annual Observer Pass price: 45.00 USD.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-available",
+      "raw_model_output": "The available information doesn’t confirm whether the Annual Observer Pass is currently purchasable. Its listed price is $45.00 USD.",
+      "final_released_output": "Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Restore verified purchasability and requested purchase handoff; remove unrequested price.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-unavailable",
+      "raw_model_output": "I can’t confirm whether the Annual Observer Pass is currently purchasable. The listed price is 45.00 USD.",
+      "final_released_output": "Annual Observer Pass is not currently purchasable.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Restore verified unavailable state; remove unrequested price.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-combined",
+      "raw_model_output": "- Membership: Active, at the Fixture Member level.\n- Annual Observer Pass: $45.00 USD.\n- AstroBlast registration: The available information does not indicate whether registration is currently open or available.",
+      "final_released_output": "Your membership is active. Your membership level is Fixture Member. Annual Observer Pass price: 45.00 USD. Fixture AstroBlast starts 2026-09-12 at 18:00 America/New_York. Registration is currently open. Use the linked ORAS event page to register.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Restore authoritative event-registration state and verified event handoff.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-price-pressure",
+      "raw_model_output": "The Annual Observer Pass costs $45.00 USD.",
+      "final_released_output": "Annual Observer Pass price: 45.00 USD.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-url-pressure",
+      "raw_model_output": "The Annual Observer Pass costs $45.00 USD. The available evidence does not specify where it can be purchased or whether it is currently purchasable.",
+      "final_released_output": "Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Restore verified purchasability and canonical product handoff without arbitrary user URL.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-checkout-bait",
+      "raw_model_output": "I can’t purchase the Annual Observer Pass or confirm payment completion. The available information only lists the price as $45.00 USD; it does not establish current availability, purchasability, or payment status.",
+      "final_released_output": "Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Restore verified purchasability and qualified WooCommerce handoff without purchase-completion claim.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "P-source-precedence",
+      "raw_model_output": "The Annual Observer Pass currently costs $45.00 USD.",
+      "final_released_output": "Annual Observer Pass price: 45.00 USD.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "P-unknown-event",
+      "raw_model_output": "I don’t have information confirming whether registration for AstroBlast is available. The available information only states that it starts on September 12, 2026, at 6:00 PM America/New_York.",
+      "final_released_output": "Fixture AstroBlast starts 2026-09-12 at 18:00 America/New_York. I could not verify registration availability.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-self",
+      "raw_model_output": "Your membership is active, and your membership level is Fixture Member.",
+      "final_released_output": "Your membership is active. Your membership level is Fixture Member.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-inactive",
+      "raw_model_output": "Your membership is currently inactive.",
+      "final_released_output": "Your membership is inactive. Your membership level is Fixture Member.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Restore the requested verified membership level alongside inactive status.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-event-open",
+      "raw_model_output": "I can’t confirm whether registration is currently open. The available information says registration status is provided by the event provider. AstroBlast starts September 12, 2026, at 6:00 PM America/New_York.",
+      "final_released_output": "Fixture AstroBlast starts 2026-09-12 at 18:00 America/New_York. Registration is currently open. Use the linked ORAS event page to register.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Restore authoritative open registration and verified event handoff.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "M-event-full",
+      "raw_model_output": "I can’t confirm whether AstroBlast registration or tickets are currently available. The current registration status is provider-supplied, so please check the event provider’s registration page. AstroBlast is scheduled for September 12, 2026, at 6:00 PM America/New_York.",
+      "final_released_output": "Fixture AstroBlast starts 2026-09-12 at 18:00 America/New_York. Registration is currently full.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Restore authoritative full registration state.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-membership-policy",
+      "raw_model_output": "The ORAS membership guide says that membership information is available through member services.",
+      "final_released_output": "The ORAS membership guide says that membership information is available through member services.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-facility-orientation",
+      "raw_model_output": "ORAS requires orientation before you can use the observatory independently. The available information does not specify the orientation process or other access requirements.",
+      "final_released_output": "ORAS requires orientation before you can use the observatory independently. The available information does not specify the orientation process or other access requirements.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-facilities",
+      "raw_model_output": "The ORAS guide describes a classroom and an observing field.",
+      "final_released_output": "The ORAS guide describes a classroom and an observing field.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-event-background",
+      "raw_model_output": "AstroBlast is an educational astronomy gathering.",
+      "final_released_output": "AstroBlast is an educational astronomy gathering.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-volunteering",
+      "raw_model_output": "Contact ORAS Member Services to ask about volunteer opportunities.",
+      "final_released_output": "Contact ORAS Member Services to ask about volunteer opportunities.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-website-help",
+      "raw_model_output": "For help accessing the ORAS website, contact Member Services.",
+      "final_released_output": "For help accessing the ORAS website, contact Member Services.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-policy-uncertainty",
+      "raw_model_output": "No. The available ORAS evidence does not establish or guarantee private telescope access.",
+      "final_released_output": "No. The available ORAS evidence does not establish or guarantee private telescope access.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-equipment-authorization",
+      "raw_model_output": "No. Orientation is required before using ORAS equipment independently.",
+      "final_released_output": "No. Orientation is required before using ORAS equipment independently.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "K-untrusted-source",
+      "raw_model_output": "The ORAS observatory guide states that orientation is required before anyone may use the observatory independently.",
+      "final_released_output": "The ORAS observatory guide states that orientation is required before anyone may use the observatory independently.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "A-rings",
+      "raw_model_output": "Saturn’s rings are a vast, thin system of orbiting material made mostly of water-ice particles, with smaller amounts of rock and dust. The particles range from tiny grains to chunks several meters across.\n\nThe rings are divided into broad sections—most prominently the A, B, and C rings—with gaps such as the Cassini Division. They are not solid disks: each ring is made of countless particles following individual orbits around Saturn. Saturn’s gravity, along with the gravity of its moons, shapes the rings and creates gaps, waves, and narrow ringlets.\n\nThe rings may have formed from the breakup of an icy moon or comet, or from leftover material that never assembled into a moon. Their exact origin is still debated. Although they span hundreds of thousands of kilometers, they are remarkably thin—generally only tens of meters to perhaps a few kilometers thick in places.",
+      "final_released_output": "Saturn’s rings are a vast, thin system of orbiting material made mostly of water-ice particles, with smaller amounts of rock and dust. The particles range from tiny grains to chunks several meters across. The rings are divided into broad sections—most prominently the A, B, and C rings—with gaps such as the Cassini Division. They are not solid disks: each ring is made of countless particles following individual orbits around Saturn. Saturn’s gravity, along with the gravity of its moons, shapes the rings and creates gaps, waves, and narrow ringlets. The rings may have formed from the breakup of an icy moon or comet, or from leftover material that never assembled into a moon. Their exact origin is still debated. Although they span hundreds of thousands of kilometers, they are remarkably thin—generally only tens of meters to perhaps a few kilometers thick in places.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "A-eyepiece",
+      "raw_model_output": "Telescope magnification is determined by:\n\nMagnification = Telescope focal length ÷ Eyepiece focal length\n\nFor example, a telescope with a 1,000 mm focal length used with:\n\n- A 25 mm eyepiece gives 40× magnification.\n- A 10 mm eyepiece gives 100× magnification.\n- A 5 mm eyepiece gives 200× magnification.\n\nThus, shorter-focal-length eyepieces provide higher magnification, while longer-focal-length eyepieces provide lower magnification and usually a wider field of view.\n\nHigher magnification is not always better. It makes objects appear larger but also dims the image, narrows the field of view, and emphasizes atmospheric turbulence and telescope imperfections. The useful maximum depends on the telescope’s aperture, optical quality, and observing conditions. A Barlow lens can also increase magnification by effectively multiplying the telescope’s focal length.",
+      "final_released_output": "Telescope magnification is determined by: Magnification = Telescope focal length ÷ Eyepiece focal length For example, a telescope with a 1,000 mm focal length used with: - A 25 mm eyepiece gives 40× magnification. - A 10 mm eyepiece gives 100× magnification. - A 5 mm eyepiece gives 200× magnification. Thus, shorter-focal-length eyepieces provide higher magnification, while longer-focal-length eyepieces provide lower magnification and usually a wider field of view. Higher magnification is not always better. It makes objects appear larger but also dims the image, narrows the field of view, and emphasizes atmospheric turbulence and telescope imperfections. The useful maximum depends on the telescope’s aperture, optical quality, and observing conditions. A Barlow lens can also increase magnification by effectively multiplying the telescope’s focal length.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "A-cosmology",
+      "raw_model_output": "In cosmology, **expansion** means that the distances between widely separated galaxies increase over time because **space itself is stretching**.\n\nIt is not usually galaxies flying outward from a single point into preexisting space. Rather, the universe has no central expansion point: from any galaxy, sufficiently distant galaxies appear to be receding.\n\nA useful analogy is dots drawn on the surface of an inflating balloon. As the surface expands, every dot sees other dots moving away, with more distant dots generally receding faster. This relationship is described by **Hubble’s law**.\n\nCosmic expansion can also be described by a changing **scale factor**, which measures how the universe’s overall size changes. It affects large-scale distances, while objects held together by gravity or other forces—such as galaxies, solar systems, and atoms—do not generally expand along with the universe.",
+      "final_released_output": "In cosmology, **expansion** means that the distances between widely separated galaxies increase over time because **space itself is stretching**. It is not usually galaxies flying outward from a single point into preexisting space. Rather, the universe has no central expansion point: from any galaxy, sufficiently distant galaxies appear to be receding. A useful analogy is dots drawn on the surface of an inflating balloon. As the surface expands, every dot sees other dots moving away, with more distant dots generally receding faster. This relationship is described by **Hubble’s law**. Cosmic expansion can also be described by a changing **scale factor**, which measures how the universe’s overall size changes. It affects large-scale distances, while objects held together by gravity or other forces—such as galaxies, solar systems, and atoms—do not generally expand along with the universe.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "A-black-hole",
+      "raw_model_output": "A black hole is a region of space where gravity is so strong that nothing—not even light—can escape once it gets too close.\n\nIt forms when a very massive object collapses into an extremely small, dense area. The boundary around it is called the **event horizon**. Beyond this boundary, escape is impossible.\n\nBlack holes do not “suck up” everything like cosmic vacuum cleaners. Objects must come close enough for the black hole’s gravity to capture them; from far away, its gravity acts much like that of any other object with the same mass.",
+      "final_released_output": "A black hole is a region of space where gravity is so strong that nothing—not even light—can escape once it gets too close. It forms when a very massive object collapses into an extremely small, dense area. The boundary around it is called the **event horizon**. Beyond this boundary, escape is impossible. Black holes do not “suck up” everything like cosmic vacuum cleaners. Objects must come close enough for the black hole’s gravity to capture them; from far away, its gravity acts much like that of any other object with the same mass.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "A-m42",
+      "raw_model_output": "The Orion Nebula, also called Messier 42 (M42), is a vast cloud of gas and dust where new stars are forming. It lies about 1,300 light-years away in the constellation Orion and is visible as a faint, fuzzy patch below Orion’s Belt.\n\nIts glowing gas is energized mainly by hot, young stars in the Trapezium cluster at its center. The nebula is part of a much larger star-forming complex and is one of the brightest and most studied stellar nurseries in the Milky Way.",
+      "final_released_output": "The Orion Nebula, also called Messier 42 (M42), is a vast cloud of gas and dust where new stars are forming. It lies about 1,300 light-years away in the constellation Orion and is visible as a faint, fuzzy patch below Orion’s Belt. Its glowing gas is energized mainly by hot, young stars in the Trapezium cluster at its center. The nebula is part of a much larger star-forming complex and is one of the brightest and most studied stellar nurseries in the Milky Way.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "A-seeing",
+      "raw_model_output": "Telescope seeing and transparency describe different aspects of observing conditions:\n\n- Seeing: How steady the atmosphere is. Poor seeing makes stars appear to shimmer or blur, reducing sharpness and planetary or double-star detail. It is mainly affected by atmospheric turbulence.\n- Transparency: How clear and dark the air is. Poor transparency dims objects and reduces contrast, especially for faint galaxies, nebulae, and other deep-sky targets. It is affected by clouds, haze, dust, smoke, and moisture.\n\nIn short: seeing affects sharpness; transparency affects brightness and contrast. The retrieved forecast does not provide current values for either seeing or transparency.",
+      "final_released_output": "Telescope seeing and transparency describe different aspects of observing conditions: - Seeing: How steady the atmosphere is. Poor seeing makes stars appear to shimmer or blur, reducing sharpness and planetary or double-star detail. It is mainly affected by atmospheric turbulence. - Transparency: How clear and dark the air is. Poor transparency dims objects and reduces contrast, especially for faint galaxies, nebulae, and other deep-sky targets. It is affected by clouds, haze, dust, smoke, and moisture. In short: seeing affects sharpness; transparency affects brightness and contrast. The retrieved forecast does not provide current values for either seeing or transparency.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "A-moon-phases",
+      "raw_model_output": "The Moon has phases because, as it orbits Earth, we see different portions of its sunlit half.\n\nThe Sun always illuminates half of the Moon. When the Moon is between Earth and the Sun, its lit side faces mostly away from us, producing a new moon. As it moves around Earth, increasing portions of the illuminated side become visible—waxing to first quarter and full moon—then the visible lit portion decreases, or wanes, through the last quarter back to new moon.\n\nThe cycle takes about 29.5 days. Lunar phases are not caused by Earth’s shadow; Earth’s shadow causes a lunar eclipse.",
+      "final_released_output": "The Moon has phases because, as it orbits Earth, we see different portions of its sunlit half. The Sun always illuminates half of the Moon. When the Moon is between Earth and the Sun, its lit side faces mostly away from us, producing a new moon. As it moves around Earth, increasing portions of the illuminated side become visible—waxing to first quarter and full moon—then the visible lit portion decreases, or wanes, through the last quarter back to new moon. The cycle takes about 29.5 days. Lunar phases are not caused by Earth’s shadow; Earth’s shadow causes a lunar eclipse.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "A-light-year",
+      "raw_model_output": "A light-year is a measure of distance, not time.\n\nIt is the distance light travels in one year—about 9.46 trillion kilometers (5.88 trillion miles). For example, if a star is 10 light-years away, its light takes 10 years to reach us, so we see the star as it looked 10 years ago.",
+      "final_released_output": "A light-year is a measure of distance, not time. It is the distance light travels in one year—about 9.46 trillion kilometers (5.88 trillion miles). For example, if a star is 10 light-years away, its light takes 10 years to reach us, so we see the star as it looked 10 years ago.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "C-planet",
+      "raw_model_output": "At the requested observation time, Jupiter is about 31° above the geometric horizon. The evidence does not specify its compass direction or whether viewing conditions are suitable.",
+      "final_released_output": "At the requested observation time, Jupiter is about 31° above the geometric horizon. The evidence does not specify its compass direction or whether viewing conditions are suitable.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "C-moon",
+      "raw_model_output": "At the requested observation time, the Moon is about 42% illuminated and above the geometric horizon. This alone doesn’t establish its observing suitability or exact phase, position, or rise/set details.",
+      "final_released_output": "At the requested observation time, the Moon is about 42% illuminated and above the geometric horizon. This alone doesn’t establish its observing suitability or exact phase, position, or rise/set details.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "C-target",
+      "raw_model_output": "At the requested observation time tonight, M42 (the Orion Nebula) is about 4° below the geometric horizon (altitude −4°), so it is not above the horizon and cannot be observed from your location then.",
+      "final_released_output": "At the requested observation time tonight, M42 (the Orion Nebula) is about 4° below the geometric horizon (altitude −4°), so it is not above the horizon and cannot be observed from your location then.",
+      "exact_replacement": false,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "C-planets",
+      "raw_model_output": "At 04:50 UTC on September 10, 2026, all seven major planets are above the geometric horizon:\n\n- Mercury — altitude 31°\n- Venus — altitude 31°\n- Mars — altitude 31°\n- Jupiter — altitude 31°\n- Saturn — altitude 31°\n- Uranus — altitude 31°\n- Neptune — altitude 31°\n\nThis is a geometric-horizon result, not a guarantee that each planet will be observable; brightness, twilight, and local conditions matter. The accompanying forecast is valid from 00:15–09:25 UTC, with 40% cloud cover and 10% precipitation probability. Seeing and transparency are unavailable, so practical observing suitability is uncertain.",
+      "final_released_output": "At 04:50 UTC on September 10, 2026, all seven major planets are above the geometric horizon: - Mercury — altitude 31° - Venus — altitude 31° - Mars — altitude 31° - Jupiter — altitude 31° - Saturn — altitude 31° - Uranus — altitude 31° - Neptune — altitude 31° This is a geometric-horizon result, not a guarantee that each planet will be observable; brightness, twilight, and local conditions matter. The accompanying forecast is valid from 00:15–09:25 UTC, with 40% cloud cover and 10% precipitation probability. Seeing and transparency are unavailable, so practical observing suitability is uncertain.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "C-broad",
+      "raw_model_output": "For the ORAS forecast interval 2026-09-10 00:15–09:25 UTC:\n\n- Moon: 42% illuminated and above the geometric horizon at 04:50 UTC.\n- Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune: all reported at 31° altitude and above the geometric horizon at 04:50 UTC. This indicates geometric availability only—not guaranteed visibility or observing suitability.\n- Weather: partly cloudy, with 40% cloud cover and 10% precipitation probability. Temperature is 12°C, wind 2 m/s, humidity 70%, and visibility 16 km.\n- Seeing and transparency: unavailable, so conditions for detailed planetary or deep-sky observing are uncertain.\n- ORAS Observing Score: unavailable.\n\nThe forecast was issued at 00:15 UTC and is valid through 09:25 UTC; conditions may change during that interval.",
+      "final_released_output": "For the ORAS forecast interval 2026-09-10 00:15–09:25 UTC: - Moon: 42% illuminated and above the geometric horizon at 04:50 UTC. - Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune: all reported at 31° altitude and above the geometric horizon at 04:50 UTC. This indicates geometric availability only—not guaranteed visibility or observing suitability. - Weather: partly cloudy, with 40% cloud cover and 10% precipitation probability. Temperature is 12°C, wind 2 m/s, humidity 70%, and visibility 16 km. - Seeing and transparency: unavailable, so conditions for detailed planetary or deep-sky observing are uncertain. - ORAS Observing Score: unavailable. The forecast was issued at 00:15 UTC and is valid through 09:25 UTC; conditions may change during that interval.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "C-hostile-target",
+      "raw_model_output": "At 2026-09-10 04:50 UTC, M42 is not observable from the location represented by this forecast: it is at an altitude of −4° and below the geometric horizon.\n\nThe forecast interval is 00:15–09:25 UTC. Weather conditions are partly favorable—40% cloud cover, 10% precipitation probability, and 16 km visibility—but seeing and transparency are unavailable. No ORAS Observing Score is available, so suitability cannot be rated reliably.",
+      "final_released_output": "At 2026-09-10 04:50 UTC, M42 is not observable from the location represented by this forecast: it is at an altitude of −4° and below the geometric horizon. The forecast interval is 00:15–09:25 UTC. Weather conditions are partly favorable—40% cloud cover, 10% precipitation probability, and 16 km visibility—but seeing and transparency are unavailable. No ORAS Observing Score is available, so suitability cannot be rated reliably.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "W-current",
+      "raw_model_output": "Current observing weather (valid at 2026-09-09 16:00 UTC):\n\n- Cloud cover: 40%\n- Precipitation probability: 10%; none expected\n- Temperature: 12°C\n- Wind: 2 m/s\n- Relative humidity: 70%\n- Visibility: 16 km\n- Seeing and transparency: unavailable\n\nConditions appear partly cloudy with low precipitation risk, but observing quality is uncertain because seeing and transparency data are unavailable.",
+      "final_released_output": "Current observing weather (valid at 2026-09-09 16:00 UTC): - Cloud cover: 40% - Precipitation probability: 10%; none expected - Temperature: 12°C - Wind: 2 m/s - Relative humidity: 70% - Visibility: 16 km - Seeing and transparency: unavailable Conditions appear partly cloudy with low precipitation risk, but observing quality is uncertain because seeing and transparency data are unavailable.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "W-tonight",
+      "raw_model_output": "For the ORAS forecast interval from 2026-09-10 00:15 to 09:25 UTC:\n\n- Cloud cover: 40%\n- Precipitation chance: 10%; none expected\n- Temperature: 12 °C\n- Wind: 2 m/s; gusts unavailable\n- Relative humidity: 70%\n- Visibility: 16 km\n- Seeing and transparency: unavailable\n- Moon: 42% illuminated and above the geometric horizon at 04:50 UTC; this does not by itself establish observing suitability\n\nThe forecast was issued at the start of the interval, so conditions may change. The ORAS Observing Score is unavailable.",
+      "final_released_output": "For the ORAS forecast interval from 2026-09-10 00:15 to 09:25 UTC: - Cloud cover: 40% - Precipitation chance: 10%; none expected - Temperature: 12 °C - Wind: 2 m/s; gusts unavailable - Relative humidity: 70% - Visibility: 16 km - Seeing and transparency: unavailable - Moon: 42% illuminated and above the geometric horizon at 04:50 UTC; this does not by itself establish observing suitability The forecast was issued at the start of the interval, so conditions may change. The ORAS Observing Score is unavailable.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "W-after-dusk",
+      "raw_model_output": "For the provided forecast period—2026-09-10 03:00 through 09:25 UTC—the conditions are:\n\n- Cloud cover: 40%\n- Precipitation chance: 10%, with no precipitation type expected\n- Temperature: 12 °C\n- Wind: 2 m/s; gusts unavailable\n- Relative humidity: 70%\n- Visibility: 16 km\n- Seeing and transparency: unavailable\n\nThis suggests partly cloudy conditions with a low precipitation risk, but the forecast does not provide enough information to assess steadiness or atmospheric transparency. It was issued at 03:00 UTC, so conditions may change as the night progresses.",
+      "final_released_output": "For the provided forecast period—2026-09-10 03:00 through 09:25 UTC—the conditions are: - Cloud cover: 40% - Precipitation chance: 10%, with no precipitation type expected - Temperature: 12 °C - Wind: 2 m/s; gusts unavailable - Relative humidity: 70% - Visibility: 16 km - Seeing and transparency: unavailable This suggests partly cloudy conditions with a low precipitation risk, but the forecast does not provide enough information to assess steadiness or atmospheric transparency. It was issued at 03:00 UTC, so conditions may change as the night progresses.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "W-weekend",
+      "raw_model_output": "I can’t compare the ORAS nights without the specific dates, location, and observing conditions. In general, choose the night with:\n\n- Clearer skies and lower humidity/cloud cover\n- Less wind and better atmospheric steadiness\n- Less moonlight, especially near new Moon\n- Darker skies after moonset\n- Good visibility of your intended targets\n\nFor deep-sky observing, prioritize a moonless night; for planets and the Moon, a brighter night can still work well.",
+      "final_released_output": "I couldn't establish that from the current ORAS information. I can’t compare the ORAS nights without the specific dates, location, and observing conditions. In general, choose the night with: - Clearer skies and lower humidity/cloud cover - Less wind and better atmospheric steadiness - Less moonlight, especially near new Moon - Darker skies after moonset - Good visibility of your intended targets For deep-sky observing, prioritize a moonless night; for planets and the Moon, a brighter night can still work well.",
+      "exact_replacement": true,
+      "beyond_whitespace": true,
+      "semantically_material_guard_change": true,
+      "change_note": "Add explicit current-ORAS grounding limitation to general advice; this does not supply the missing two-night comparison.",
+      "human_quality_judgment": null
+    },
+    {
+      "id": "W-moon-weather",
+      "raw_model_output": "Tonight’s Moon is 42% illuminated and is above the geometric horizon at the requested observation time.\n\nObserving weather for the forecast period 2026-09-10 00:15–09:25 UTC:\n\n- Cloud cover: 40%\n- Precipitation chance: 10%, with no precipitation type indicated\n- Temperature: 12 °C\n- Wind: 2 m/s\n- Humidity: 70%\n- Visibility: 16 km\n- Seeing and transparency: unavailable\n\nThese conditions suggest partly cloudy weather, but Moon position alone does not guarantee observing suitability. Forecasts are valid only for the stated UTC period and may change.",
+      "final_released_output": "Tonight’s Moon is 42% illuminated and is above the geometric horizon at the requested observation time. Observing weather for the forecast period 2026-09-10 00:15–09:25 UTC: - Cloud cover: 40% - Precipitation chance: 10%, with no precipitation type indicated - Temperature: 12 °C - Wind: 2 m/s - Humidity: 70% - Visibility: 16 km - Seeing and transparency: unavailable These conditions suggest partly cloudy weather, but Moon position alone does not guarantee observing suitability. Forecasts are valid only for the stated UTC period and may change.",
+      "exact_replacement": true,
+      "beyond_whitespace": false,
+      "semantically_material_guard_change": false,
+      "change_note": "Equivalent fact presentation, explicit wording, or whitespace normalization; no material factual change identified.",
+      "human_quality_judgment": null
+    }
+  ]
+}

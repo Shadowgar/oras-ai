@@ -1,0 +1,871 @@
+
+> oras-ai-assistant@0.2.1 test
+> php tools/run-tests.php && node tests/frontend-chat-test.js
+
+PASS access guard allows member AI execution when globally enabled
+PASS access guard denies member AI execution when globally disabled
+PASS disabled member AI does not block administrative scanner processing
+PASS disabled member AI does not block administrative OpenAI classification
+PASS AT-ACTION-002 scheduled event without registration state cannot be called bookable
+PASS AT-ACTION-002 out-of-stock pass cannot be recommended as purchasable
+PASS AT-ACTION-002 in-stock but non-purchasable pass cannot receive a checkout recommendation
+PASS AT-ACTION-001 and 003 current pass offer keeps provider price and member checkout boundary
+PASS AT-ACTION-001 untrusted product destination and malformed provider URL cannot become handoff links
+PASS AT-ACTION-004 member state stays bound to authenticated self and excludes raw records
+PASS AT-ACTION-003 runtime exposes no autonomous commerce operation or tool
+PASS M8 event offering resolves only after trusted event identity and keeps schedule on provider failure
+PASS M8 event offering projects open full closed and unknown without private provider fields
+PASS M8 event answer rejects model registration claims that contradict live provider state
+PASS M8 event offering rejects a provider link unrelated to its trusted event
+PASS M8 generic upcoming event resolves a published event and its offering
+PASS M8 generic recommendation skips an unavailable offering when a later event is open
+PASS M8 event availability path contains no registration or commerce mutation calls
+PASS M8 sibling ticket states retain an open option but mixed non-open states do not become sold out
+PASS M8 unrelated unsafe sibling link cannot erase another qualified open offering
+PASS M8 generic upcoming answer uses the selected event link and ignores model completion
+PASS M8 event offering failure uses bounded existing Events connector health
+PASS M8 registration questions without an event identity request a name and never invent availability
+PASS M8 correction price/payment boundary: How much is an Observer Pass?
+PASS M8 correction price/payment boundary: What does an Annual Observer Pass cost?
+PASS M8 correction price/payment boundary: Price of Daily Observer Pass
+PASS M8 correction price/payment boundary: Price of Annual Observer Pass
+PASS M8 correction price/payment boundary: Can I get an Observer Pass?
+PASS M8 correction price/payment boundary: Where can I get an Observer Pass?
+PASS M8 correction price/payment boundary: Where can I buy the Annual Observer Pass?
+PASS M8 correction price/payment boundary: What Observer Passes are available?
+PASS M8 correction pass intent stays bounded to explicit Observer Pass context
+PASS M8 correction composition membership + pass
+PASS M8 correction composition pass + event
+PASS M8 correction composition membership + event
+PASS M8 correction composition all domains
+PASS M8 correction combined failure isolation pmpro
+PASS M8 correction combined failure isolation woo
+PASS M8 correction combined failure isolation event
+PASS M8 correction event optional unsafe link open http://192.168.50.47:8889/event/
+PASS M8 correction event optional unsafe link open javascript:alert(1)
+PASS M8 correction event optional unsafe link open https://evil.example/event/
+PASS M8 correction event optional unsafe link open not a URL
+PASS M8 correction event optional unsafe link full http://192.168.50.47:8889/event/
+PASS M8 correction event optional unsafe link full javascript:alert(1)
+PASS M8 correction event optional unsafe link full https://evil.example/event/
+PASS M8 correction event optional unsafe link full not a URL
+PASS M8 correction event optional unsafe link closed http://192.168.50.47:8889/event/
+PASS M8 correction event optional unsafe link closed javascript:alert(1)
+PASS M8 correction event optional unsafe link closed https://evil.example/event/
+PASS M8 correction event optional unsafe link closed not a URL
+PASS M8 correction unsafe event sibling preserves unrelated event and safe source
+PASS M8 correction sibling isolation Daily + malformed record
+PASS M8 correction sibling isolation Annual + malformed record
+PASS M8 correction sibling isolation Daily + unknown candidate
+PASS M8 correction sibling isolation Daily + duplicate Annual
+PASS M8 correction sibling isolation Annual + duplicate Daily
+PASS M8 correction sibling isolation Annual + malformed Daily
+PASS M8 correction sibling isolation Daily + malformed Annual
+PASS M8 correction malformed unknown candidate creates no failure for a healthy requested identity
+PASS M8 correction both malformed pass candidates remain bounded unavailable
+PASS M8 correction price field failure preserves availability and safe link beside sibling price
+PASS M8 correction duplicate Annual is disclosed without choosing a winner beside Daily
+PASS M8 correction native Woo isolates malformed record
+PASS M8 correction native Woo isolates malformed methods
+PASS M8 correction native Woo isolates malformed child
+PASS M8 correction native Woo isolates malformed throw
+PASS M8 correction native Woo isolates malformed id-throw
+PASS M8 correction native Woo isolates malformed children-throw
+PASS M8 correction native Woo isolates malformed child-throw
+PASS M8 correction malformed candidate identity cannot throw away a healthy Daily
+PASS M8 correction malformed Annual URL field cannot throw away a healthy Daily
+PASS M8 correction native malformed known Annual cannot hide a duplicate
+PASS M9 Task 3I partial failure membership succeeds / price unavailable
+PASS M9 Task 3I partial failure price succeeds / membership unavailable
+PASS M9 Task 3I partial failure both succeed
+PASS M9 Task 3I partial failure both unavailable
+PASS M9 Task 3I independent fields price known / availability unknown
+PASS M9 Task 3I independent fields availability known / price unknown
+PASS M9 Task 3I combined price membership event failure woo
+PASS M9 Task 3I combined price membership event failure pmpro
+PASS M9 Task 3I combined price membership event failure event
+PASS M9 Task 3I no product facts retains price intent Annual
+PASS M9 Task 3I no product facts retains price intent Daily
+PASS M9 Task 3I no product facts retains price intent Annual and Daily
+PASS M9 Task 3I price-only success does not introduce unrequested availability uncertainty
+PASS M9 Task 3I connector denial does not become scoped failure or expose healthy sibling
+PASS M9 Task 3I ambiguous event identity retains clarification and zero model calls
+PASS M9 Task 3K intent matrix annual price only all facts
+PASS M9 Task 3K intent matrix daily price only all facts
+PASS M9 Task 3K intent matrix annual daily plural prices
+PASS M9 Task 3K intent matrix price only provider unavailable
+PASS M9 Task 3K intent matrix price only availability known price missing
+PASS M9 Task 3K intent matrix availability only price also known
+PASS M9 Task 3K intent matrix price and availability both known
+PASS M9 Task 3K intent matrix price and purchase price missing
+PASS M9 Task 3K intent matrix price and availability stock missing
+PASS M9 Task 3K intent matrix buy purchasable
+PASS M9 Task 3K intent matrix buy unavailable
+PASS M9 Task 3K intent matrix buy canonical URL missing
+PASS M9 Task 3K intent matrix buy canonical URL unsafe
+PASS M9 Task 3K intent matrix annual only with both types admitted
+PASS M9 Task 3K intent matrix daily only with both types admitted
+PASS M9 Task 3K intent matrix comparison missing daily price
+PASS M9 Task 3K intent matrix availability absent price known
+PASS M9 Task 3K intent matrix price and availability purchasability missing
+PASS M9 Task 3K intent matrix price and buy both known
+PASS M9 Task 3K intent matrix get pass preserves purchase guidance
+PASS M9 Task 3K intent matrix backorder availability preserves qualified handoff
+PASS M9 Task 3K intent matrix backorder price only remains price only
+PASS M9 Task 3K retained fixture M-price
+PASS M9 Task 3K retained fixture M-combined
+PASS M9 Task 3K retained fixture P-one-down
+PASS M9 Task 3K retained fixture M-price-pressure
+PASS M9 Task 3K retained fixture M-checkout-bait
+PASS M9 Task 3K retained fixture P-source-precedence
+PASS M9 Task 3K plural prices compare real connector
+PASS M9 Task 3K plural comparison missing daily real connector
+PASS M9 Task 3K annual price real connector
+PASS M9 Task 3K availability real connector
+PASS M9 Task 3K membership only ignores admitted product siblings
+PASS M9 Task 3K event only ignores admitted member and pass siblings
+PASS M8 Task 3 generic pass answer keeps Annual and Daily price availability and links distinct
+PASS M8 Task 3 out-of-stock pass stays unavailable even when Woo purchasability is true
+PASS M8 Task 3 qualified Woo backorder remains a member-driven handoff
+PASS M8 Task 3 malformed Annual price cannot erase Daily or qualified Annual availability
+PASS M8 Task 3 unavailable Daily does not erase current Annual handoff
+PASS M8 Task 3 unsafe Annual URL cannot erase safe Daily link or become a handoff
+PASS M8 Task 3 duplicate Annual fails boundedly while Daily remains qualified
+PASS M8 Task 3 missing Daily never substitutes a copied price beside current Annual
+PASS M8 Task 3 many failed fields still block every matching stale product fact
+PASS M8 Task 3 partial operational failure counts safely while absent sibling does not
+PASS admin test console submenu uses manage_options and the established plugin menu
+PASS admin test console render is capability protected and reuses the shared chat component
+PASS admin chat assets load only on the protected Test Console page
+PASS unauthorized users cannot force admin Test Console assets to load
+PASS administrator console eligibility reuses the existing allowance and kill switch
+PASS administrator Test Console conversations remain owned and isolated through the existing transport
+PASS Connector Health is a manage-options read-only page with safe fixed connector state
+PASS Connector Health submenu stays inside ORAS AI and requires manage_options
+PASS cost admin view is manage-options protected and exposes aggregate state without content
+PASS unchanged valid cost settings remain a successful no-op without audit noise
+PASS cost settings require manage-options and action-specific nonce
+PASS valid cost settings preserve separate model prices and are non-autoloaded
+PASS invalid cost settings fail closed without partial configuration changes
+PASS quota budget and pricing changes create safe semantic audit events
+PASS M6 provider admin is manage-options protected and shows immutable site plus safe configuration status
+PASS M6 provider settings require manage-options before nonce verification
+PASS M6 provider settings require an action-specific nonce
+PASS M6 provider settings save validated credentials and NWS contact without echoing secrets
+PASS M6 provider settings preserve an existing secret when the password field is blank
+PASS M6 provider settings reject malformed submissions without partial writes
+PASS M6 provider settings submenu remains protected inside ORAS AI
+PASS member AI checkbox renders the current saved state
+PASS settings save stores checked member AI with API key and model
+PASS settings save stores unchecked member AI as disabled
+PASS unchanged settings and blank API key create no audit event
+PASS settings audit records one OpenAI model change with safe old and new values
+PASS settings audit records member AI enabled to disabled
+PASS settings audit records member AI disabled to enabled
+PASS settings audit records first stored API key as set without key material
+PASS submitting the existing stored API key creates no audit event
+PASS settings audit records stored API key replacement without either key
+PASS settings audit records explicit stored API key removal
+PASS recent audit history is capability protected and handles a missing user safely
+PASS ADM-003 exclusion persists across normal scan and rebuild and unexclude requeues safely
+PASS deterministic Ignore and administrator Excluded remain visibly distinct
+PASS source exclusion rejects unauthorized requests before nonce verification
+PASS source exclusion rejects a bad nonce and malformed action safely
+PASS ADM-004 Needs Review queue exposes actionable source provenance ownership and repeated review context
+PASS authorized review dispositions update only linked scanner-managed review artifacts
+PASS review disposition refuses manual knowledge even when linked to a review source
+PASS review disposition rejects unauthorized requests before nonce verification
+PASS review disposition rejects a bad nonce and malformed action safely
+PASS NFR-OBS-004 repeated processing failures persist and appear without scan-run metrics
+PASS current intent terms are bounded to live/current subjects and do not reclassify stable ORAS questions
+PASS AT-RET-001 supported ORAS request sends admitted evidence and returns server sources
+PASS AT-RET-003 ORAS no-evidence response is deterministic with zero provider calls
+PASS grounded context excludes ineligible evidence and live authority beats static for one fact
+PASS provider cannot invent citations and model HTML remains plain text
+PASS stable general astronomy uses model knowledge without ORAS retrieval
+PASS current astronomy returns deterministic unavailable result without model or M6 provider
+PASS crossover uses ORAS evidence plus general astronomy without fabricating citations
+PASS crossover without ORAS evidence limits provider to astronomy and preserves no-evidence statement
+PASS off-topic request releases reservation and skips retrieval and answer provider
+PASS successful provider execution receives bounded output timeout and conservative context reservation
+PASS cost quota burst and hard-stop denials never call answer provider
+PASS provider failure releases definite no-call and conservatively settles unknown paid usage
+PASS malicious member and evidence remain untrusted and cannot create tools URLs or system policy
+PASS M6 general planet request uses one all-bodies call and admits only seven planets
+PASS M6 specific planet request uses the fixed single-body route
+PASS M6 AstronomyAPI failures are bounded do not retry and never expose secrets or raw payloads
+PASS M6 AstronomyAPI request surface cannot select arbitrary bodies hosts or credentials
+PASS M6 unconfigured AstronomyAPI fails before HTTP without breaking local providers
+PASS M6 correction planet provider rejects old date
+PASS M6 correction planet provider rejects missing date
+PASS M6 correction planet provider rejects malformed date
+PASS M6 correction planet provider rejects empty date
+PASS M6 correction planet provider rejects no timezone
+PASS M6 correction planet provider rejects calendar rollover
+PASS M6 correction planet provider rejects one second early
+PASS M6 correction planet provider rejects one second late
+PASS M6 correction planet provider rejects nonzero fractional second
+PASS M6 correction provider time agrees exactly with the serialized request second
+PASS M6 correction one stale body cannot complete the all-planets result
+PASS M6 provider contract documented single-body route mercury
+PASS M6 provider contract documented single-body route venus
+PASS M6 provider contract documented single-body route mars
+PASS M6 provider contract documented single-body route jupiter
+PASS M6 provider contract documented single-body route saturn
+PASS M6 provider contract documented single-body route uranus
+PASS M6 provider contract documented single-body route neptune
+PASS M6 provider contract unsupported bodies and raw paths never reach HTTP
+PASS M6 provider contract coordinate fields canonical
+PASS M6 provider contract coordinate fields matching historical spelling
+PASS M6 provider contract coordinate fields conflicting altitude
+PASS M6 provider contract coordinate fields conflicting azimuth
+PASS M6 provider contract coordinate fields malformed historical spelling
+PASS M6 provider contract coordinate fields historical spelling only
+PASS M6 astronomy observability stores only bounded provider health aggregates
+PASS M6 provider admin shows bounded astronomy and NWS health without secrets
+PASS M6 NWS observability counts only bounded operational failures
+PASS M6 astronomy service preserves local facts when a required planet lookup fails
+PASS M6 current astronomy orchestration uses provider facts without URL sources or model current fallback
+PASS M6 failed current astronomy never falls back to model memory
+PASS M6 unresolved target does not erase independent Moon and planet facts
+PASS M6 corrupt OpenNGC data does not disable independent Sun Moon or planet providers
+PASS M6 crossover grounding combines ORAS evidence with current catalog facts
+PASS M6 unsupported planet rise transit set remains bounded beside current position facts
+PASS M6 IAU reference transformation meets locked point-one-degree tolerance
+PASS M6 horizontal transformation validates coordinates and normalizes angles
+PASS M6 missing SunCalc dependency is bounded without disabling sibling astronomy
+PASS M6 local Sun and Moon calculations meet locked USNO reference tolerances
+PASS M6 local Moon calculation preserves below geometric horizon state
+PASS M6 correction after-dusk good-night production path consults NWS and scores the remaining night
+PASS M6 correction bounded model context for What planets can I see tonight?
+PASS M6 correction bounded model context for What can I see tonight?
+PASS M6 correction single-target model detail remains complete after metadata compaction
+PASS M6 correction unqualified planet time never reaches model 2026-09-01T02:00:00Z
+PASS M6 correction unqualified planet time never reaches model missing
+PASS M6 observing site uses the exact owner-approved server values
+PASS M6 observing site rejects invalid coordinates elevation and timezone
+PASS M6 clock is injectable and request times are immutable UTC instants
+PASS M6 time context preserves America New York DST transitions
+PASS M6 provider-neutral request does not impose a seven-day weather horizon on astronomy
+PASS M6 current-data request keeps observation intervals closed and rejects invalid ordering
+PASS M6 provider adapters own their supported forecast or calculation horizon
+PASS M6 current-data request derives identity and site only from trusted server objects
+PASS M6 current-data request accepts only deterministic fact types and target identities
+PASS M6 planner evaluates each forecast overlap midpoint with same-period Moon and weather
+PASS M6 planner preserves partial facts when Member Hub score is absent or fails
+PASS M6 one malformed forecast interval does not erase a qualified sibling
+PASS M6 broad planet request uses one all-bodies lookup per period and no catalog scan
+PASS M6 tied authoritative scores remain tied with no nightly aggregate
+PASS M6 observing plan reaches guarded grounding beside ORAS evidence with URL-less score
+PASS M6 failed NWS retains qualified astronomy and does not invent a score
+PASS M6 planner resolves M31 only when explicitly requested and keeps below-horizon geometric wording
+PASS M6 unresolved catalog target leaves the qualified night and weather intact
+PASS M6 planner compares only complete authoritative interval scores and preserves ties
+PASS M6 weekend comparison gathers two nights before declining a whole-night winner
+PASS M6 best weekend wording identifies only the highest authoritative interval
+PASS M6 bounded grounding retains authoritative scores from both long weekend nights
+PASS M6 good-night observing intent uses current forecast Moon and authoritative score
+PASS M6 weekday comparison uses separate nights and retains a qualified sibling after failure
+PASS M6 unrelated provider forecast periods cannot enter planning evidence
+PASS M6 planet failure preserves Moon weather and score while leaving target unknown
+PASS M6 absent Member Hub leaves astronomy and weather with bounded score unavailability
+PASS M6 broad observing and weekend questions enter the guarded astronomy boundary
+PASS M6 planner does not turn an untimed general astronomy question into tonight forecast
+PASS M6 planner admits a trusted explicit twenty-four-hour observing time
+PASS M6 grounded policy forbids model score or visibility invention
+PASS M6 explicit member observing interval controls the planner forecast request
+PASS M6 planner astronomy failure identities remain distinct across forecast periods
+PASS M6 time-scoped astronomy evidence names its exact evaluated instant
+PASS M6 unavailable observing night never invokes model memory for a current answer
+PASS M6 edge forecast is evaluated inside its requested overlap without altering provider validity
+PASS M6 good-night ORAS request reaches grounded current planning
+PASS M6 mixed good-night and Observer Pass request retains both authority families
+PASS M6 failed weather leaves Observer Pass evidence without an invented score
+PASS M6 failed Observer Pass connector keeps qualified observing facts
+PASS M6 unavailable good-night current data never reaches model-memory synthesis
+PASS M6 score adapter returns bounded unavailable when Member Hub class or method is absent
+PASS M6 score adapter maps only qualified normalized inputs and preserves authoritative output
+PASS M6 score adapter bounds WP_Error and malformed score results
+PASS M6 missing weather or Moon blocks score without invoking Member Hub
+PASS M6 OpenNGC provider emits independent qualified target-position facts
+PASS M6 unresolved OpenNGC target fails boundedly without using client coordinates
+PASS M6 OpenNGC resolver returns pinned deterministic catalog coordinates and aliases
+PASS M6 OpenNGC resolver fails boundedly for unknown and ambiguous aliases
+PASS M6 OpenNGC resolver bounds missing and malformed local index data
+PASS M6 OpenNGC resolution ignores client coordinates and never fetches at runtime
+PASS M6 OpenNGC generated index is pinned bounded and attributed
+PASS M6 provider interfaces are independent of approved vendor implementations
+PASS M6 current astronomy service remains vendor independent
+PASS M6 current-data result exposes only bounded states and normalized values
+PASS M6 raw provider payload cannot become a normalized current-data result
+PASS M6 astronomy fact validates bounded normalized arguments
+PASS M6 weather snapshot supports every required normalized field and explicit unavailability
+PASS M6 weather snapshot rejects malformed ranges and values
+PASS M6 observing score is versioned bounded and contains no scoring algorithm
+PASS M6 current astronomy weather authority retains frozen precedence
+PASS audit log stores the exact safe event schema actor and timestamp
+PASS audit log bounds retained history to 100 newest events
+PASS API key audit event accepts semantic action only
+PASS AT-AUTH-001 anonymous request is denied before nonce membership or provider work
+PASS AT-AUTH-002 active member receives server-derived member visibility
+PASS AT-AUTH-003 inactive member is denied and browser membership claims cannot bypass policy
+PASS AT-AUTH-004 browser identity and visibility claims cannot impersonate or elevate
+PASS administrator capability allows access without querying membership and derives admin visibility
+PASS global member AI kill switch denies members and administrators after authorization
+PASS PMPro adapter answers only whether the specified user has any active level
+PASS missing PMPro fails closed for a normal member without fatal error
+PASS request gateway rejects missing and invalid nonce before membership work
+PASS request gateway trims valid string input and rejects empty or non-string input
+PASS authenticated AJAX gateway registers without an anonymous hook and returns minimal safe data
+PASS Task 2 gateway has no retrieval model domain quota or connector dependency
+PASS Task 5 authenticated endpoint returns structured backend answer without chat UI
+PASS unauthorized invalid-nonce and kill-switch endpoint requests never call answer provider
+PASS NFR-PRIV-004 gateway rejects payment-card input before answer-provider dispatch without logging it
+PASS M9 review semantics accepts Boolean flags [false,false]
+PASS M9 review semantics accepts Boolean flags [true,true]
+PASS M9 review semantics accepts Boolean flags [false,true]
+PASS M9 review semantics accepts Boolean flags [true,false]
+PASS M9 review semantics rejects missing or non Boolean stable_dynamic_separation
+PASS M9 review semantics rejects missing or non Boolean critical_qualifications_preserved
+PASS M9 review semantics rejects extracted fragments and invalid required dimensions
+PASS M9 review semantics retains false flag rejection for static_knowledge
+PASS M9 review semantics retains false flag rejection for live_data
+PASS M9 review semantics retains false flag rejection for mixed
+PASS M9 review semantics retains false flag rejection for ignore
+PASS M9 review semantics scanner demotes approved knowledge and excludes review from retrieval
+PASS classification result exposes exactly five outcomes and extraction version one
+PASS classification result normalizes a provider-independent static result
+PASS classification result accepts valid mixed stable and dynamic fields separately
+PASS classification result routes mixed output with no stable content to review
+PASS classification result routes malformed mixed fragments to review
+PASS classification result rejects invalid category visibility and confidence
+PASS classification result rejects malformed or missing required fields
+PASS classification result rejects mixed output without dynamic material
+PASS classification result routes failed mixed validation to review
+PASS classification result rejects current price and date claims hidden in stable mixed content
+PASS classification result marks historical event knowledge distinctly and requires review
+PASS classification result rejects unsupported source dispositions
+PASS configuration preserves exact OpenAI option names
+PASS configuration enables member AI by default
+PASS configuration reads the stored enabled member AI state
+PASS configuration reads the stored disabled member AI state
+PASS configuration returns the current default OpenAI model
+PASS configuration accepts every current OpenAI model
+PASS configuration resolves an invalid stored model to the v0.2.1 default
+PASS configuration retrieves the existing stored OpenAI API key
+PASS configuration preserves blank OpenAI API-key behavior
+PASS configuration settings helpers preserve stored option writes and removal
+PASS M6 provider configuration preserves server-only option names
+PASS M6 provider configuration stores fake AstronomyAPI credentials server-side
+PASS M6 provider configuration rejects malformed credentials and NWS contact
+PASS M6 NWS configuration builds only an identifying bounded user agent
+PASS M6 credentials have no frontend evidence conversation or audit serialization path
+PASS M9 readiness reports missing and invalid local prerequisites without claiming live verification
+PASS M9 readiness shows configured prerequisites and General fallback using existing local validation
+PASS M9 readiness settings and maintenance visibility stay protected and safe
+PASS M9 privacy disclosure distinguishes chat escalation usage and independent tickets
+PASS M9 seeded OFF keeps console disabled while scanner still obeys shared stop
+PASS cost configuration exposes the frozen defaults and conservative centralized execution bounds
+PASS AT-COST-001 daily quota allows 25 successful admissions and denies 26 without spend
+PASS AT-COST-001 monthly quota allows 150 successful admissions and denies 151
+PASS AT-COST-001 accounting is independent and cannot use a browser user ID
+PASS AT-COST-002 rolling burst allows five denies six and recovers independently
+PASS AT-COST-003 oversized input is denied and output and timeout budgets are exposed centrally
+PASS AT-COST-004 missing model pricing fails closed before paid provider work
+PASS pricing keeps separate input output rates and reservation metadata reproduces its calculation
+PASS open reservations count toward hard stop and crossing reservation is denied
+PASS ledger lock contention fails closed without a reservation or provider work
+PASS reconciliation replaces reservation with provider-reported actual usage and cost
+PASS released and duplicate reconciled reservations are idempotent and cannot double charge
+PASS reconciliation validates normalized provider usage and reservation model
+PASS warning is nonblocking while hard stop blocks new paid admission
+PASS frozen ten-dollar warning and twenty-dollar hard stop use reconciled monthly cost
+PASS usage ledger retains only metadata for 12 months and prunes older records
+PASS M9 retention strict calendar boundary 2026-10-02 12:00:00
+PASS M9 retention strict calendar boundary 2024-02-29 12:00:00
+PASS M9 retention strict calendar boundary 2025-03-31 12:00:00
+PASS M9 retention expired exposure is redacted without reopening budget or losing late settlement
+PASS M9 retention fault reference survives redaction and remains fail closed
+PASS M9 retention bounded passes eventually reach old records behind young records
+PASS M9 retention callback works idle and exposes bounded busy outcome without altering a writer
+PASS M9 retention activation init upgrade deactivation and reactivation preserve configuration
+PASS M9 retention failed durable write keeps ledger protected and last success unchanged
+PASS M9 retention rejection and burst batches progress without dropping current counters
+PASS M9 retention registered init callback schedules same-version installs without admin visit
+PASS M9 answer reserves before HTTP and reconciles provider usage
+PASS M9 answer denies absent pricing invalid model and at or over hard stop
+PASS M9 answer retains unknown spend without inventing tokens
+PASS M9 answer retains known usage even on malformed incomplete and HTTP-error output
+PASS M9 answer cannot bypass outstanding headroom or failed durable storage
+PASS M9 answer usage records contain no private request or response data
+PASS M9 support_summary reserves before HTTP and reconciles provider usage
+PASS M9 support_summary denies absent pricing invalid model and at or over hard stop
+PASS M9 support_summary retains unknown spend without inventing tokens
+PASS M9 support_summary retains known usage even on malformed incomplete and HTTP-error output
+PASS M9 support_summary cannot bypass outstanding headroom or failed durable storage
+PASS M9 support_summary usage records contain no private request or response data
+PASS M9 domain_classifier reserves before HTTP and reconciles provider usage
+PASS M9 domain_classifier denies absent pricing invalid model and at or over hard stop
+PASS M9 domain_classifier retains unknown spend without inventing tokens
+PASS M9 domain_classifier retains known usage even on malformed incomplete and HTTP-error output
+PASS M9 domain_classifier cannot bypass outstanding headroom or failed durable storage
+PASS M9 domain_classifier usage records contain no private request or response data
+PASS M9 scanner_classification reserves before HTTP and reconciles provider usage
+PASS M9 scanner_classification denies absent pricing invalid model and at or over hard stop
+PASS M9 scanner_classification retains unknown spend without inventing tokens
+PASS M9 scanner_classification retains known usage even on malformed incomplete and HTTP-error output
+PASS M9 scanner_classification cannot bypass outstanding headroom or failed durable storage
+PASS M9 scanner_classification usage records contain no private request or response data
+PASS M9 support summary does not consume another member question or burst slot
+PASS M9 domain and scanner contribute to warning and bounded admin breakdown
+PASS M9 known over-reservation usage is preserved and blocks subsequent spend
+PASS M9 local oversized domain and scanner inputs never reserve paid spend
+PASS M9 stale ledger lock cannot be taken over with a racy delete
+PASS M9 every production OpenAI endpoint and POST dispatch belongs to the qualified seam
+PASS M9 ambiguous member question accounts classifier and answer separately without extra question
+PASS M9 paid off-topic classifier retains its spend when answer reservation releases
+PASS M9 domain output qualifies all enums and rejects oversized or incomplete output
+PASS M9 scanner denial and incomplete extraction preserve existing approved knowledge
+PASS M9 scanner mixed extraction admits substantial qualified output without truncating fragments
+PASS M9 outstanding reservations carry into next UTC month until settled
+PASS M9 support service reuses one reservation and records known malformed-output usage
+PASS M9 paid reservation is claimed once and cannot be released during HTTP
+PASS M9 member input bounds and administrator gateway hard stop prevent HTTP
+PASS M9 settled-month source totals and unknown subtotal agree with monthly spend
+PASS M9 failed settlement persistence keeps paid dispatch blocked after write recovery
+PASS M9 known overrun with settlement contention fences later dispatch until accounting recovery
+PASS M9 concurrent lock insertion cannot be overwritten by WordPress add-option upsert
+PASS M9 paid transport retains bounded operator metadata for HTTP provider rejection
+PASS M9 paid transport retains local blocker code without its private message
+PASS M9 paid transport rejects unrecognized diagnostic strings and malformed request IDs
+PASS AT-DOMAIN-001 rule-first guard allows clear ORAS support requests
+PASS AT-DOMAIN-002 rule-first guard allows general astronomy requests
+PASS AT-DOMAIN-003 obvious off-topic requests are refused before classifier or provider work
+PASS AT-DOMAIN-004 ORAS astronomy and observing-weather crossover is allowed
+PASS AT-DOMAIN-005 member prompt cannot override the two-domain boundary
+PASS AT-DOMAIN-006 every turn is independently rechecked
+PASS ambiguous input alone invokes the injected classifier
+PASS malformed or failed ambiguity classification fails closed
+PASS OpenAI domain adapter uses configured model strict output and question-only context
+PASS OpenAI domain adapter fails safely without configuration or live HTTP
+PASS NFR-OBS-003 domain counters persist bounded outcomes without member content
+PASS gateway reaches domain guard only after authorization and kill-switch checks
+PASS M9 specialized domain matrix oras
+PASS M9 specialized domain matrix astronomy
+PASS M9 specialized domain matrix crossover-observing
+PASS M9 specialized domain matrix crossover-purchase
+PASS M9 specialized domain matrix crossover-planets
+PASS M9 specialized domain matrix crossover-facilities
+PASS M9 specialized domain matrix off-topic
+PASS M9 specialized domain ambiguous policy stays fail closed
+PASS M9 specialized scanner matrix static_knowledge
+PASS M9 specialized scanner matrix live_data
+PASS M9 specialized scanner matrix mixed
+PASS M9 specialized scanner matrix mixed-claims-only
+PASS M9 specialized scanner matrix mixed-types-only
+PASS M9 specialized scanner matrix ignore
+PASS M9 specialized scanner matrix review
+PASS M9 specialized scanner matrix stable-illegal
+PASS M9 specialized scanner matrix live-illegal
+PASS M9 specialized scanner matrix mixed-missing
+PASS M9 specialized scanner matrix unknown
+PASS M9 specialized scanner strict schema prevents contradictory class fragments
+PASS M9 specialized scanner rejects malformed envelope without deleting contradictory data
+PASS M9 evaluation retained corpus validates categories specialized workflows and independent expected dimensions
+PASS M9 evaluation rejects duplicate IDs malformed dimensions and non synthetic data
+PASS M9 evaluation hard grader blocks forbidden claims without assigning qualitative scores
+PASS M9 evaluation retained evidence removes secrets and preserves unknown usage
+PASS M9 evaluation provider reported usage incomplete status and cap are recorded
+PASS M9 evaluation fixture run is repeatable retains failures and cannot select a model
+PASS M9 evaluation live command fails closed without explicit disposable configuration
+PASS M9 evaluation live bounds reject excessive calls costs duplicate identities and fixture only selection
+PASS M9 evaluation sensitive and unsafe canonical evidence fails hard checks
+PASS M9 evaluation paid plan includes all possible calls tokens and uses only qualified supplied rates
+PASS M9 evaluation reports metrics by evidence class without inventing latency or usage
+PASS M9 evaluation native bootstrap never executes without the explicit disposable marker
+PASS M9 review I1 retained member support preview and uncertain state exercise confirmation and renderer
+PASS M9 review M1 maximum cost uses Task 1 component wise fractional rounding
+PASS M9 review M2 downstream timeout is one unsuccessful case not a malformed successful classifier
+PASS M9 integrity defaults to v3 and preserves every non scanner case and v1 bytes
+PASS M9 integrity scanner sources contain four clean realistic fields and all five meanings
+PASS M9 integrity actual classifier receives only explicit source fields without expected labels or notes
+PASS M9 integrity rejects evaluation contamination in source_title
+PASS M9 integrity rejects evaluation contamination in source_url
+PASS M9 integrity rejects evaluation contamination in post_type
+PASS M9 integrity rejects evaluation contamination in content
+PASS M9 integrity rejects incomplete or metadata carrying source envelopes and personal data
+PASS M9 integrity corpus and fixture versions cannot be confused
+PASS M9 integrity v3 preserves static mixed current utility and policy ambiguity distinctions
+PASS M9 integrity v3 offline fixture pipeline covers every case without live execution
+PASS M9 integrity v3 changes only review evaluation semantics and corpus identity
+PASS M9 runner rejects unexpected E_WARNING
+PASS M9 runner rejects unexpected E_USER_WARNING
+PASS M9 runner rejects unexpected caught E_USER_WARNING
+PASS M9 runner permits an explicitly handled warning and leaves deprecation policy unchanged
+PASS M9 runner restores its caller error handler after success
+PASS M9 runner restores its caller error handler after failure
+PASS AT-KB-008 active eligibility follows lifecycle and exact scanner ownership marker
+PASS AT-KB-008 active count and dashboard exclude retired records while retaining total count
+PASS source admin lists active retired and ownership state for every linked artifact
+PASS knowledge base registers its private post type and taxonomy
+PASS knowledge base exposes and seeds the v0.2.1 default categories
+PASS manual knowledge save persists current meta names status visibility and category
+PASS manual knowledge save falls back invalid status and visibility to v0.2.1 defaults
+PASS scanned knowledge upsert records managed marker and source linkage
+PASS scanned synchronization timestamp advances for every material artifact and provenance change
+PASS AT-KB-005 mixed source persists one review artifact per stable fragment with complete provenance
+PASS successful mixed extraction reuses the Task 1 managed review record as fragment zero
+PASS reprocessing the same mixed source reuses the ordered artifact set
+PASS mixed migration repairs source linkage without changing a manually linked KB entry
+PASS invalid mixed extraction reuses review state without creating approved fragment artifacts
+PASS mixed extraction retires only surplus scanner-managed fragment artifacts
+PASS mixed fragment addition and reorder reuse the existing identity set
+PASS mixed rebuild reuses artifacts and repairs a manual primary link without changing manual knowledge
+PASS privacy policy and historical artifacts retain qualified provenance without retrieval behavior
+PASS differing live event time signals only the exact scanner artifact and keeps live authoritative
+PASS equivalent event instants do not create a review signal
+PASS Woo price comparison signals a differing value but treats equivalent decimals as equal
+PASS manual same-fact knowledge remains untouched by live conflict signaling
+PASS operational connector failures increment only their bounded safe aggregate
+PASS valid domain outcomes including multiple active PMPro levels do not count as health failures
+PASS inactive membership absent product and denied access remain non-operational outcomes
+PASS invalid connector return and unsafe URL count only bounded operational reasons
+PASS connector failure storage saturates and rejects unsafe reason codes
+PASS partial multi-connector failure retains healthy facts and bounded failed requirements
+PASS one failed fact suppresses only its exact static identity
+PASS multiple failed fact identities suppress only those identities
+PASS live request derives identity and visibility from the authorized server request and carries multiple fact identities
+PASS event routing is bounded deterministic and does not invoke a loader for unrelated historical or ambiguous subjects
+PASS event routing supports Public Night and projects only fields needed by a start-time question
+PASS current event remains eligible after its start while its authoritative end is still future
+PASS AT-LIVE-001 Events adapter normalizes the next event into least-field facts
+PASS event connector returns explicit bounded outcomes without retries or fatal errors
+PASS live service accepts only safe connector URLs and converts facts to bounded evidence metadata
+PASS live service contains connector exceptions from matching as bounded failures
+PASS retrieval request preserves multiple fact identities without assigning them universally to synchronized evidence
+PASS AT-RET-002 actual live event evidence displaces only matching static facts and preserves multiple live facts
+PASS failed Events lookup blocks stale current substitution but remains isolated from stable ORAS answers
+PASS live requests can only be constructed from the typed authorized server request boundary
+PASS PMPro routing is bounded to self membership context and never enumerates another member
+PASS LIVE-003 PMPro returns only own normalized active status and current level facts
+PASS client membership claims cannot replace authoritative PMPro state
+PASS inactive and ambiguous current PMPro states use safe deterministic outcomes
+PASS administrator PMPro context remains self-only and does not infer membership from AI access
+PASS administrator virtual-membership filter is scoped to factual lookup and restored for every returned state
+PASS administrator virtual-membership filter is restored when lookup throws
+PASS administrator factual lookup preserves an existing caller PMPro filter
+PASS LIVE-004 missing malformed and failed PMPro return bounded outcomes without retry
+PASS LIVE-005 PMPro raw records are structurally excluded from evidence model context and sources
+PASS canonical URL is optional per fact while every non-empty URL remains validated
+PASS live PMPro facts displace only matching stale membership claims
+PASS PMPro failure blocks stale self state and remains isolated from unrelated stable ORAS answers
+PASS PMPro connector source is read-only minimized and separately registered from authorization
+PASS M8 Task 2 generic self-membership question uses current authenticated PMPro state
+PASS M8 Task 2 inactive self membership cannot become active in final answer
+PASS M8 Task 2 current level outranks invented and stale former levels in answer
+PASS M8 Task 2 multiple levels disclose status but never model-select one level
+PASS M8 Task 2 PMPro row carrying another user ID is never admitted
+PASS M8 Task 2 malformed PMPro row identity cannot be coerced into self
+PASS M8 Task 2 browser identity cannot redirect an authorized membership answer
+PASS M8 Task 2 administrator allowance does not create PMPro membership
+PASS M8 Task 2 membership answer path has no mutation capability
+PASS M8 Task 2 generic self lookup does not turn membership changes into status answers
+PASS M8 Task 2 failed PMPro cannot be replaced by model memory when event facts survive
+PASS M8 Task 2 current level name is sanitized before answer and model context
+PASS M8 Task 2 absent PMPro returns bounded current-data uncertainty without model fallback
+PASS WooCommerce routing is narrow deterministic and server controlled
+PASS AT-LIVE-002 generic Observer Pass pricing preserves Annual and Daily identities and currency
+PASS specific Observer Pass routing returns only requested fields and option
+PASS price availability and purchasability coexist as independent live facts
+PASS active sale state is authoritative and inactive sale fields are ignored
+PASS recognized variations normalize narrowly and ambiguous variants fail safely
+PASS WooCommerce connector returns bounded failures without retries or stale invention
+PASS WooCommerce facts enforce least fields trusted URL metadata and authorized state
+PASS WooCommerce connector source contains only read-only commerce operations
+PASS live WooCommerce price displaces only matching static fact through existing orchestration
+PASS failed WooCommerce lookup blocks stale price but does not break stable ORAS answers
+PASS OpenAI model uses the v0.2.1 default and allowlist
+PASS OpenAI classifier returns no-key error without making HTTP request
+PASS OpenAI classifier accepts direct output_text structured JSON
+PASS OpenAI structured schema exposes exactly five outcomes and mixed extraction fields
+PASS OpenAI policy prompt keeps legitimate ORAS privacy and security pages eligible
+PASS OpenAI policy prompt represents historical ORAS events as durable event knowledge
+PASS OpenAI classifier accepts nested output content text
+PASS OpenAI classifier rejects malformed JSON output
+PASS OpenAI classifier rejects an empty successful response
+PASS OpenAI classifier bounds WordPress HTTP errors without leaking transport detail
+PASS OpenAI classifier maps non-success responses to the current HTTP error
+PASS OpenAI API key constant takes precedence over stored option
+PASS M9 Task 3I scanner no-clock boundary past date plus pending approval
+PASS M9 Task 3I scanner no-clock boundary future date plus pending approval
+PASS M9 Task 3I scanner no-clock boundary missing effective date
+PASS M9 Task 3I scanner no-clock boundary conflicting dates
+PASS M9 Task 3I scanner no-clock boundary approval unknown
+PASS M9 Task 3I approved unambiguous notice retains absolute date and safe disposition
+PASS M9 Task 3I scanner rejects relative-date approval inference future effective date
+PASS M9 Task 3I scanner rejects relative-date approval inference effective date is past
+PASS M9 Task 3I scanner rejects relative-date approval inference already effective
+PASS M9 Task 3I scanner rejects relative-date approval inference not yet in effect
+PASS M9 Task 3I grounded review ambiguity reason remains unchanged
+PASS M4 conversation and message records are private WordPress-native entities
+PASS conversation ownership is server-derived and enforced for create read and append
+PASS member and assistant messages persist as ordered sanitized plain text with UTC timestamps
+PASS malformed empty and internal-role messages fail without transcript writes
+PASS 30-day retention keeps younger text and removes exact-edge and older text deterministically
+PASS conversation cleanup is opportunistic idempotent and isolated from the usage ledger
+PASS daily cleanup scheduling registers once without duplicate events
+PASS payment-card guard rejects validated PAN patterns without echoing them and allows harmless numbers
+PASS conversation storage accepts only minimum transcript fields and blocks cards before writes
+PASS SUP-004 OpenAI summary request contains only bounded question and no tools
+PASS SUP-004 OpenAI summary rejects HTML and malformed provider output
+PASS OpenAI answer adapter sends separated bounded context and normalizes valid usage
+PASS OpenAI answer adapter missing key fails before dispatch
+PASS OpenAI answer adapter treats transport HTTP malformed empty and usage failures safely
+PASS source classifier contract and OpenAI adapter are available
+PASS source processing uses an injected classifier without HTTP
+PASS OpenAI adapter converts provider payloads to the application result
+PASS OpenAI adapter routes structurally invalid provider output to review
+PASS default source classifier remains available when member AI is disabled
+PASS deterministic source match bypasses the injected classifier
+PASS events products and Elementor libraries bypass the provider
+PASS M3 retrieval boundary is provider independent and returns an explicit empty packet
+PASS AT-RET-001 and AT-RET-004 retrieve approved source-linked evidence with citation provenance
+PASS AT-RET-002 eligibility reuses active lifecycle policy and rejects unavailable linked sources
+PASS retrieval enforces trusted visibility before ranking
+PASS policy evidence is intent gated before relevance ranking
+PASS historical evidence is limited to historical intent and cannot answer current intent
+PASS ranking is deterministic and weights title above content above category and source
+PASS retrieval enforces explicit top-k per-item and total context bounds
+PASS authority resolver prefers injected Live ORAS state and blocks historical evidence for current facts
+PASS Task 1 retrieval code has no model provider or external search dependency
+PASS source classification rules expose stable version-one metadata semantics
+PASS rules classify tribe events as current public live data
+PASS rules classify products as current public live data
+PASS rules keep current WordPress template types ignored for administrators
+PASS rules keep known utility page paths ignored for administrators
+PASS rules keep ORAS speakers as static public event knowledge
+PASS rules preserve current deterministic category priority and fallback
+PASS rules leave unmatched privacy and security pages for AI classification
+PASS tribe_events remains deterministic public live data
+PASS WooCommerce product remains deterministic public live data
+PASS WordPress template record types remain ignored admin utility content
+PASS known utility page paths remain ignored with admin visibility
+PASS privacy and security pages have no deterministic v0.2.1 classification
+PASS ORAS speaker remains deterministic static public knowledge
+PASS ordinary Elementor-built public page is not blanket ignored
+PASS valid mixed classification persists only stable fragments as review artifacts
+PASS historical ORAS event knowledge is distinct from current deterministic event data
+PASS historical ORAS event knowledge uses the safe scanner review disposition
+PASS AI live and ignored outcomes requiring review do not retire managed knowledge
+PASS legitimate ORAS privacy policy remains eligible Policies and Rules knowledge
+PASS current deterministic category heuristics retain priority and fallback
+PASS static source creates then reuses one managed knowledge entry
+PASS review source creates then updates one review knowledge entry
+PASS live reclassification retires scanner-managed knowledge
+PASS ignored reclassification retires scanner-managed knowledge
+PASS manual knowledge is protected during live or ignored reclassification cleanup
+PASS AT-KB-007 manual artifact survives every scanner disposition unchanged
+PASS scanner upsert never adopts a source-linked manual artifact
+PASS AT-KB-007 missing source preserves a linked manual artifact unchanged
+PASS AT-KB-006 missing source retires every managed artifact and preserves provenance
+PASS NFR-OBS-001 scan runs persist bounded aggregate outcomes without source content
+PASS scanner AJAX records a complete qualified run across every M2 disposition
+PASS scanner run records failed processing and validates completion IDs
+PASS source discovery includes public content and excludes attachments and ORAS AI internals
+PASS source discovery hashes title permalink and extracted content with SHA-256
+PASS normal scan skips an unchanged completed source
+PASS normal scan requeues changed content and updates its source hash
+PASS rebuild scan requeues an unchanged terminal source
+PASS processed source stores current rule and extraction versions and remains skipped
+PASS missing or stale extraction version requeues an unchanged source
+PASS missing rule version is legacy version one and does not requeue
+PASS stale rule version requeues and reprocesses without changing output or duplicating records
+PASS rebuild queues an unchanged source with matching rule version
+PASS AT-KB-001 normal and rebuild cycles preserve one static artifact and stable sync identity
+PASS stale extraction version reprocesses without duplicating the managed artifact
+PASS AT-KB-007 manual snapshot survives unchanged normal sync and rebuild
+PASS scanner AJAX rejects users without manage_options before nonce verification
+PASS scanner AJAX requires the oras_ai_scan nonce
+PASS settings save rejects users without manage_options before nonce verification
+PASS settings save requires the oras_ai_save_settings nonce
+PASS knowledge save requires a valid entry nonce
+PASS knowledge save requires edit_post capability
+PASS scanner JavaScript localization excludes the API key
+PASS stored API key is not rendered into the admin password field
+PASS capability registry accepts only server-registered identifiers
+PASS capability registry enforces fixed argument schema and bounded depth
+PASS AT-SEC-002 member and retrieved instructions cannot grant capabilities
+PASS AT-SEC-003 URL policy allows only explicit safe HTTPS destinations without fetching
+PASS M6 licensing pins SunCalc and attributes generated OpenNGC data without tracking vendor
+PASS plugin load registers baseline classes and hooks
+PASS AT-ACTION-005 existing support side effect requires confirmation and remains replay safe
+PASS M7 Task 3 pending is durable, private, token-only and side-effect free
+PASS M7 Task 3 confirmation creates one ticket from stored content and replays result
+PASS M7 Task 3 uncertainty never retries and stale creating is uncertain
+PASS M7 Task 3 cancellation, expiry and ownership block writes
+PASS M7 Task 3 route change and customer conflict fail before ticket create
+PASS M7 Task 3 concurrent replay observes creating and never enters provider twice
+PASS M7 Task 3 expired and stale claimed records do not contact provider
+PASS M7 Task 3 owner and conversation binding reject token reuse
+PASS M7 Task 3 transport requires nonce, membership and enabled AI before confirmation
+PASS M7 Task 3 audit records states without private ticket content
+PASS M7 Task 3 stale state writer cannot overwrite a persisted ticket ID
+PASS M7 Task 3 thirty-day cleanup removes local text and claim
+PASS M7 Task 3 provider preflight and definite create failure remain terminal
+PASS M7 Task 3 tag warning keeps known ticket and cancellation cannot erase it
+PASS M7 Task 3 pending tokens are unique and raw tokens are not stored
+PASS M7 Task 3 chat send persists a preview without provider writes
+PASS M7 Task 4 restore exposes an owner-only opaque reference and reuses stored summary
+PASS M7 Task 4 restore retains terminal outcomes without replaying ticket creation
+PASS M7 status recognizes core and optional Pro without exposing provider objects
+PASS M7 status fails closed for missing or incompatible core and missing capabilities
+PASS M7 customer lookup prefers authorized user linkage and does not create during read-only lookup
+PASS M7 customer identity rejects a caller-selected different user and invalid email
+PASS M7 customer email fallback cannot claim an unlinked row by editable WordPress email
+PASS M7 email lookup may corroborate the same already-linked customer
+PASS M7 customer lookup rejects duplicate and conflicting identity rows
+PASS M7 confirmed customer creation disables WordPress user creation
+PASS M7 customer create false and exception stay bounded and are never retried
+PASS M7 route requires explicit existing mailbox and bounded existing tags
+PASS M7 stale route fails before provider create attempt
+PASS M7 create uses one core ticket call with safe content and no agent or mail call
+PASS M7 create rejects invalid input before attempting provider call
+PASS M7 encoded markup cannot become active markup after provider entity decoding
+PASS M7 ticket false is definite failure while null and thrown create are uncertain
+PASS M7 tag failure preserves authoritative ticket ID without another create
+PASS M7 ticket customer must still belong to current authorized WordPress user
+PASS M7 member ticket path rejects an agent session before core can set created_by
+PASS M7 support candidate requires admin and a valid ticket ID
+PASS M7 support candidate accepts only server-loaded closed tickets
+PASS M7 support candidate is private review-only idempotent and contains no customer data
+PASS M7 support candidate admin action requires nonce and ignores spoofed content
+PASS M7 support candidate does not overwrite manual knowledge or retry an incomplete claim
+PASS M7 Task 2 routing requires explicit primary mailbox and validates provider records read-only
+PASS M7 Task 2 topic routes use General fallback for unknown missing or stale mappings
+PASS M7 Task 2 invalid General or primary route fails closed without provider default mailbox
+PASS M7 Task 2 malformed stored topic mapping still uses valid General fallback
+PASS M7 Task 2 routing rejects invalid tags malformed IDs and unknown configured topics atomically
+PASS M7 Task 2 admin route save requires manage_options and action nonce
+PASS M7 Task 2 admin save validates config and audits only semantic change
+PASS M7 Task 2 admin blank optional topic rows remain unmapped and page is protected
+PASS M7 Task 2 support routing submenu is manage-options protected
+PASS M7 Task 2 admin tag-only mapping uses the configured primary mailbox
+PASS M7 Task 2 support no-evidence path proposes but astronomy no-evidence does not
+PASS M7 Task 2 unanswered ORAS organization issue outside named topics uses General Support
+PASS M7 Task 2 human-help and member feedback qualify with bounded topics
+PASS M7 Task 2 candidate fields are allowlisted sanitized and cannot choose provider IDs
+PASS M7 Task 2 original question and summary are bounded without reading conversation history
+PASS M7 Task 2 missing provider gives routing unavailable only for appropriate support issue
+PASS M7 Task 2 rejects cross-user proposal and logs only topic metadata
+PASS M7 Task 2 proposal construction performs no Fluent Support writes
+PASS M7 Task 4 feedback intents use the existing confirmed support proposal path
+PASS M7 Task 2 authenticated chat result exposes only a bounded ephemeral proposal
+PASS M7 Task 2 unavailable routing is structured while ordinary answer remains normal
+PASS SUP-004 dedicated summary uses one metered bounded model call
+PASS SUP-004 invalid duplicate HTML empty oversized and malformed summaries fail closed
+PASS SUP-004 summaries add spend without daily monthly or burst question charges
+PASS SUP-004 hard stop denies summary before provider dispatch
+PASS SUP-004 provider failures release or conservatively settle reservation
+PASS SUP-004 production proposal uses a distinct model summary and stores it unchanged
+PASS SUP-004 summary runs only for support proposals after route validation
+PASS SUP-004 summary failure leaves chat usable but creates no proposal
+PASS SUP-004 chat transport returns normal answer and manual fallback when summary fails
+PASS AT-SUPPORT-003 confirmed ticket uses stored distinct AI summary without regeneration
+PASS SUP-004 cancellation and feedback do not regenerate summaries
+PASS conversation transport registers only an authenticated operation endpoint
+PASS current operation creates or restores only the authenticated member latest conversation
+PASS new chat creates a current owned conversation and retains the prior conversation
+PASS expired conversations are pruned before current restoration and malformed loads fail safely
+PASS owner load returns only ordered safe transcript fields and cross-user access is denied
+PASS send operation stores member and assistant messages and returns trusted structured sources
+PASS send stores safe refusal and failure answers without raw provider payloads
+PASS send persists a safe domain refusal without provider work
+PASS stored conversation history is not included in later model context
+PASS transport rejects card input before transcript storage and provider dispatch
+PASS transport preserves gateway authorization boundaries and safe operation errors
+PASS transport AJAX errors contain only safe machine-readable status data
+PASS eligible frontend registers the shared chat shortcode and site-wide hooks
+PASS site-wide Support launcher and overlay are plugin-owned and use shared chat markup
+PASS anonymous and ineligible frontend users receive no production launcher
+PASS administrator follows the existing eligible frontend boundary and kill switch hides UI
+PASS eligible shortcode renders the same page chat component while unauthorized shortcode fails safely
+PASS shared chat markup exposes accessible labels status log and responsive panel structure
+PASS M7 Task 4 shared chat declares support feedback and a server-owned contact route
+PASS M6 tonight weather uses astronomical dusk through following dawn
+PASS M6 named tomorrow observing night derives tomorrow dusk through next dawn
+PASS M6 summer and winter ORAS nights use different astronomical clock intervals
+PASS M6 astronomical night derivation honors America New York DST offsets
+PASS M6 trusted explicit weather interval overrides tonight derivation
+PASS M6 member explicit local weather interval overrides tonight derivation
+PASS M6 member explicit weather time uses a forecast point
+PASS M6 member explicit twenty-four-hour weather interval uses ORAS local time
+PASS M9 weather optional captures are warning-free: cloudy at 21:30
+PASS M9 weather optional captures are warning-free: forecast from 20:30 to 23:15
+PASS M9 weather optional captures are warning-free: cloudy at 9 pm
+PASS M9 weather optional captures are warning-free: cloudy at 11 am
+PASS M9 weather optional captures are warning-free: cloudy at 9:30 pm
+PASS M9 weather optional captures are warning-free: forecast from 9 pm to 11 pm
+PASS M9 weather optional captures are warning-free: forecast from 9:15 pm to 11 pm
+PASS M9 weather optional captures are warning-free: forecast from 23:15 to 20:30
+PASS M9 weather optional captures are warning-free: cloudy at 21:30 tomorrow
+PASS M9 weather optional captures are warning-free: cloudy at 21:30 Friday
+PASS M9 weather optional captures are warning-free: cloudy at 21:30 on 2026-09-10
+PASS M9 weather invalid time retains tonight fallback: cloudy at 21
+PASS M9 weather invalid time retains tonight fallback: cloudy at 25:30
+PASS M9 weather invalid time retains tonight fallback: cloudy at 13 pm
+PASS M9 weather invalid time retains tonight fallback: forecast from 20 to 23
+PASS M6 missing astronomical night is a fact-scoped weather uncertainty
+PASS M6 missing night boundaries do not erase unrelated ORAS evidence
+PASS M6 current weather service keeps valid fields when a sibling field is unavailable
+PASS M6 distinct forecast periods retain distinct fact identities through grounding
+PASS M6 cloudy seeing and transparency wording routes to qualified weather data
+PASS M6 cloudy now selects a station observation instead of tonight forecast
+PASS M6 qualified current weather reaches grounding and never creates an empty source
+PASS M6 failed NWS cannot erase valid sibling astronomy or trigger weather memory fallback
+PASS M6 failed Moon lookup does not erase valid sibling weather
+PASS M6 weather-only failure never falls back to model memory
+PASS M6 plugin wires NWS behind the current weather service and shared astronomy contract
+PASS M6 correction tonight window before dusk
+PASS M6 correction tonight window exact dusk
+PASS M6 correction tonight window after dusk
+PASS M6 correction tonight window after midnight before dawn
+PASS M6 correction tonight window exact dawn
+PASS M6 correction tonight window after dawn
+PASS M6 correction tonight window spring DST active night
+PASS M6 correction tonight window fall DST first repeated hour
+PASS M6 correction tonight window fall DST second repeated hour
+PASS M6 correction active tonight does not reinterpret a named future night or stale explicit interval
+PASS M6 correction active night samples trusted now at request construction with an advancing clock
+PASS M6 NWS observation age exactly ninety minutes remains current
+PASS M6 NWS observation older than ninety minutes is stale
+PASS M6 fresh observation cache cannot conceal stale provider timestamp
+PASS M6 NWS observation discovery is fixed-host bounded and normalized
+PASS M6 NWS forecast retains structured fields issue and valid interval
+PASS M6 requested observing interval retains every overlapping structured forecast period
+PASS M6 future point-in-time weather uses forecast rather than current observation
+PASS M6 forecast retains valid temperature when cloud field is absent
+PASS M6 absent structured precipitation remains unavailable rather than invented none
+PASS M6 NWS cache uses bounded fixed slots and approved maximum TTLs
+PASS M6 NWS cache expires exactly at its configured TTL
+PASS M6 malformed NWS units and payloads fail with bounded reasons
+PASS M6 oversized NWS response is rejected before raw payload normalization
+PASS M6 NWS provider has no astronomy implementation dependency
+PASS M6 NWS honors WordPress response cache header objects within local caps
+PASS M6 NWS Expires header bounds mapping reuse when max-age is absent
+PASS M6 expired observation cache never becomes stale-on-network-error fallback
+PASS M6 cached invalid grid receives one bounded rediscovery and no retry loop
+PASS M6 invalid cached grid during station discovery receives one point rediscovery
+PASS M6 correction half-open NWS end equals request start
+PASS M6 correction half-open NWS start equals request end
+PASS M6 correction half-open NWS one second overlap
+PASS M6 correction half-open NWS contained
+PASS M6 correction half-open NWS enclosing
+PASS M6 correction half-open NWS identical
+PASS M6 correction half-open NWS point at start
+PASS M6 correction half-open NWS point inside
+PASS M6 correction half-open NWS point at end
+PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points
+PASS M6 correction expired boundary forecast cannot reach the answer model
+PASS M6 correction cached NWS forecast obeys the same half-open requested window
+865 test(s) passed.
+78 frontend chat assertions passed.

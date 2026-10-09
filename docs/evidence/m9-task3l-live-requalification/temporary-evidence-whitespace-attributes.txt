@@ -1,0 +1,6 @@
+docs/evidence/m9-task3j-luna-requalification/correction-production-tests.diff whitespace=-blank-at-eol,-space-before-tab
+docs/evidence/m9-task3j-luna-requalification/final-lint-js.txt whitespace=-blank-at-eof
+docs/evidence/m9-task3j-luna-requalification/precommit-lint-js.txt whitespace=-blank-at-eof
+docs/evidence/m9-task3j-luna-requalification/task3i-lint-js-original.txt whitespace=-blank-at-eof
+docs/evidence/m9-task3k-price-intent-correction/lint-js.txt whitespace=-blank-at-eof
+docs/evidence/m9-task3k-price-intent-correction/production-correction.diff whitespace=-blank-at-eol,-space-before-tab

@@ -1,0 +1,47 @@
+{
+    "summary": {
+        "accounting_available": true,
+        "member_day_allowed": 0,
+        "member_month_allowed": 0,
+        "site_month_actual_microdollars": 43918,
+        "site_month_reserved_microdollars": 0,
+        "site_month_allowed": 236,
+        "site_month_input_tokens": 99481,
+        "site_month_output_tokens": 22542,
+        "site_month_models": {
+            "gpt-5.6-luna": 208,
+            "gpt-6-luna": 28
+        },
+        "site_month_sources": {
+            "answer": {
+                "calls": 128,
+                "accounted_microdollars": 23652
+            },
+            "domain_classifier": {
+                "calls": 50,
+                "accounted_microdollars": 2760
+            },
+            "scanner_classification": {
+                "calls": 40,
+                "accounted_microdollars": 16266
+            },
+            "support_summary": {
+                "calls": 18,
+                "accounted_microdollars": 1240
+            }
+        },
+        "site_month_unknown_microdollars": 385,
+        "rejections": []
+    },
+    "saved_model_raw": "[unset]",
+    "effective_model": "gpt-5.6-luna",
+    "saved_controls_sha256": "12096e0b7edbcb92f5fd34290640b15c8da2cae2dae62df59969623d58c88d3e",
+    "ledger_option_sha256": "66aae073bcc2a03317f123726e6154e25f1f3b4cf8020a35cb7bce434547c03f",
+    "historical_ledger_records_preserved": 200,
+    "version": "0.2.1",
+    "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+    "source_tree_uncommitted": false,
+    "fixed_source_manifest_sha256": "876f5bc00c465f29a0985309a4ebf67a4c6b9c499f42a1179e39fc01459bef0c",
+    "persistent_guard_sha256": "d41408136cb63c53d9167f3becb958a36e1066d753de401c11e0e01e997d219c",
+    "candidate_override": "NONE: fixed committed runtime and harness; process-only approved HTTP exception."
+}

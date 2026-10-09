@@ -1,0 +1,250 @@
+{
+  "comparisons": [
+    {
+      "id": "P-one-down",
+      "campaigns": {
+        "Task3H": {
+          "executed": true,
+          "source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+          "raw_outputs": [
+            "Your membership is active at the Fixture Member level. The Annual Observer Pass price isn’t provided in the available information."
+          ],
+          "final_released_output": "Your membership is active. Your membership level is Fixture Member. I could not verify current Observer Pass availability or purchasability.",
+          "frozen_rule_pass": true
+        },
+        "Task3J": {
+          "executed": true,
+          "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+          "raw_outputs": [
+            "Your membership is active at the Fixture Member level. The Annual Observer Pass price is not provided in the available information."
+          ],
+          "final_released_output": "Your membership is active. Your membership level is Fixture Member. I could not verify the Annual Observer Pass price from current WooCommerce information.",
+          "frozen_rule_pass": true
+        },
+        "Task3L": {
+          "executed": true,
+          "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+          "raw_outputs": [
+            "Your membership is active at the Fixture Member level. The Annual Observer Pass price isn’t provided in the available information."
+          ],
+          "final_released_output": "Your membership is active. Your membership level is Fixture Member. I could not verify the Annual Observer Pass price from current WooCommerce information.",
+          "frozen_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "M-price",
+      "campaigns": {
+        "Task3H": {
+          "executed": true,
+          "source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+          "raw_outputs": [
+            "An Annual Observer Pass costs **$45.00 USD**."
+          ],
+          "final_released_output": "Annual Observer Pass price: 45.00 USD. Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+          "frozen_rule_pass": true
+        },
+        "Task3J": {
+          "executed": true,
+          "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+          "raw_outputs": [
+            "An Annual Observer Pass costs $45.00 USD."
+          ],
+          "final_released_output": "Annual Observer Pass price: 45.00 USD. Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+          "frozen_rule_pass": true
+        },
+        "Task3L": {
+          "executed": true,
+          "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+          "raw_outputs": [
+            "An Annual Observer Pass costs $45.00 USD."
+          ],
+          "final_released_output": "Annual Observer Pass price: 45.00 USD.",
+          "frozen_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "M-available",
+      "campaigns": {
+        "Task3H": {
+          "executed": true,
+          "source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+          "raw_outputs": [
+            "I can’t confirm current availability or whether it’s purchasable. The Annual Observer Pass is listed at $45.00 USD."
+          ],
+          "final_released_output": "Annual Observer Pass price: 45.00 USD. Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+          "frozen_rule_pass": true
+        },
+        "Task3J": {
+          "executed": false,
+          "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+          "raw_outputs": null,
+          "final_released_output": null,
+          "frozen_rule_pass": null
+        },
+        "Task3L": {
+          "executed": true,
+          "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+          "raw_outputs": [
+            "The available information doesn’t confirm whether the Annual Observer Pass is currently purchasable. Its listed price is $45.00 USD."
+          ],
+          "final_released_output": "Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+          "frozen_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "M-unavailable",
+      "campaigns": {
+        "Task3H": {
+          "executed": true,
+          "source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+          "raw_outputs": [
+            "The Annual Observer Pass is listed at $45.00 USD, but its current stock and purchasability aren’t provided here, so I can’t confirm that it’s available to buy."
+          ],
+          "final_released_output": "Annual Observer Pass price: 45.00 USD. Annual Observer Pass is not currently purchasable.",
+          "frozen_rule_pass": true
+        },
+        "Task3J": {
+          "executed": false,
+          "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+          "raw_outputs": null,
+          "final_released_output": null,
+          "frozen_rule_pass": null
+        },
+        "Task3L": {
+          "executed": true,
+          "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+          "raw_outputs": [
+            "I can’t confirm whether the Annual Observer Pass is currently purchasable. The listed price is 45.00 USD."
+          ],
+          "final_released_output": "Annual Observer Pass is not currently purchasable.",
+          "frozen_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "M-combined",
+      "campaigns": {
+        "Task3H": {
+          "executed": true,
+          "source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+          "raw_outputs": [
+            "- Membership: Active — Fixture Member.\n- Annual Observer Pass: $45.00 USD.\n- AstroBlast registration: The provided information does not confirm whether registration is currently available. AstroBlast starts September 12, 2026, at 18:00 America/New_York."
+          ],
+          "final_released_output": "Your membership is active. Your membership level is Fixture Member. Annual Observer Pass price: 45.00 USD. Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout. Fixture AstroBlast starts 2026-09-12 at 18:00 America/New_York. Registration is currently open. Use the linked ORAS event page to register.",
+          "frozen_rule_pass": true
+        },
+        "Task3J": {
+          "executed": false,
+          "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+          "raw_outputs": null,
+          "final_released_output": null,
+          "frozen_rule_pass": null
+        },
+        "Task3L": {
+          "executed": true,
+          "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+          "raw_outputs": [
+            "- Membership: Active, at the Fixture Member level.\n- Annual Observer Pass: $45.00 USD.\n- AstroBlast registration: The available information does not indicate whether registration is currently open or available."
+          ],
+          "final_released_output": "Your membership is active. Your membership level is Fixture Member. Annual Observer Pass price: 45.00 USD. Fixture AstroBlast starts 2026-09-12 at 18:00 America/New_York. Registration is currently open. Use the linked ORAS event page to register.",
+          "frozen_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "X-review",
+      "campaigns": {
+        "Task3H": {
+          "executed": true,
+          "source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+          "raw_outputs": [
+            "{\"classification\":{\"source_kind\":\"review\",\"category\":\"Observatory Access\",\"visibility\":\"members\",\"confidence\":\"high\",\"knowledge_title\":\"Observatory Equipment Access Notice\",\"reason\":\"The notice contains potentially important member access requirements, but its status is unclear: it has a future effective date, indicates that Board approval is pending, and does not state whether it supersedes earlier rules. These qualifications prevent safe publication as stable knowledge.\",\"historical_event\":false,\"stable_fragments\":[],\"excluded_dynamic_claims\":[],\"dynamic_fact_types\":[],\"validation\":{\"stable_dynamic_separation\":false,\"critical_qualifications_preserved\":false}}}"
+          ],
+          "final_released_output": "{\"source_kind\":\"review\",\"stable_fragments\":[],\"excluded_dynamic_claims\":[]}",
+          "frozen_rule_pass": true
+        },
+        "Task3J": {
+          "executed": false,
+          "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+          "raw_outputs": null,
+          "final_released_output": null,
+          "frozen_rule_pass": null
+        },
+        "Task3L": {
+          "executed": true,
+          "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+          "raw_outputs": [
+            "{\"classification\":{\"source_kind\":\"review\",\"category\":\"Observatory Access\",\"visibility\":\"members\",\"confidence\":\"high\",\"knowledge_title\":\"Observatory Equipment Access Notice\",\"reason\":\"The notice states that members must complete orientation and have an authorized supervisor present, but its applicability is ambiguous because the approval panel says “Board vote pending,” no approving resolution is identified, and it does not say whether the requirements supersede earlier access rules. The footer date is quoted without interpreting its effective status.\",\"historical_event\":false,\"stable_fragments\":[],\"excluded_dynamic_claims\":[],\"dynamic_fact_types\":[],\"validation\":{\"stable_dynamic_separation\":false,\"critical_qualifications_preserved\":false}}}"
+          ],
+          "final_released_output": "{\"source_kind\":\"review\",\"stable_fragments\":[],\"excluded_dynamic_claims\":[]}",
+          "frozen_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "C-broad",
+      "campaigns": {
+        "Task3H": {
+          "executed": true,
+          "source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+          "raw_outputs": [
+            "For the ORAS interval **2026-09-10 00:15–09:25 UTC**, conditions are moderately favorable but not guaranteed:\n\n- **Cloud cover:** 40%\n- **Precipitation chance:** 10%, with no precipitation type forecast\n- **Visibility:** 16 km\n- **Temperature:** 12 °C\n- **Wind:** 2 m/s\n- **Seeing and transparency:** unavailable\n- **Moon:** 42% illuminated; above the geometric horizon at **04:50 UTC**\n\nAt **04:50 UTC**, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune are all reported above the geometric horizon at an altitude of about **31°**. This indicates potential availability, but does not by itself establish that each will be visually observable; clouds, twilight, sky brightness, and the unavailable transparency/seeing data may limit what you can actually see. The ORAS Observing Score is unavailable."
+          ],
+          "final_released_output": "For the ORAS interval **2026-09-10 00:15–09:25 UTC**, conditions are moderately favorable but not guaranteed: - **Cloud cover:** 40% - **Precipitation chance:** 10%, with no precipitation type forecast - **Visibility:** 16 km - **Temperature:** 12 °C - **Wind:** 2 m/s - **Seeing and transparency:** unavailable - **Moon:** 42% illuminated; above the geometric horizon at **04:50 UTC** At **04:50 UTC**, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune are all reported above the geometric horizon at an altitude of about **31°**. This indicates potential availability, but does not by itself establish that each will be visually observable; clouds, twilight, sky brightness, and the unavailable transparency/seeing data may limit what you can actually see. The ORAS Observing Score is unavailable.",
+          "frozen_rule_pass": true
+        },
+        "Task3J": {
+          "executed": false,
+          "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+          "raw_outputs": null,
+          "final_released_output": null,
+          "frozen_rule_pass": null
+        },
+        "Task3L": {
+          "executed": true,
+          "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+          "raw_outputs": [
+            "For the ORAS forecast interval 2026-09-10 00:15–09:25 UTC:\n\n- Moon: 42% illuminated and above the geometric horizon at 04:50 UTC.\n- Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune: all reported at 31° altitude and above the geometric horizon at 04:50 UTC. This indicates geometric availability only—not guaranteed visibility or observing suitability.\n- Weather: partly cloudy, with 40% cloud cover and 10% precipitation probability. Temperature is 12°C, wind 2 m/s, humidity 70%, and visibility 16 km.\n- Seeing and transparency: unavailable, so conditions for detailed planetary or deep-sky observing are uncertain.\n- ORAS Observing Score: unavailable.\n\nThe forecast was issued at 00:15 UTC and is valid through 09:25 UTC; conditions may change during that interval."
+          ],
+          "final_released_output": "For the ORAS forecast interval 2026-09-10 00:15–09:25 UTC: - Moon: 42% illuminated and above the geometric horizon at 04:50 UTC. - Mercury, Venus, Mars, Jupiter, Saturn, Uranus, and Neptune: all reported at 31° altitude and above the geometric horizon at 04:50 UTC. This indicates geometric availability only—not guaranteed visibility or observing suitability. - Weather: partly cloudy, with 40% cloud cover and 10% precipitation probability. Temperature is 12°C, wind 2 m/s, humidity 70%, and visibility 16 km. - Seeing and transparency: unavailable, so conditions for detailed planetary or deep-sky observing are uncertain. - ORAS Observing Score: unavailable. The forecast was issued at 00:15 UTC and is valid through 09:25 UTC; conditions may change during that interval.",
+          "frozen_rule_pass": true
+        }
+      }
+    },
+    {
+      "id": "W-weekend",
+      "campaigns": {
+        "Task3H": {
+          "executed": true,
+          "source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+          "raw_outputs": [
+            "I can’t determine which ORAS night is better without reliable local forecasts and event details. In general, choose the night with:\n\n- Clear skies and good transparency\n- Little or no wind\n- A darker Moon phase or the Moon below the horizon\n- Lower humidity and minimal haze\n- The target constellation high above the horizon during observing hours\n\nFor faint deep-sky objects, prioritize darkness and transparency; for planets or the Moon, steadier air (“good seeing”) matters more."
+          ],
+          "final_released_output": "I couldn't establish that from the current ORAS information. I can’t determine which ORAS night is better without reliable local forecasts and event details. In general, choose the night with: - Clear skies and good transparency - Little or no wind - A darker Moon phase or the Moon below the horizon - Lower humidity and minimal haze - The target constellation high above the horizon during observing hours For faint deep-sky objects, prioritize darkness and transparency; for planets or the Moon, steadier air (“good seeing”) matters more.",
+          "frozen_rule_pass": true
+        },
+        "Task3J": {
+          "executed": false,
+          "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+          "raw_outputs": null,
+          "final_released_output": null,
+          "frozen_rule_pass": null
+        },
+        "Task3L": {
+          "executed": true,
+          "source_commit": "62daea2e99f0557328642d29e529ed0942bf74cf",
+          "raw_outputs": [
+            "I can’t compare the ORAS nights without the specific dates, location, and observing conditions. In general, choose the night with:\n\n- Clearer skies and lower humidity/cloud cover\n- Less wind and better atmospheric steadiness\n- Less moonlight, especially near new Moon\n- Darker skies after moonset\n- Good visibility of your intended targets\n\nFor deep-sky observing, prioritize a moonless night; for planets and the Moon, a brighter night can still work well."
+          ],
+          "final_released_output": "I couldn't establish that from the current ORAS information. I can’t compare the ORAS nights without the specific dates, location, and observing conditions. In general, choose the night with: - Clearer skies and lower humidity/cloud cover - Less wind and better atmospheric steadiness - Less moonlight, especially near new Moon - Darker skies after moonset - Good visibility of your intended targets For deep-sky observing, prioritize a moonless night; for planets and the Moon, a brighter night can still work well.",
+          "frozen_rule_pass": true
+        }
+      }
+    }
+  ],
+  "historical_results_not_reused": true,
+  "task3j_note": "Task3J stopped after two cases because owner focused M-price intent requirement failed despite the unchanged frozen rule passing. No old outcome counts toward this new campaign."
+}

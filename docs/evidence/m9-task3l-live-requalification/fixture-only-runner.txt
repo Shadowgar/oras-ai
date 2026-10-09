@@ -1,0 +1,22 @@
+<?php
+// Execute only the three original fixture-only paths; never replay live-eligible cases.
+$root='/tmp/oras-ai-m9-task3l-source';
+$proof=json_decode(file_get_contents($root.'/source-proof.json'),true);
+foreach($proof['files_sha256']as$path=>$sha)if(hash_file('sha256',$root.'/'.$path)!==$sha)throw new RuntimeException('Fixed source changed');
+require $root.'/tests/bootstrap.php';
+require $root.'/tools/evaluation/harness.php';
+$plan=json_decode(file_get_contents($root.'/plan.json'),true);
+$source=file_get_contents($root.'/tools/evaluation/harness.php');
+$start=strpos($source,"\tpublic static function fixture_run(): array {");
+$end=strpos($source,"\n\tpublic static function report(",$start);
+$method=substr($source,$start,$end-$start);
+$method=str_replace('public static function fixture_run(): array','function task3l_fixture_only(): array',$method);
+$method=str_replace('self::','ORAS_AI_Release_Evaluation::',$method);
+$method=str_replace("foreach (\$corpus['cases'] as \$case) {", "foreach (\$corpus['cases'] as \$case) { if (\$case['execution_class'] === 'live_eligible') { continue; }",$method);
+eval($method);
+$warnings=array();set_error_handler(static function($severity,$message,$file,$line)use(&$warnings){$warnings[]=array('severity'=>$severity,'file'=>basename($file),'line'=>$line);throw new ErrorException($message,0,$severity,$file,$line);},E_WARNING|E_USER_WARNING);
+$report=task3l_fixture_only();restore_error_handler();
+$report['source_commit']=$proof['source_commit'];$report['source_tree_uncommitted']=false;$report['fixed_source_manifest_sha256']=$proof['manifest_sha256'];$report['php_warnings']=$warnings;
+if(count($report['results'])!==3||array_column($report['results'],'id')!==$plan['fixture_case_ids']||$report['failed_cases']!==0||$warnings)throw new RuntimeException('Fixture-only gate failed');
+file_put_contents('/tmp/oras-ai-task3l/fixture-only-results.json',json_encode($report,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");
+echo 'FIXTURE-ONLY PASS 3/3; zero paid calls; '. $report['fixture_calls'] ." scripted HTTP calls\n";

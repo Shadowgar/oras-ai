@@ -1,0 +1,78 @@
+{
+  "cases": 69,
+  "paid_calls": 58,
+  "input_tokens": 21058,
+  "cached_tokens": 5312,
+  "output_tokens": 5457,
+  "incremental_cost_microdollars": 10807,
+  "ledger_before": 33111,
+  "ledger_after": 43918,
+  "hard_stop_headroom_microdollars": 19956082,
+  "reservations": 0,
+  "provider_failures": 0,
+  "timeouts": 0,
+  "truncations": 0,
+  "latency_median": 2.3143069744110107,
+  "latency_p95": 3.766090154647827,
+  "latency_max": 4.276072025299072,
+  "answer_output_tokens": {
+    "count": 42,
+    "median": 88.5,
+    "p95": 217,
+    "max": 257
+  },
+  "cost_by_family": {
+    "support_summary": {
+      "calls": 6,
+      "microdollars": 352
+    },
+    "answer": {
+      "calls": 42,
+      "microdollars": 7680
+    },
+    "domain_classifier": {
+      "calls": 5,
+      "microdollars": 324
+    },
+    "scanner_classification": {
+      "calls": 5,
+      "microdollars": 2451
+    }
+  },
+  "case_count": 72,
+  "live_case_count": 69,
+  "fixture_case_count": 3,
+  "automated_passes": 72,
+  "automated_pass_rate": 1.0,
+  "domain_classifier_passes": 5,
+  "scanner_labels_passes": 5,
+  "scanner_schema_passes": 5,
+  "scanner_application_passes": 5,
+  "support_summary_passes": 6,
+  "confirmed_released_hard_failures": 0,
+  "human_semantic_hard_gate_review": "OWNER_REVIEW_PENDING",
+  "new_unknown_usage_microdollars": 0,
+  "unchanged_historical_unknown_microdollars": 385,
+  "answer_cap_hits": 0,
+  "all_adapter_cap_hits": 0,
+  "malformed_or_incomplete_live_provider_responses": 0,
+  "scripted_fixture_http_calls_not_paid": 1,
+  "fixture_usage_is_simulated": true,
+  "free_model_availability_lookups": 3,
+  "paid_preflight_calls": 0,
+  "retries": 0,
+  "latency_p95_method": "nearest rank, ceil(0.95*n), n=58 provider response observations",
+  "pricing": {
+    "input_microdollars_per_million_tokens": 200000,
+    "output_microdollars_per_million_tokens": 1200000,
+    "unit": "per_million_tokens"
+  },
+  "cached_input_accounting": "Charged at full input rate; cached tokens are a subset of total input. Input and output components rounded upward separately for each paid call.",
+  "deterministic_corrections": {
+    "scope": "42 generated answer responses among 53 answer cases; other adapters and 11 local/guarded answer cases are excluded.",
+    "exact_replacements": 30,
+    "beyond_whitespace_replacements": 15,
+    "semantically_material_guard_changes": 9,
+    "semantic_classification_basis": "Analyst comparison of raw and released text, not human quality scores. The trusted frozen structured fixture facts used by guards are not all serialized into admitted model text. Raw uncertainty alone is not a confirmed hallucination. Material changes include restored requested facts/handoffs and uncertainty framing."
+  }
+}

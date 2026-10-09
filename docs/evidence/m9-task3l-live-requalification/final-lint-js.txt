@@ -1,0 +1,4 @@
+
+> oras-ai-assistant@0.2.1 lint:js
+> node --check assets/scanner.js && node --check assets/chat.js
+
