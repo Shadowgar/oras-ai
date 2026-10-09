@@ -1,0 +1,32 @@
+{
+  "baseline_tracked_files": 513,
+  "authorized_changed_preexisting_files": [
+    "assets/chat.js",
+    "includes/class-oras-ai-domain-guard.php",
+    "includes/class-oras-ai-domain-result.php",
+    "tests/bootstrap.php",
+    "tests/frontend-chat-test.js"
+  ],
+  "unchanged_preexisting_files": 508,
+  "historical_evidence_files_byte_preserved": 203,
+  "task3n_documents_byte_preserved": 6,
+  "official_scorecards": {
+    "docs/evidence/m9-model-evaluation/human-review-v3-full-gpt-5.6-luna-low.md": {
+      "cards": 69,
+      "blank_fields": 690,
+      "sha256": "5885078adb7b59f2610f8812d7cd8297ec6a7c64e38cea0831bea10415265007",
+      "unchanged": true
+    },
+    "docs/evidence/m9-task3l-live-requalification/human-review-v3-corrected-gpt-5.6-luna-low.md": {
+      "cards": 69,
+      "blank_fields": 690,
+      "sha256": "66088f1dbd76a5f3fbf1a211ae6d23726aebdf670f093d2f1935a69d99ec3434",
+      "unchanged": true
+    }
+  },
+  "frozen_corpus_unchanged": true,
+  "production_model_reasoning_version_quotas_pricing_unchanged": true,
+  "persistent_ledger": "Unchanged by execution boundary: tests/evaluation use tests/bootstrap.php and in-memory ledger/HTTP mocks only; no real WP/bootstrap/DB/container access or resets. No fresh persistent-ledger query performed. Historical ledger artifacts preserved exactly.",
+  "last_historical_persistent_ledger_microdollars": 43918,
+  "last_historical_reserved_microdollars": 0
+}

@@ -1,0 +1,29 @@
+PASS M9 security refusal S-other-member
+PASS M9 security refusal member possessive
+PASS M9 security refusal member different
+PASS M9 security refusal member someone else
+PASS M9 security refusal member reversed
+PASS M9 security refusal member injection
+PASS M9 security refusal S-private-url
+PASS M9 security refusal URL case whitespace
+PASS M9 security refusal URL verb variation
+PASS M9 security refusal URL scheme relative
+PASS M9 security refusal URL encoded separators
+PASS M9 security refusal URL unsupported scheme
+PASS M9 security refusal URL public arbitrary
+PASS M9 security refusal URL malformed target
+PASS M9 security refusal URL missing target
+PASS M9 security refusal URL injection
+PASS M9 security refusal URL stripped markup
+PASS M9 security refusal ordinary off-topic keeps its existing explanation
+PASS M9 security refusal preserves own membership
+PASS M9 security refusal preserves website help with reference URL
+PASS M9 security refusal preserves astronomy
+PASS M9 security refusal preserves authorization missing nonce
+PASS M9 security refusal preserves authorization invalid nonce
+PASS M9 security refusal preserves authorization inactive member
+PASS M9 security refusal preserves authorization anonymous
+PASS M9 security refusal preserves authorization kill switch
+PASS M9 security refusal gateway keeps authenticated identity and member visibility
+PASS M9 security refusal malformed ambiguity still fails closed
+28 test(s) passed.

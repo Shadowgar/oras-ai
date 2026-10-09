@@ -219,6 +219,10 @@
 			return { text: strings.unavailable, kind: 'error' };
 		}
 		if (result && result.status === 'refusal') {
+			if ((code === 'private_account_access' || code === 'arbitrary_url_access') &&
+				typeof result.answer === 'string' && result.answer.trim()) {
+				return { text: result.answer, kind: 'notice' };
+			}
 			return { text: strings.refusal, kind: 'notice' };
 		}
 		if (result && result.status === 'no_evidence') {

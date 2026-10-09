@@ -1,0 +1,6 @@
+
+> oras-ai-assistant@0.2.1 evaluate:release
+> php tools/release-evaluation.php --output=/tmp/oras-ai-task3o/corrected-offline-v3
+
+FIXTURE ONLY: 72 cases; 0 rule failures; quality unscored; model not qualified.
+Evidence: /tmp/oras-ai-task3o/corrected-offline-v3/report.json

@@ -1,0 +1,52 @@
+{
+  "red": {
+    "php_exit": 1,
+    "tests_registered": 893,
+    "existing_tests_passed": 865,
+    "new_regressions": 28,
+    "new_passes": 11,
+    "intended_failures": 17,
+    "frontend_exit": 1,
+    "independent_url_frontend_exit": 1,
+    "failure": "Generic explanation lost; expanded directives previously classified as allowed. No syntax, warning, infrastructure or existing-test failure."
+  },
+  "green": {
+    "focused_exit": 0,
+    "focused_regressions_passed": 28,
+    "php_tests": 893,
+    "frontend_assertions": 97,
+    "new_frontend_assertions": 19,
+    "php_lint_files": 224,
+    "unexpected_warnings": 0,
+    "commands": {
+      "npm run lint:php": 0,
+      "npm run lint:js": 0,
+      "npm test": 0,
+      "npm run quality": 0,
+      "git diff --check": 0
+    }
+  },
+  "frozen_fixture": {
+    "cases": 72,
+    "technical_passes": 72,
+    "rule_failures": 0,
+    "live_calls": 0,
+    "fixture_calls": 59,
+    "quality_unscored": true,
+    "recommendation": "NOT_QUALIFIED"
+  },
+  "production_files": [
+    "assets/chat.js",
+    "includes/class-oras-ai-domain-guard.php",
+    "includes/class-oras-ai-domain-result.php"
+  ],
+  "test_files": [
+    "tests/bootstrap.php",
+    "tests/frontend-chat-test.js",
+    "tests/domain/SecurityRefusalQualityTest.php"
+  ],
+  "paid_api_calls": 0,
+  "production_access": false,
+  "deployment": false,
+  "task3o_commit_push": false
+}

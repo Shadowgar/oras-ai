@@ -32,6 +32,11 @@ final class ORAS_AI_Domain_Guard {
 	public function classify_by_rules( $question ) {
 		$question = $this->normalize( $question );
 
+		$security_reason = $this->security_refusal_reason( $question );
+		if ( '' !== $security_reason ) {
+			return ORAS_AI_Domain_Result::security_refusal( $security_reason );
+		}
+
 		if ( $this->contains_any( $question, $this->off_topic_phrases() ) || $this->contains_unsafe_directive( $question ) ) {
 			return ORAS_AI_Domain_Result::from_outcome( ORAS_AI_Domain_Result::OFF_TOPIC );
 		}
@@ -80,6 +85,31 @@ final class ORAS_AI_Domain_Guard {
 		}
 
 		return false;
+	}
+
+	/** Recognize blocked operations locally; never inspect an identity or URL target. */
+	private function security_refusal_reason( $question ) {
+		$other_owner = "(?:another|other|(?:a )?different|someone else(?:'s|’s)?)";
+		$account     = '(?:user|member|person|account|membership)';
+		$action      = '(?:select|switch to|use|inspect|access|check|view|show|look up|retrieve|reveal)';
+		if (
+			preg_match( '/\b' . $action . '\s+(?:me\s+)?(?:the\s+)?' . $other_owner . '\s+' . $account . '\b/u', $question )
+			|| preg_match( '/\b' . $action . '\s+(?:the\s+)?(?:membership|account)(?: information| details)?\s+(?:for|of|belonging to)\s+' . $other_owner . '\s+' . $account . '\b/u', $question )
+		) {
+			return 'private_account_access';
+		}
+
+		// Permit references in website-help questions; reject instructions to fetch targets.
+		$url_action = '(?:fetch|visit|open|access|call|request|download|read|retrieve|resolve|probe)';
+		$url_target = '(?:(?:this|the|that|a|an|private|arbitrary|internal)\s+)*(?:url\b|address\b|endpoint\b|(?:https?|ftp|file|gopher)(?::|%3a)|//)';
+		if (
+			preg_match( '~\b' . $url_action . '\s+' . $url_target . '~', $question )
+			|| preg_match( '/\bfetch\s*(?:$|for\b)/', $question )
+		) {
+			return 'arbitrary_url_access';
+		}
+
+		return '';
 	}
 
 	private function contains_unsafe_directive( $question ) {

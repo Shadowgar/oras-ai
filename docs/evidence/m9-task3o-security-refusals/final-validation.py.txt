@@ -1,0 +1,36 @@
+from pathlib import Path
+import hashlib,json,re,subprocess
+root=Path('/home/rocco/projects/oras-ai');out=root/'docs/evidence/m9-task3o-security-refusals'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+load=lambda p:json.loads(p.read_text())
+git=lambda *args:subprocess.check_output(['git',*args],cwd=root,text=True).strip()
+assert git('branch','--show-current')=='m9/production-release'
+assert git('rev-parse','HEAD')=='d352ddafe676697ab040ab9ca306183365cf0241'
+assert git('rev-list','--left-right','--count','HEAD...origin/m9/production-release').split()==['0','0']
+assert not git('diff','--cached','--name-only')
+checks=load(out/'checks.json');allowed=set(checks['production_files']+checks['test_files'][:2])
+assert set(git('diff','--name-only').splitlines())==allowed
+untracked=git('ls-files','--others','--exclude-standard').splitlines();assert all(p=='tests/domain/SecurityRefusalQualityTest.php' or p.startswith('docs/evidence/m9-task3o-security-refusals/') for p in untracked)
+for p,h in load(out/'preserved-sha256.json').items():assert sha(root/p)==h,p
+for p,h in load(Path('/tmp/oras-ai-task3o/task3n-approved-sha256.json')).items():assert sha(root/p)==h,p
+for p in out.glob('*.json'):load(p)
+for p in out.glob('*.md'):
+ for target in re.findall(r'\]\(([^)]+)\)',p.read_text()):
+  if not target.startswith('http'):assert (p.parent/target.split('#')[0]).exists(),target
+for p in out.iterdir():
+ assert not re.search(rb'(?:\bsk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9_.-]{12,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)',p.read_bytes(),re.I),p.name
+fields=['Factual faithfulness (1–5)','Relevance (1–5)','Completeness (1–5)','Clarity (1–5)','Calibrated uncertainty (1–5)','Concision (1–5)','Overall score (1–5)','Pass/fail','Hard-gate concern YES/NO','Reviewer notes']
+for p in load(out/'preservation.json')['official_scorecards']:
+ text=(root/p).read_text()
+ for f in fields:assert len(re.findall(r'^\| '+re.escape(f)+r' \| \|$',text,re.M))==69
+worksheet=(root/'docs/evidence/m9-human-quality-adjudication/owner-decision-worksheet.md').read_text();assert len(re.findall(r'^\| [A-Z]-[^|]+ \| \| \| \| \| \|$',worksheet,re.M))==69
+assert sha(root/'docs/quality/release-evaluation/core-v3.json')=='360b93db97999563182018f2a858ad28d107605298d2f44b96fa1272a41b1411'
+fingerprint=subprocess.check_output(['php','-r',"require 'tests/bootstrap.php'; require 'tools/evaluation/harness.php'; echo ORAS_AI_Release_Evaluation::source_fingerprint();"],cwd=root,text=True)
+assert fingerprint==load(out/'corrected-fixture-report.json')['source_fingerprint_sha256']
+quality=(out/'final-quality.txt').read_text();assert '224 PHP file(s) passed lint.' in quality and '893 test(s) passed.' in quality and '97 frontend chat assertions passed.' in quality
+assert not re.search(r'^(?:FAIL |Warning:|PHP Warning:)',quality,re.M)
+assert load(root/'package.json')['version']=='0.2.1';assert "define( 'ORAS_AI_VERSION', '0.2.1' );" in (root/'oras-ai-assistant.php').read_text()
+check=subprocess.run(['git','diff','--check'],cwd=root,capture_output=True,text=True);assert check.returncode==0
+(out/'final-diff-check.txt').write_text(check.stdout+check.stderr)
+state={'validation':'PASS','branch':git('branch','--show-current'),'HEAD':git('rev-parse','HEAD'),'origin_ahead_behind':[0,0],'remote_head_verified':'d352ddafe676697ab040ab9ca306183365cf0241','worktree':'Task 3O changes only; deliberately uncommitted','staged_files':0,'changed_preexisting_files':sorted(allowed),'new_test_file':'tests/domain/SecurityRefusalQualityTest.php','new_evidence_directory':str(out.relative_to(root)),'new_source_fingerprint_verified':fingerprint,'unchanged_preexisting_files':508,'historical_evidence_files_preserved':203,'task3n_documents_preserved':6,'blank_official_cards_each':69,'blank_reviewer_fields_each':690,'blank_owner_worksheet_rows':69,'json_link_credential_checks':'PASS','git_diff_check_exit':0,'paid_api_calls':0,'native_ledger_access':False,'no_task3o_commit_push':True,'status':'M9 SECURITY REFUSAL CORRECTION READY FOR OWNER REVIEW'}
+(out/'final-state-validation.json').write_text(json.dumps(state,indent=2)+'\n');print(json.dumps(state,indent=2))

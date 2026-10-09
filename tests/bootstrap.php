@@ -116,6 +116,7 @@ function oras_ai_test_reset(): void {
 	$GLOBALS['oras_ai_test_submenu_pages'] = array();
 	$GLOBALS['oras_ai_test_is_admin'] = true;
 	$GLOBALS['oras_ai_test_current_user_id'] = 7;
+	$GLOBALS['oras_ai_test_user_lookups'] = array();
 	$GLOBALS['oras_ai_test_users'] = array(
 		7 => (object) array('ID' => 7, 'display_name' => 'Test Administrator'),
 	);
@@ -665,6 +666,7 @@ function get_current_user_id(): int {
 }
 
 function get_userdata($user_id) {
+	$GLOBALS['oras_ai_test_user_lookups'][] = (int) $user_id;
 	return $GLOBALS['oras_ai_test_users'][(int) $user_id] ?? false;
 }
 

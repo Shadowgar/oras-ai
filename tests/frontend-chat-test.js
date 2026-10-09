@@ -158,6 +158,19 @@ assert.deepStrictEqual([
 	api.statusMessage({ status: 'failure', error_code: 'unexpected' }, statusStrings).text,
 ], ['', 'Out of scope', 'No evidence', 'Request limit reached', 'Unavailable', 'Request failed']);
 
+const privacyRefusal = "I can only access membership information associated with your authenticated account. I cannot inspect another member's private information.";
+const urlRefusal = 'I cannot access private or arbitrary URLs. I can still help with ORAS or astronomy questions using approved sources.';
+for (const [code, answer] of [['private_account_access', privacyRefusal], ['arbitrary_url_access', urlRefusal], ['oras_ai_private_account_access', privacyRefusal]]) {
+	const notice = api.statusMessage({ status: 'refusal', error_code: code, answer }, statusStrings);
+	assert.strictEqual(notice.text, answer, 'Security refusal notice lost its relevant explanation');
+	assert.strictEqual(notice.kind, 'notice');
+}
+for (const answer of ['', '   ', null, {}, 42]) {
+	assert.strictEqual(api.statusMessage({ status: 'refusal', error_code: 'private_account_access', answer }, statusStrings).text, 'Out of scope');
+}
+assert.strictEqual(api.statusMessage({ status: 'refusal', error_code: 'unexpected', answer: 'Untrusted details' }, statusStrings).text, 'Out of scope');
+assert.strictEqual(api.statusMessage({ status: 'failure', error_code: 'private_account_access', answer: privacyRefusal }, statusStrings).text, 'Request failed');
+
 const message = new FakeNode('div');
 api.renderMessage(message, { role: 'assistant', content: '<script>alert(1)</script>' }, fakeDocument);
 assert.strictEqual(message.textContent, '');
@@ -238,6 +251,7 @@ const transport = api.createTransport(
 		'[data-oras-ai-chat-close]': close,
 	};
 	const operations = [];
+	let securityResult = null;
 	const controller = api.createController(root, {
 		strings: Object.assign({}, statusStrings, {
 			loading: 'Loading',
@@ -259,8 +273,8 @@ const transport = api.createTransport(
 			return {
 				conversation_id: 8,
 				member_message: { role: 'member', content: fields.question },
-				assistant_message: { role: 'assistant', content: 'Shared answer', sources: [] },
-				result: { status: 'success' },
+				assistant_message: { role: 'assistant', content: securityResult ? securityResult.answer : 'Shared answer', sources: [] },
+				result: securityResult || { status: 'success' },
 			};
 		},
 	});
@@ -285,6 +299,16 @@ const transport = api.createTransport(
 	assert.strictEqual(status.textContent, '');
 	assert(styles.includes('@media (max-width: 600px)') && styles.includes('.oras-ai-chat--panel') && styles.includes('max-height: none'));
 	assert(styles.includes('.oras-ai-chat[hidden]') && styles.includes('display: none'), 'Hidden panel must not intercept launcher clicks');
+
+	for (const [code, answer] of [['private_account_access', privacyRefusal], ['arbitrary_url_access', urlRefusal]]) {
+		securityResult = { status: 'refusal', error_code: code, answer };
+		input.value = 'Blocked operation';
+		await controller.submit();
+		assert.strictEqual(status.textContent, answer, 'Controller must display the server refusal as plain text');
+		assert(allText(messages).includes(answer), 'Assistant message must retain the refusal explanation');
+		assert.strictEqual(status.children.length, 0, 'Refusal notice must not add markup');
+	}
+	securityResult = null;
 
 	const supportRoot = fakeDocument.createElement('section');
 	const supportMessages = fakeDocument.createElement('div');

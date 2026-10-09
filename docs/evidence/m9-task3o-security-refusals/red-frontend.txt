@@ -1,0 +1,29 @@
+node:assert:150
+  throw new AssertionError(obj);
+  ^
+
+AssertionError [ERR_ASSERTION]: Security refusal notice lost its relevant explanation
++ actual - expected
+
++ 'Out of scope'
+- "I can only access membership information associated with your authenticated account. I cannot inspect another member's private information."
+
+    at assert.strictEqual (/home/rocco/projects/oras-ai/tests/frontend-chat-test.js:4:73)
+    at Object.<anonymous> (/home/rocco/projects/oras-ai/tests/frontend-chat-test.js:165:9)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'Out of scope',
+  expected: "I can only access membership information associated with your authenticated account. I cannot inspect another member's private information.",
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.0
