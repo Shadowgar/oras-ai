@@ -121,6 +121,16 @@ final class ORAS_AI_Source_Classification_Result {
 			$errors[]       = 'invalid_classifier';
 		}
 
+		// AI classifications have no trusted reference clock. Relative-date reasons
+		// cannot establish policy approval/applicability; preserve fail-closed review.
+		if ( 'ai' === $classified_by && preg_match(
+			'/\b(?:past|future|upcoming|expired)\s+(?:effective\s+)?dates?\b|\b(?:effective\s+)?dates?\s+(?:(?:is|are|falls?|lies?|remains?)\s+)?(?:in\s+the\s+)?(?:past|future)\b|\b(?:already|not\s+yet)\s+(?:effective|in\s+effect)\b/i',
+			$reason
+		) ) {
+			$errors[] = 'unsupported_temporal_reference';
+			$payload['reason'] = 'Human review is required: the classification used relative-date reasoning without a trusted reference date. Verify source approval, applicability and critical qualifications independently; an effective-date label alone does not establish them.';
+		}
+
 		$stable_fragments = self::normalize_stable_fragments(
 			isset( $payload['stable_fragments'] ) ? $payload['stable_fragments'] : null,
 			$errors

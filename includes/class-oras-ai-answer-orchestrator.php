@@ -128,6 +128,17 @@ final class ORAS_AI_Answer_Orchestrator {
 					if ( 'ambiguous_event_subject' === $live_result->reason() ) {
 						return ORAS_AI_Answer_Result::no_evidence( 'Please name the event so I can verify current registration availability.', 'event_identity_required' );
 					}
+					// Disclose each requested member/action fact even when all providers fail.
+					// Denial must retain the existing authorization boundary.
+					if ( ORAS_AI_Live_Result::DENIED !== $live_result->status() ) {
+						$unavailable_context = $this->context_assembler->assemble( $guarded, new ORAS_AI_Evidence_Packet(), $intent, ORAS_AI_Grounded_Context::ORAS_GROUNDED );
+						if ( ! is_wp_error( $unavailable_context ) ) {
+							$unavailable_answer = $this->bounded_member_aware_answer( $request->question(), $unavailable_context );
+							if ( null !== $unavailable_answer ) {
+								return ORAS_AI_Answer_Result::no_evidence( $unavailable_answer, 'live_data_unavailable' );
+							}
+						}
+					}
 					return ORAS_AI_Answer_Result::no_evidence( self::NO_EVIDENCE_MESSAGE, 'live_data_unavailable' );
 				}
 				if ( $live_result->successful() ) {
@@ -384,7 +395,9 @@ final class ORAS_AI_Answer_Orchestrator {
 					}
 				}
 			}
-			if ( empty( $products ) ) {
+			$price_requested = (bool) preg_match( '/\b(?:price|cost|how much)\b/', $question );
+			$availability_requested = (bool) preg_match( '/\b(?:available|availability|stock|buy|get|purchase|purchasable|where)\b/', $question );
+			if ( empty( $products ) && ! $price_requested && ! preg_match( '/\b(?:annual|daily)\b/', $question ) ) {
 				return 'I could not verify current Observer Pass availability or purchasability.';
 			}
 			$sentences = array();
@@ -397,8 +410,8 @@ final class ORAS_AI_Answer_Orchestrator {
 				$title = ucfirst( $option ) . ' Observer Pass';
 				if ( isset( $facts['price'] ) ) {
 					$sentences[] = $facts['price']->field( 'relevant_text' );
-				} elseif ( preg_match( '/\b(?:price|cost|how much)\b/', $question ) ) {
-					$sentences[] = 'I could not verify the ' . $title . ' price.';
+				} elseif ( $price_requested ) {
+					$sentences[] = 'I could not verify the ' . $title . ' price from current WooCommerce information.';
 				}
 				if ( isset( $facts['availability'], $facts['purchasable'] ) ) {
 					$in_stock = in_array( $facts['availability']->field( 'comparison_value' ), array( 'instock|yes', 'onbackorder|yes' ), true );
@@ -407,7 +420,7 @@ final class ORAS_AI_Answer_Orchestrator {
 					$sentences[] = $in_stock && $purchasable && '' !== $url
 						? $title . ' is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.'
 						: $title . ' is not currently purchasable.';
-				} else {
+				} elseif ( $availability_requested ) {
 					$sentences[] = $facts
 						? 'I could not verify whether the ' . $title . ' is currently purchasable.'
 						: 'I could not verify current ' . $title . ' availability or purchasability.';

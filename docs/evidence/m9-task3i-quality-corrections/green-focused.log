@@ -1,0 +1,30 @@
+Command: npm test
+Exit code: 0
+831 PHP tests and 78 frontend assertions passed; 26 focused tests passed.
+
+PASS M9 Task 3I partial failure membership succeeds / price unavailable
+PASS M9 Task 3I partial failure price succeeds / membership unavailable
+PASS M9 Task 3I partial failure both succeed
+PASS M9 Task 3I partial failure both unavailable
+PASS M9 Task 3I independent fields price known / availability unknown
+PASS M9 Task 3I independent fields availability known / price unknown
+PASS M9 Task 3I combined price membership event failure woo
+PASS M9 Task 3I combined price membership event failure pmpro
+PASS M9 Task 3I combined price membership event failure event
+PASS M9 Task 3I no product facts retains price intent Annual
+PASS M9 Task 3I no product facts retains price intent Daily
+PASS M9 Task 3I no product facts retains price intent Annual and Daily
+PASS M9 Task 3I price-only success does not introduce unrequested availability uncertainty
+PASS M9 Task 3I connector denial does not become scoped failure or expose healthy sibling
+PASS M9 Task 3I ambiguous event identity retains clarification and zero model calls
+PASS M9 Task 3I scanner no-clock boundary past date plus pending approval
+PASS M9 Task 3I scanner no-clock boundary future date plus pending approval
+PASS M9 Task 3I scanner no-clock boundary missing effective date
+PASS M9 Task 3I scanner no-clock boundary conflicting dates
+PASS M9 Task 3I scanner no-clock boundary approval unknown
+PASS M9 Task 3I approved unambiguous notice retains absolute date and safe disposition
+PASS M9 Task 3I scanner rejects relative-date approval inference future effective date
+PASS M9 Task 3I scanner rejects relative-date approval inference effective date is past
+PASS M9 Task 3I scanner rejects relative-date approval inference already effective
+PASS M9 Task 3I scanner rejects relative-date approval inference not yet in effect
+PASS M9 Task 3I grounded review ambiguity reason remains unchanged

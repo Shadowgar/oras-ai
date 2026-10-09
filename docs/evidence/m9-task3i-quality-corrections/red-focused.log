@@ -1,0 +1,45 @@
+Command: php tools/run-tests.php
+Exit code: 1
+805 existing tests passed; 24 new focused tests: 7 passed, 17 failed.
+
+FAIL M9 Task 3I partial failure membership succeeds / price unavailable
+Requested subquestion disappeared: Current membership status: active. I could not verify current Observer Pass availability or purchasability. Missing Annual Observer Pass price.
+PASS M9 Task 3I partial failure price succeeds / membership unavailable
+FAIL M9 Task 3I partial failure both succeed
+Unqualified or failed sibling fact asserted. Unexpected could not verify.
+FAIL M9 Task 3I partial failure both unavailable
+Requested subquestion disappeared: I couldn't establish that from the current ORAS information. Missing could not verify current membership.
+PASS M9 Task 3I independent fields price known / availability unknown
+PASS M9 Task 3I independent fields availability known / price unknown
+FAIL M9 Task 3I combined price membership event failure woo
+Requested price portion omitted. Missing Annual Observer Pass price.
+PASS M9 Task 3I combined price membership event failure pmpro
+PASS M9 Task 3I combined price membership event failure event
+FAIL M9 Task 3I no product facts retains price intent Annual
+Pass identity or price intent lost. Missing Annual Observer Pass price.
+FAIL M9 Task 3I no product facts retains price intent Daily
+Pass identity or price intent lost. Missing Daily Observer Pass price.
+FAIL M9 Task 3I no product facts retains price intent Annual and Daily
+Pass identity or price intent lost. Missing Annual Observer Pass price.
+FAIL M9 Task 3I price-only success does not introduce unrequested availability uncertainty
+Unrequested fields were treated as failures. Unexpected could not verify.
+FAIL M9 Task 3I scanner no-clock boundary past date plus pending approval
+No-clock date claim passed validation.
+FAIL M9 Task 3I scanner no-clock boundary future date plus pending approval
+No-clock date claim passed validation.
+FAIL M9 Task 3I scanner no-clock boundary missing effective date
+No-clock date claim passed validation.
+FAIL M9 Task 3I scanner no-clock boundary conflicting dates
+No-clock date claim passed validation.
+FAIL M9 Task 3I scanner no-clock boundary approval unknown
+No-clock date claim passed validation.
+PASS M9 Task 3I approved unambiguous notice retains absolute date and safe disposition
+FAIL M9 Task 3I scanner rejects relative-date approval inference future effective date
+Relative time was used to approve knowledge without a reference clock. Expected 'review', got 'static_knowledge'.
+FAIL M9 Task 3I scanner rejects relative-date approval inference effective date is past
+Relative time was used to approve knowledge without a reference clock. Expected 'review', got 'static_knowledge'.
+FAIL M9 Task 3I scanner rejects relative-date approval inference already effective
+Relative time was used to approve knowledge without a reference clock. Expected 'review', got 'static_knowledge'.
+FAIL M9 Task 3I scanner rejects relative-date approval inference not yet in effect
+Relative time was used to approve knowledge without a reference clock. Expected 'review', got 'static_knowledge'.
+PASS M9 Task 3I grounded review ambiguity reason remains unchanged

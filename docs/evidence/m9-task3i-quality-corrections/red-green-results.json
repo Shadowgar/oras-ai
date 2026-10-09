@@ -1,0 +1,51 @@
+{
+  "red": {
+    "command": "php tools/run-tests.php",
+    "exit_code": 1,
+    "total": 829,
+    "passed": 812,
+    "failed": 17,
+    "existing_tests_passed": 805,
+    "focused_tests": 24,
+    "failed_names": [
+      "M9 Task 3I partial failure membership succeeds / price unavailable",
+      "M9 Task 3I partial failure both succeed",
+      "M9 Task 3I partial failure both unavailable",
+      "M9 Task 3I combined price membership event failure woo",
+      "M9 Task 3I no product facts retains price intent Annual",
+      "M9 Task 3I no product facts retains price intent Daily",
+      "M9 Task 3I no product facts retains price intent Annual and Daily",
+      "M9 Task 3I price-only success does not introduce unrequested availability uncertainty",
+      "M9 Task 3I scanner no-clock boundary past date plus pending approval",
+      "M9 Task 3I scanner no-clock boundary future date plus pending approval",
+      "M9 Task 3I scanner no-clock boundary missing effective date",
+      "M9 Task 3I scanner no-clock boundary conflicting dates",
+      "M9 Task 3I scanner no-clock boundary approval unknown",
+      "M9 Task 3I scanner rejects relative-date approval inference future effective date",
+      "M9 Task 3I scanner rejects relative-date approval inference effective date is past",
+      "M9 Task 3I scanner rejects relative-date approval inference already effective",
+      "M9 Task 3I scanner rejects relative-date approval inference not yet in effect"
+    ]
+  },
+  "first_green": {
+    "command": "php tools/run-tests.php",
+    "exit_code": 0,
+    "passed": 829,
+    "focused_passed": 24
+  },
+  "final_green": {
+    "command": "npm test; npm run quality (separate executions)",
+    "exit_codes": [
+      0,
+      0
+    ],
+    "php_passed": 831,
+    "frontend_assertions": 78,
+    "php_lint_files": 222,
+    "focused_passed": 26,
+    "partial_failure_tests": 15,
+    "scanner_tests": 11,
+    "unexpected_warnings": 0,
+    "failures": 0
+  }
+}
