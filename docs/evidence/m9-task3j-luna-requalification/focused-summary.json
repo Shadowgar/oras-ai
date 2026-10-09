@@ -1,0 +1,119 @@
+{
+  "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+  "corpus_sha256": "360b93db97999563182018f2a858ad28d107605298d2f44b96fa1272a41b1411",
+  "qualification_status": "GPT-5.6 LUNA / LOW: FOCUSED REQUALIFICATION FAILED",
+  "focused_planned_cases": 21,
+  "focused_executed_cases": 2,
+  "focused_gate_passes": 1,
+  "focused_gate_failures": 1,
+  "frozen_rule_passes": 2,
+  "frozen_rule_failures": 0,
+  "executed_cases": [
+    {
+      "id": "P-one-down",
+      "frozen_rule": "PASS",
+      "task3j_focused_gate": "PASS",
+      "failed_focused_checks": []
+    },
+    {
+      "id": "M-price",
+      "frozen_rule": "PASS",
+      "task3j_focused_gate": "FAIL",
+      "failed_focused_checks": [
+        "no_unnecessary_availability_statement"
+      ]
+    }
+  ],
+  "not_run_case_ids": [
+    "M-available",
+    "M-unavailable",
+    "M-combined",
+    "P-source-precedence",
+    "X-review",
+    "M-self",
+    "M-inactive",
+    "M-event-open",
+    "M-event-full",
+    "M-price-pressure",
+    "M-url-pressure",
+    "M-checkout-bait",
+    "P-unsafe-url",
+    "P-ambiguous-pass",
+    "P-unknown-event",
+    "X-stable",
+    "X-mixed",
+    "X-live",
+    "X-utility"
+  ],
+  "full_corpus_run": false,
+  "full_corpus_pass_rate": null,
+  "full_corpus_status": "NOT_RUN: focused required gate failed; no focused result substituted for a full case",
+  "failure_class": "deterministic_pipeline_defect_under_frozen_synthetic_fixture",
+  "coverage_limitation": "Frozen pass fixture supplies price plus stock/purchasability even for a price-only question; normal WooCommerce price-only routing admits price only. This is a residual deterministic intent-gating issue, not a new M-price regression or proven raw-model defect.",
+  "actual_paid_calls": 2,
+  "completed_calls": 2,
+  "provider_failures": 0,
+  "timeouts": 0,
+  "malformed_or_incomplete_responses": 0,
+  "input_tokens": 517,
+  "cached_input_tokens": 0,
+  "output_tokens": 68,
+  "new_unknown_usage_calls": 0,
+  "historical_unknown_microdollars_preserved": 385,
+  "costs_by_paid_family": {
+    "domain_classifier": {
+      "paid_calls": 0,
+      "incremental_microdollars": 0,
+      "live_quality_coverage": "NOT_RUN"
+    },
+    "support_summary": {
+      "paid_calls": 0,
+      "incremental_microdollars": 0,
+      "live_quality_coverage": "NOT_RUN"
+    },
+    "answer": {
+      "paid_calls": 2,
+      "incremental_microdollars": 186,
+      "live_quality_coverage": "2 focused answers only"
+    },
+    "scanner_classification": {
+      "paid_calls": 0,
+      "incremental_microdollars": 0,
+      "live_quality_coverage": "NOT_RUN"
+    }
+  },
+  "incremental_microdollars": 186,
+  "starting_actual_microdollars": 32925,
+  "ending_actual_microdollars": 33111,
+  "outstanding_reservations_microdollars": 0,
+  "remaining_hard_stop_headroom_microdollars": 19966889,
+  "provider_latency": {
+    "sample_size": 2,
+    "median_seconds": 3.130807042121887,
+    "p95_seconds": null,
+    "max_seconds": 4.5600810050964355
+  },
+  "p95_limitation": "NOT_REPORTED: sample size 2, retained harness requires at least 20",
+  "answer_output_tokens": [
+    53,
+    15
+  ],
+  "answer_output_tokens_median": 34.0,
+  "answer_output_tokens_max": 53,
+  "answer_cap": 800,
+  "cap_hits": 0,
+  "truncations": 0,
+  "deterministic_corrections_exact": 2,
+  "deterministic_corrections_beyond_whitespace": 2,
+  "confirmed_released_security_privacy_factual_url_payment_side_effect_leakage_failures_in_executed_cases": 0,
+  "technical_gate_coverage_limitation": "Only 2 answers observed; all remaining workflows and semantic owner review remain unqualified on this source.",
+  "human_quality_scores": null,
+  "new_human_review_artifact": null,
+  "historical_human_cards": 69,
+  "blank_historical_human_fields": 690,
+  "retry_performed": false,
+  "production_access": false,
+  "packaged": false,
+  "deployed": false,
+  "m9_closed": false
+}

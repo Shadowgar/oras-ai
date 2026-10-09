@@ -194,7 +194,7 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 	public static function matches_offering_question( $question ) {
 		$question = strtolower( trim( wp_strip_all_tags( (string) $question, true ) ) );
 		return (bool) preg_match( '/\bobserver\s+pass(?:es)?\b/', $question )
-			&& (bool) preg_match( '/\b(how much|price|cost|available|availability|stock|in stock|buy|get|purchase|purchasable|where)\b/', $question );
+			&& (bool) preg_match( '/\b(how much|prices?|costs?|available|availability|stock|in stock|buy|get|purchase|purchasable|where)\b/', $question );
 	}
 
 	private function route( ORAS_AI_Live_Request $request ) {
@@ -211,7 +211,7 @@ final class ORAS_AI_WooCommerce_Connector implements ORAS_AI_Observable_Live_Con
 		$is_daily  = (bool) preg_match( '/\bdaily\b/', $question );
 		$option    = $is_annual && ! $is_daily ? 'annual' : ( $is_daily && ! $is_annual ? 'daily' : 'all' );
 		$fields    = array();
-		if ( preg_match( '/\b(how much|price|cost)\b/', $question ) ) {
+		if ( preg_match( '/\b(how much|prices?|costs?)\b/', $question ) ) {
 			$fields[] = 'price';
 		}
 		if ( preg_match( '/\b(available|availability|stock|in stock|buy|get|purchase|purchasable|where)\b/', $question ) ) {

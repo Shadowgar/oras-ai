@@ -1,0 +1,36 @@
+{
+  "copied_artifacts_byte_identical": {
+    "source-proof.json": "86635f5e8c3241e1f3c47cee8e5a9a8d37d097c219cfc8845043b7d2dca39ab8",
+    "plan.json": "6c63d129406148446394750207709582324ea5bd483c6ffca739b417ad7c4c7f",
+    "preflight.json": "6d81908e744d52d18237742f933f4f33f84d7be2978b5afea52b19f5bf199e3e",
+    "focused-live-results.json": "ac9505e63fba17e1ce184749b67a0d85c89836c68dfd6d533b961637c570c932",
+    "focused-events.jsonl": "0f402334ace42d0f4d6d77e6a586f33b77f22d4da17e245179fccdb9f9a98ba0",
+    "ledger-after.json": "b19a02e20ed430112d7c387b17da11011e48a4d775ccf64c3dbde0553b8aa46c",
+    "evaluation-bootstrap.txt": "683a7aef80b78c8662d83e14d40e96db65cf79272b0b605296fce3374c134f73",
+    "focused-console.txt": "4248a0435d6698fc80b55b60357c1ecbd6a8dde2828b70def9299baafb082fdd",
+    "approved-task3i-files.json": "93463fa6970fc3b8db47881a60024433b2e0316176eb53c66eae89e7c34df545",
+    "approved-task3i-precommit-sha256.json": "52e1aa902c1a4ae60868c958667e9cd4ed9ed78bf40c3e88da275e57a1de4c57",
+    "task3i-lint-js-original.txt": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+    "precommit-checks.json": "9473199a3fe825ccbc8fa3c55ec84103fc640a7771a998c19a99b1764a8023c2",
+    "precommit-lint-php.txt": "30efefc7ec9d8e5e4ff0886ee28e53e2b9ca5c4cd3a81cb1fde2afe2b3adf583",
+    "precommit-lint-js.txt": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+    "precommit-test.txt": "3e69445a570f1cc12234e9e0c015c44626762c38de98436e2fa754250cca4375",
+    "precommit-quality.txt": "e738e826ff390e875cf480896280787c8dfffda6b2bf64c7535c8b2885f2f5e6",
+    "precommit-diff-check.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final-checks.json": "5a562a586010ce6e632a67d042faa1ea4bd818b8a4356ea91966b58cd919efdd",
+    "final-lint-php.txt": "30efefc7ec9d8e5e4ff0886ee28e53e2b9ca5c4cd3a81cb1fde2afe2b3adf583",
+    "final-lint-js.txt": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+    "final-test.txt": "3e69445a570f1cc12234e9e0c015c44626762c38de98436e2fa754250cca4375",
+    "final-quality.txt": "e738e826ff390e875cf480896280787c8dfffda6b2bf64c7535c8b2885f2f5e6",
+    "final-diff-check.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "all_other_artifacts_sha256": {
+    "correction-production-tests.diff": "5803eb3ebbe3156f811e0814ba14729a37e4932bf747d647f3bb1338d0231b87",
+    "correction-scope.json": "ed8d12fd0aa6161076d6424282be848c003b209d1053c9fc16f5889365c79b97",
+    "focused-summary.json": "b627773ca8e4c6fc1696b52808f1b07de99cfb4c4927845652b9b76661896dd5",
+    "historical-case-comparison.json": "b6f31f08e9e6a5514a3abdfd82f6a6c63209dae313a8779de91d102ae477fc8c",
+    "preservation-verification.json": "ffdefbe2508f0c782398ef125b36c7a65cb9a1ad833378e7d43e065e72221bd2",
+    "task3j-final-report.md": "a6a83ccbb315bbaf2b46de6614b6be793179b696b1f3363d9dce304254a64134",
+    "final-state-verification.json": "23157e2e3c940a4f39f056e73e3a10085676c26fc2b53e1f5c1e77b8f18f35e7"
+  }
+}

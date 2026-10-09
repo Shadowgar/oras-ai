@@ -1,0 +1,21 @@
+[
+  "docs/evidence/m9-task3i-quality-corrections/bounded-card-inspection.md",
+  "docs/evidence/m9-task3i-quality-corrections/diff-check.log",
+  "docs/evidence/m9-task3i-quality-corrections/green-focused.log",
+  "docs/evidence/m9-task3i-quality-corrections/lint-js.log",
+  "docs/evidence/m9-task3i-quality-corrections/lint-php.log",
+  "docs/evidence/m9-task3i-quality-corrections/preservation-verification.json",
+  "docs/evidence/m9-task3i-quality-corrections/quality-results.json",
+  "docs/evidence/m9-task3i-quality-corrections/quality.log",
+  "docs/evidence/m9-task3i-quality-corrections/red-focused.log",
+  "docs/evidence/m9-task3i-quality-corrections/red-green-results.json",
+  "docs/evidence/m9-task3i-quality-corrections/root-cause-before-changes.md",
+  "docs/evidence/m9-task3i-quality-corrections/task3i-changed-files-sha256.json",
+  "docs/evidence/m9-task3i-quality-corrections/task3i-final-report.md",
+  "docs/evidence/m9-task3i-quality-corrections/test.log",
+  "includes/class-oras-ai-answer-orchestrator.php",
+  "includes/class-oras-ai-openai.php",
+  "includes/class-oras-ai-source-classification-result.php",
+  "tests/actions/PartialFailureQualityTest.php",
+  "tests/openai/ScannerReasonQualityTest.php"
+]

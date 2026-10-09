@@ -1,0 +1,27 @@
+[
+  {
+    "command": "npm run lint:php",
+    "exit_code": 0,
+    "elapsed_seconds": 4.287
+  },
+  {
+    "command": "npm run lint:js",
+    "exit_code": 0,
+    "elapsed_seconds": 0.142
+  },
+  {
+    "command": "npm test",
+    "exit_code": 0,
+    "elapsed_seconds": 3.094
+  },
+  {
+    "command": "npm run quality",
+    "exit_code": 0,
+    "elapsed_seconds": 7.54
+  },
+  {
+    "command": "git diff --check",
+    "exit_code": 0,
+    "elapsed_seconds": 0.003
+  }
+]

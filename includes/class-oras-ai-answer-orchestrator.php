@@ -395,8 +395,9 @@ final class ORAS_AI_Answer_Orchestrator {
 					}
 				}
 			}
-			$price_requested = (bool) preg_match( '/\b(?:price|cost|how much)\b/', $question );
+			$price_requested = (bool) preg_match( '/\b(?:prices?|costs?|how much)\b/', $question );
 			$availability_requested = (bool) preg_match( '/\b(?:available|availability|stock|buy|get|purchase|purchasable|where)\b/', $question );
+			$purchase_requested = (bool) preg_match( '/\b(?:buy|get|purchase|where)\b/', $question );
 			if ( empty( $products ) && ! $price_requested && ! preg_match( '/\b(?:annual|daily)\b/', $question ) ) {
 				return 'I could not verify current Observer Pass availability or purchasability.';
 			}
@@ -408,22 +409,29 @@ final class ORAS_AI_Answer_Orchestrator {
 			foreach ( $options as $option ) {
 				$facts = $products[ $option ] ?? array();
 				$title = ucfirst( $option ) . ' Observer Pass';
-				if ( isset( $facts['price'] ) ) {
-					$sentences[] = $facts['price']->field( 'relevant_text' );
-				} elseif ( $price_requested ) {
-					$sentences[] = 'I could not verify the ' . $title . ' price from current WooCommerce information.';
+				if ( $price_requested ) {
+					$sentences[] = isset( $facts['price'] )
+						? $facts['price']->field( 'relevant_text' )
+						: 'I could not verify the ' . $title . ' price from current WooCommerce information.';
 				}
-				if ( isset( $facts['availability'], $facts['purchasable'] ) ) {
-					$in_stock = in_array( $facts['availability']->field( 'comparison_value' ), array( 'instock|yes', 'onbackorder|yes' ), true );
-					$purchasable = 'yes' === $facts['purchasable']->field( 'comparison_value' );
-					$url = (string) $facts['purchasable']->field( 'canonical_url' );
-					$sentences[] = $in_stock && $purchasable && '' !== $url
-						? $title . ' is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.'
-						: $title . ' is not currently purchasable.';
-				} elseif ( $availability_requested ) {
-					$sentences[] = $facts
-						? 'I could not verify whether the ' . $title . ' is currently purchasable.'
-						: 'I could not verify current ' . $title . ' availability or purchasability.';
+				if ( $availability_requested ) {
+					if ( isset( $facts['availability'], $facts['purchasable'] ) ) {
+						$in_stock = in_array( $facts['availability']->field( 'comparison_value' ), array( 'instock|yes', 'onbackorder|yes' ), true );
+						$purchasable = 'yes' === $facts['purchasable']->field( 'comparison_value' );
+						$url = (string) $facts['purchasable']->field( 'canonical_url' );
+						$sentences[] = $in_stock && $purchasable
+							? $title . ' is currently purchasable.'
+							: $title . ' is not currently purchasable.';
+						// Preserve the qualified Woo backorder handoff for availability requests.
+						$needs_checkout = $purchase_requested || 'onbackorder|yes' === $facts['availability']->field( 'comparison_value' );
+						if ( $needs_checkout && $in_stock && $purchasable && '' !== $url ) {
+							$sentences[] = 'Use the linked ORAS product page to continue through WooCommerce checkout.';
+						}
+					} else {
+						$sentences[] = $facts
+							? 'I could not verify whether the ' . $title . ' is currently purchasable.'
+							: 'I could not verify current ' . $title . ' availability or purchasability.';
+					}
 				}
 			}
 			return implode( ' ', $sentences );

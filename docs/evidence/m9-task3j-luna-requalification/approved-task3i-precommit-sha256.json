@@ -1,0 +1,21 @@
+{
+  "docs/evidence/m9-task3i-quality-corrections/bounded-card-inspection.md": "974d316d16db8063658fd4ce6aaa331b07edda3b6fda02613c0c7685e2341683",
+  "docs/evidence/m9-task3i-quality-corrections/preservation-verification.json": "77896a8c6b3163a196ce24e4b3cb37ccf1cd69f6494d03541f1a70b942145b0f",
+  "docs/evidence/m9-task3i-quality-corrections/quality-results.json": "977071c75250fed683c41f02172897d8005c1c612dfab4526c102af4aec07bad",
+  "docs/evidence/m9-task3i-quality-corrections/red-green-results.json": "20dab71d1043ef32f2740a79046e86b99da19aeb06e7a45829be294546534d46",
+  "docs/evidence/m9-task3i-quality-corrections/root-cause-before-changes.md": "5b32a269030a5645b69ff79cd7d98309584414c6250cd0daa1f363a82e68f73f",
+  "docs/evidence/m9-task3i-quality-corrections/task3i-changed-files-sha256.json": "51e6efb0ccc7a8fac383c3b3d75eaf8119d9750a8da8e5ce4f5b84d02a34cdeb",
+  "docs/evidence/m9-task3i-quality-corrections/task3i-final-report.md": "d6e4ca11c6d67dd3c4458a3c151bf20dc7fc63cc3e46698c92a05ff0d1c3e309",
+  "includes/class-oras-ai-answer-orchestrator.php": "c9549aceb07257f20331ead3d3b24814913a3aaaca301a714fba3a6be8c82c32",
+  "includes/class-oras-ai-openai.php": "a0f9ba028d007cd4ebfc06d0fcd3a63094306405d08a2dcbb21ca841029bc990",
+  "includes/class-oras-ai-source-classification-result.php": "72b40265549357fdf9b2783359dc22d00c4baaba2e706cc350346ba7ee1f2c0a",
+  "tests/actions/PartialFailureQualityTest.php": "aefbdae0b2d198110af54b0bb91430357cfb5049609d468e9862baf4e06906f9",
+  "tests/openai/ScannerReasonQualityTest.php": "b1c10f46523a131119e1231a0df16d2cd7e9e22ccc3186dedc62358ceb288d8a",
+  "docs/evidence/m9-task3i-quality-corrections/diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "docs/evidence/m9-task3i-quality-corrections/green-focused.log": "3d8de195786c8e283691601fe085187c40b22ba174b57eebf127add03c7bfbb3",
+  "docs/evidence/m9-task3i-quality-corrections/lint-js.log": "cbe1e3a7de6c2433ccabfc83ac5a3ce080936acb8c2b985a5fddb95831e3b227",
+  "docs/evidence/m9-task3i-quality-corrections/lint-php.log": "30efefc7ec9d8e5e4ff0886ee28e53e2b9ca5c4cd3a81cb1fde2afe2b3adf583",
+  "docs/evidence/m9-task3i-quality-corrections/quality.log": "e738e826ff390e875cf480896280787c8dfffda6b2bf64c7535c8b2885f2f5e6",
+  "docs/evidence/m9-task3i-quality-corrections/red-focused.log": "e7778320a3dc086ed734c2a5d0f68fc90ff8e969d41433f8a8869bd517c2e1b3",
+  "docs/evidence/m9-task3i-quality-corrections/test.log": "3e69445a570f1cc12234e9e0c015c44626762c38de98436e2fa754250cca4375"
+}

@@ -1,0 +1,6 @@
+CASE P-one-down RULE_PASS FOCUSED PASS CALLS 1
+CASE M-price RULE_PASS FOCUSED FAIL CALLS 1
+FOCUSED STAGE STOPPED; NO RETRY; FULL CORPUS PROHIBITED
+sh: git: not found
+sh: git: not found
+FOCUSED RECORDED 2 of 21 cases; 2 calls; 1 focused failures

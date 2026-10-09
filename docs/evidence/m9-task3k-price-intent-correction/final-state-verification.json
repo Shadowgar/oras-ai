@@ -1,0 +1,29 @@
+{
+  "checked_at_utc": "2026-10-09T01:39:58.897501+00:00",
+  "branch": "m9/production-release",
+  "head": "ced199a16b31699dddb66d7644f120874ca088a1",
+  "origin_ahead_behind": [
+    0,
+    0
+  ],
+  "tracked_modified_paths": [
+    "includes/class-oras-ai-answer-orchestrator.php",
+    "includes/class-oras-ai-woocommerce-connector.php"
+  ],
+  "new_test_path": "tests/actions/PassIntentQualityTest.php",
+  "new_evidence_directory": "docs/evidence/m9-task3k-price-intent-correction/",
+  "unchanged_preexisting_untracked_evidence_directory": "docs/evidence/m9-task3j-luna-requalification/",
+  "staged_paths": [],
+  "git_diff_check_exit_code": 0,
+  "preserved_artifact_hashes_match": 125,
+  "existing_other_tracked_files_unchanged": 405,
+  "paid_api_calls": 0,
+  "incremental_cost_microdollars": 0,
+  "native_database_access": false,
+  "committed": false,
+  "pushed": false,
+  "all_30_report_items_present": true,
+  "runtime_candidate": "gpt-5.6-luna / low",
+  "version": "0.2.1",
+  "qualification_limit": "Offline regression and fixture qualification only; no fresh live model qualification"
+}

@@ -1,0 +1,29 @@
+{
+  "copied_artifacts_byte_identical": {
+    "red-full.txt": "d1bd79540c4dcf62e599b53448c2190eb08ba1295bd4cd434a3c5732b01984b7",
+    "red-results.json": "488250a576b752020272e6a8f20ee8899e4784955874a229d9c4c67456a0cba1",
+    "green-full.txt": "c5cc230e59ed86ab0619678e203c2a64011c6628fe169b9ae8116462f2a88183",
+    "green-results.json": "ad17268503f2eaae1ae1c8f79d0827c816e60171f4025d5510e302045ffd8891",
+    "backorder-red.txt": "5c54fd26b875c4f82fb1f0d04df1ca4fa1d4882f0f585da25526c3b01dbcda9b",
+    "backorder-red-results.json": "4d74f9893256091695cc8926aad6bd8392057a520c3f5a05328b7f0450e40046",
+    "green-full-final.txt": "5391ce941702b568571ca8a7e45d66a9a0342b9d5456b1b95a0b2f01d1288d5e",
+    "green-results-final.json": "9ae8eb5cb81df0be3f7b426f82f7fa4e737d9058084cb876eb62f92cc4815153",
+    "verification-checks.json": "356880125fc91d4b669e570ceba19a1e55245d752a3ff9be4aa5255225ab6313",
+    "lint-php.txt": "03be6ed24ebef770b42e370bf303618a4a9908e1e8b6b8a721d4ebfeea33e465",
+    "lint-js.txt": "babb91f1d8ba760bc51de31136c05397da7a31733d32100cd2cb3bf221ec4a9a",
+    "test.txt": "1b9f9a8e0f25dc98414f457d0186d0d330f9984c2c0d2dc03b405a61c74905ae",
+    "quality.txt": "cfa99b6846d4b2bfcbed1cfb11cbbb7968a3170b7b80ae5f7aac6b24ef735334",
+    "diff-check.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "offline-v3-fixture-results.json": "c8d7729a51d2b1a11dea27e90564ba8c8302c334d5266a16a651679733fe8cbf",
+    "offline-v3-fixture-events.jsonl": "f888b0aa84e89ca6f6f248c35d68210b093adede01b267524a25ad766561f85d"
+  },
+  "generated_artifacts_sha256": {
+    "focused-test-results.json": "160e7cfaedf82a76dc0d8cb4f403e1096cd2e35326f54dd4782eab6e89041d12",
+    "preservation-verification.json": "dc803ad9a4e51a376d647c808bcf56500d0ebbab8ffccb60a8726cdd82730c7f",
+    "prior-task3j-m-price-failure.json": "fdcd46456f71c44386cad0597c1d6ca40f9bd83d5cef28befe0ec0e44b711b37",
+    "production-correction.diff": "578d248d5aabf7dec8ad02368251825991af82b13064e1bfa142359f38262c8d",
+    "source-and-scope.json": "4f4fb7f30c5cddc8d34f88e4652dce63f8211c84559da4eac719e8c6cb37466f",
+    "task3k-final-report.md": "fc17122c2f867503f3e5a9f584160b726e0ad641e0d5c379a747d8d04abf42c3",
+    "final-state-verification.json": "1fdc8d39bc403f8b631f94f24dcc9538465e195b98cc4e42ecbf987a0fba7cfc"
+  }
+}

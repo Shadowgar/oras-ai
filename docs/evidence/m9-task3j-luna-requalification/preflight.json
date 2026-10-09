@@ -1,0 +1,112 @@
+{
+    "credential": "PRESENT",
+    "home": "http://localhost:8889",
+    "environment": "local",
+    "candidate": {
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "low"
+    },
+    "saved_model_raw": "[unset]",
+    "saved_cost_controls_sha256": "12096e0b7edbcb92f5fd34290640b15c8da2cae2dae62df59969623d58c88d3e",
+    "guard": {
+        "original_openai_blocked": true,
+        "openai_get_permitted": true,
+        "openai_post_permitted": true,
+        "unrelated_blocked": true,
+        "wrong_method_blocked": true,
+        "wrong_endpoint_blocked": true
+    },
+    "starting_budget": {
+        "accounting_available": true,
+        "member_day_allowed": 0,
+        "member_month_allowed": 0,
+        "site_month_actual_microdollars": 32925,
+        "site_month_reserved_microdollars": 0,
+        "site_month_allowed": 176,
+        "site_month_input_tokens": 77906,
+        "site_month_output_tokens": 17017,
+        "site_month_models": {
+            "gpt-5.6-luna": 148,
+            "gpt-6-luna": 28
+        },
+        "site_month_sources": {
+            "domain_classifier": {
+                "calls": 45,
+                "accounted_microdollars": 2436
+            },
+            "support_summary": {
+                "calls": 12,
+                "accounted_microdollars": 888
+            },
+            "answer": {
+                "calls": 84,
+                "accounted_microdollars": 15786
+            },
+            "scanner_classification": {
+                "calls": 35,
+                "accounted_microdollars": 13815
+            }
+        },
+        "site_month_unknown_microdollars": 385,
+        "rejections": []
+    },
+    "focused_bound": {
+        "maximum_calls": 37,
+        "maximum_input_tokens": 3615888,
+        "maximum_output_tokens": 74848,
+        "maximum_microdollars": 813009
+    },
+    "full_bound": {
+        "maximum_calls": 122,
+        "maximum_input_tokens": 10308928,
+        "maximum_output_tokens": 110784,
+        "maximum_microdollars": 2194774
+    },
+    "combined_bound": {
+        "maximum_calls": 159,
+        "maximum_input_tokens": 13924816,
+        "maximum_output_tokens": 185632,
+        "maximum_microdollars": 3007783
+    },
+    "full_batch_bounds": [
+        {
+            "maximum_calls": 70,
+            "maximum_input_tokens": 5601680,
+            "maximum_output_tokens": 32480,
+            "maximum_microdollars": 1159340
+        },
+        {
+            "maximum_calls": 52,
+            "maximum_input_tokens": 4707248,
+            "maximum_output_tokens": 78304,
+            "maximum_microdollars": 1035434
+        }
+    ],
+    "maximum_planned_ending_microdollars": 3040708,
+    "remaining_hard_stop_headroom_microdollars": 19967075,
+    "pricing": {
+        "input_microdollars_per_million_tokens": 200000,
+        "output_microdollars_per_million_tokens": 1200000,
+        "unit": "per_million_tokens"
+    },
+    "limits": {
+        "daily_quota": 25,
+        "monthly_quota": 150,
+        "burst_per_minute": 5,
+        "max_input_characters": 4000,
+        "max_output_tokens": 800,
+        "execution_timeout_seconds": 30,
+        "warning_microdollars": 10000000,
+        "hard_stop_microdollars": 20000000
+    },
+    "focused_cases": 21,
+    "full_cases": 72,
+    "live_eligible": 69,
+    "fixture_only": 3,
+    "paid_preflight_calls": 0,
+    "source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+    "source_tree_uncommitted": false,
+    "fixed_source_manifest_sha256": "78b478ef6c6eb5844eb88e17f04226e0944a4a7c30cc9dc966e68125e223e7e8",
+    "persistent_guard_sha256": "d41408136cb63c53d9167f3becb958a36e1066d753de401c11e0e01e997d219c",
+    "candidate_override": "NONE: fixed committed runtime and harness; process-only approved HTTP exception."
+}

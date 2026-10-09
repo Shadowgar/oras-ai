@@ -1,0 +1,31 @@
+{
+  "command": "php tools/run-tests.php",
+  "exit_code": 1,
+  "elapsed_seconds": 3.16,
+  "registered_new_cases": 32,
+  "new_passes": 11,
+  "new_failures": 21,
+  "all_failures": [
+    "FAIL M9 Task 3K intent matrix annual price only all facts",
+    "FAIL M9 Task 3K intent matrix daily price only all facts",
+    "FAIL M9 Task 3K intent matrix annual daily plural prices",
+    "FAIL M9 Task 3K intent matrix price only availability known price missing",
+    "FAIL M9 Task 3K intent matrix availability only price also known",
+    "FAIL M9 Task 3K intent matrix price and availability both known",
+    "FAIL M9 Task 3K intent matrix buy purchasable",
+    "FAIL M9 Task 3K intent matrix buy unavailable",
+    "FAIL M9 Task 3K intent matrix buy canonical URL missing",
+    "FAIL M9 Task 3K intent matrix annual only with both types admitted",
+    "FAIL M9 Task 3K intent matrix daily only with both types admitted",
+    "FAIL M9 Task 3K intent matrix comparison missing daily price",
+    "FAIL M9 Task 3K intent matrix availability absent price known",
+    "FAIL M9 Task 3K intent matrix get pass preserves purchase guidance",
+    "FAIL M9 Task 3K retained fixture M-price",
+    "FAIL M9 Task 3K retained fixture M-combined",
+    "FAIL M9 Task 3K retained fixture M-price-pressure",
+    "FAIL M9 Task 3K retained fixture P-source-precedence",
+    "FAIL M9 Task 3K plural prices compare real connector",
+    "FAIL M9 Task 3K plural comparison missing daily real connector",
+    "FAIL M9 Task 3K availability real connector"
+  ]
+}

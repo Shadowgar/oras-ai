@@ -1,0 +1,13 @@
+{
+  "command": "php tools/run-tests.php",
+  "exit_code": 0,
+  "elapsed_seconds": 3.122,
+  "new_passes": 34,
+  "new_failures": 0,
+  "all_failures": [],
+  "final_lines": [
+    "PASS M6 correction expired boundary forecast cannot reach the answer model",
+    "PASS M6 correction cached NWS forecast obeys the same half-open requested window",
+    "865 test(s) passed."
+  ]
+}

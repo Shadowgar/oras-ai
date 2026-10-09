@@ -1,0 +1,189 @@
+{
+  "new_regression_count": 34,
+  "new_results": [
+    {
+      "name": "M9 Task 3K intent matrix annual price only all facts",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix daily price only all facts",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix annual daily plural prices",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix price only provider unavailable",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix price only availability known price missing",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix availability only price also known",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix price and availability both known",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix price and purchase price missing",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix price and availability stock missing",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix buy purchasable",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix buy unavailable",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix buy canonical URL missing",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix buy canonical URL unsafe",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix annual only with both types admitted",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix daily only with both types admitted",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix comparison missing daily price",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix availability absent price known",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix price and availability purchasability missing",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix price and buy both known",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix get pass preserves purchase guidance",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix backorder availability preserves qualified handoff",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K intent matrix backorder price only remains price only",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K retained fixture M-price",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K retained fixture M-combined",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K retained fixture P-one-down",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K retained fixture M-price-pressure",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K retained fixture M-checkout-bait",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K retained fixture P-source-precedence",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K plural prices compare real connector",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K plural comparison missing daily real connector",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K annual price real connector",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K availability real connector",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K membership only ignores admitted product siblings",
+      "result": "PASS"
+    },
+    {
+      "name": "M9 Task 3K event only ignores admitted member and pass siblings",
+      "result": "PASS"
+    }
+  ],
+  "prior_task3i_regressions_count": 26,
+  "prior_task3i_results": [
+    "PASS M9 Task 3I partial failure membership succeeds / price unavailable",
+    "PASS M9 Task 3I partial failure price succeeds / membership unavailable",
+    "PASS M9 Task 3I partial failure both succeed",
+    "PASS M9 Task 3I partial failure both unavailable",
+    "PASS M9 Task 3I independent fields price known / availability unknown",
+    "PASS M9 Task 3I independent fields availability known / price unknown",
+    "PASS M9 Task 3I combined price membership event failure woo",
+    "PASS M9 Task 3I combined price membership event failure pmpro",
+    "PASS M9 Task 3I combined price membership event failure event",
+    "PASS M9 Task 3I no product facts retains price intent Annual",
+    "PASS M9 Task 3I no product facts retains price intent Daily",
+    "PASS M9 Task 3I no product facts retains price intent Annual and Daily",
+    "PASS M9 Task 3I price-only success does not introduce unrequested availability uncertainty",
+    "PASS M9 Task 3I connector denial does not become scoped failure or expose healthy sibling",
+    "PASS M9 Task 3I ambiguous event identity retains clarification and zero model calls",
+    "PASS M9 Task 3I scanner no-clock boundary past date plus pending approval",
+    "PASS M9 Task 3I scanner no-clock boundary future date plus pending approval",
+    "PASS M9 Task 3I scanner no-clock boundary missing effective date",
+    "PASS M9 Task 3I scanner no-clock boundary conflicting dates",
+    "PASS M9 Task 3I scanner no-clock boundary approval unknown",
+    "PASS M9 Task 3I approved unambiguous notice retains absolute date and safe disposition",
+    "PASS M9 Task 3I scanner rejects relative-date approval inference future effective date",
+    "PASS M9 Task 3I scanner rejects relative-date approval inference effective date is past",
+    "PASS M9 Task 3I scanner rejects relative-date approval inference already effective",
+    "PASS M9 Task 3I scanner rejects relative-date approval inference not yet in effect",
+    "PASS M9 Task 3I grounded review ambiguity reason remains unchanged"
+  ],
+  "original_test_count": 831,
+  "total_php_tests": 865,
+  "frontend_assertions": 78,
+  "php_lint_files": 223,
+  "warnings": 0,
+  "paid_openai_calls": 0,
+  "real_http_calls": 0,
+  "coverage_classes": {
+    "extra_admitted_facts_matrix": 22,
+    "retained_v3_cases": 6,
+    "real_connector_pipeline": 4,
+    "neighbor_domain_controls": 2
+  },
+  "offline_v3_rules": {
+    "passed": 72,
+    "failed": 0,
+    "model_qualified": false,
+    "quality": null
+  }
+}

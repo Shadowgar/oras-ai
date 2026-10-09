@@ -1,0 +1,15 @@
+{
+  "command": "php tools/run-tests.php",
+  "exit_code": 1,
+  "elapsed_seconds": 2.901,
+  "new_passes": 32,
+  "new_failures": 0,
+  "all_failures": [
+    "FAIL M8 Task 3 qualified Woo backorder remains a member-driven handoff"
+  ],
+  "final_lines": [
+    "PASS M6 correction adjacent NWS periods have a single boundary owner for fields and points",
+    "PASS M6 correction expired boundary forecast cannot reach the answer model",
+    "PASS M6 correction cached NWS forecast obeys the same half-open requested window"
+  ]
+}

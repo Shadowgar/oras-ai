@@ -1,0 +1,252 @@
+diff --git a/includes/class-oras-ai-answer-orchestrator.php b/includes/class-oras-ai-answer-orchestrator.php
+index e325e8a..ce9236b 100644
+--- a/includes/class-oras-ai-answer-orchestrator.php
++++ b/includes/class-oras-ai-answer-orchestrator.php
+@@ -128,6 +128,17 @@ final class ORAS_AI_Answer_Orchestrator {
+ 					if ( 'ambiguous_event_subject' === $live_result->reason() ) {
+ 						return ORAS_AI_Answer_Result::no_evidence( 'Please name the event so I can verify current registration availability.', 'event_identity_required' );
+ 					}
++					// Disclose each requested member/action fact even when all providers fail.
++					// Denial must retain the existing authorization boundary.
++					if ( ORAS_AI_Live_Result::DENIED !== $live_result->status() ) {
++						$unavailable_context = $this->context_assembler->assemble( $guarded, new ORAS_AI_Evidence_Packet(), $intent, ORAS_AI_Grounded_Context::ORAS_GROUNDED );
++						if ( ! is_wp_error( $unavailable_context ) ) {
++							$unavailable_answer = $this->bounded_member_aware_answer( $request->question(), $unavailable_context );
++							if ( null !== $unavailable_answer ) {
++								return ORAS_AI_Answer_Result::no_evidence( $unavailable_answer, 'live_data_unavailable' );
++							}
++						}
++					}
+ 					return ORAS_AI_Answer_Result::no_evidence( self::NO_EVIDENCE_MESSAGE, 'live_data_unavailable' );
+ 				}
+ 				if ( $live_result->successful() ) {
+@@ -384,7 +395,9 @@ final class ORAS_AI_Answer_Orchestrator {
+ 					}
+ 				}
+ 			}
+-			if ( empty( $products ) ) {
++			$price_requested = (bool) preg_match( '/\b(?:price|cost|how much)\b/', $question );
++			$availability_requested = (bool) preg_match( '/\b(?:available|availability|stock|buy|get|purchase|purchasable|where)\b/', $question );
++			if ( empty( $products ) && ! $price_requested && ! preg_match( '/\b(?:annual|daily)\b/', $question ) ) {
+ 				return 'I could not verify current Observer Pass availability or purchasability.';
+ 			}
+ 			$sentences = array();
+@@ -397,8 +410,8 @@ final class ORAS_AI_Answer_Orchestrator {
+ 				$title = ucfirst( $option ) . ' Observer Pass';
+ 				if ( isset( $facts['price'] ) ) {
+ 					$sentences[] = $facts['price']->field( 'relevant_text' );
+-				} elseif ( preg_match( '/\b(?:price|cost|how much)\b/', $question ) ) {
+-					$sentences[] = 'I could not verify the ' . $title . ' price.';
++				} elseif ( $price_requested ) {
++					$sentences[] = 'I could not verify the ' . $title . ' price from current WooCommerce information.';
+ 				}
+ 				if ( isset( $facts['availability'], $facts['purchasable'] ) ) {
+ 					$in_stock = in_array( $facts['availability']->field( 'comparison_value' ), array( 'instock|yes', 'onbackorder|yes' ), true );
+@@ -407,7 +420,7 @@ final class ORAS_AI_Answer_Orchestrator {
+ 					$sentences[] = $in_stock && $purchasable && '' !== $url
+ 						? $title . ' is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.'
+ 						: $title . ' is not currently purchasable.';
+-				} else {
++				} elseif ( $availability_requested ) {
+ 					$sentences[] = $facts
+ 						? 'I could not verify whether the ' . $title . ' is currently purchasable.'
+ 						: 'I could not verify current ' . $title . ' availability or purchasability.';
+diff --git a/includes/class-oras-ai-openai.php b/includes/class-oras-ai-openai.php
+index ef793d2..7319c24 100644
+--- a/includes/class-oras-ai-openai.php
++++ b/includes/class-oras-ai-openai.php
+@@ -42,6 +42,8 @@ final class ORAS_AI_OpenAI {
+ 			. 'mixed means a source with both durable knowledge and changing facts; return durable facts only in stable_fragments and place current facts in excluded_dynamic_claims with their dynamic_fact_types. '
+ 			. 'ignore means navigation, empty content, third-party legal, privacy, or cookie boilerplate, search/account/checkout utility pages, or content with no useful ORAS knowledge. '
+ 			. 'review means content that cannot be safely classified or separated, has policy/effective-date ambiguity, would lose critical qualifications, has low confidence, or fails stable/dynamic validation. '
++			. 'No trusted reference date is supplied for this classification. Do not use model memory or assume today to label an effective date as past, future, expired, already effective, or not yet effective. Quote an explicit source date without relative-time interpretation. '
++			. 'An effective-date footer alone does not establish Board approval or applicability. Pending, missing, or conflicting approval/applicability qualifications require review; explain the source-grounded ambiguity without inventing an approving resolution or interpreting the date as approval. '
+ 			. 'Public ORAS privacy and website-security policy pages are eligible searchable knowledge under Policies & Rules; do not ignore legitimate ORAS policy merely because it concerns privacy, security, legal terms, data handling, or vulnerability reporting. '
+ 			. 'Historical ORAS event pages with archival value use static_knowledge in Events when they contain durable past-event context, but must not preserve current dates, prices, deadlines, schedules, or availability as durable facts. '
+ 			. 'Set historical_event true only for Historical Event Knowledge and false for every other source. Historical Event Knowledge always requires human review during this milestone. '
+diff --git a/includes/class-oras-ai-source-classification-result.php b/includes/class-oras-ai-source-classification-result.php
+index dc083e5..3e81352 100644
+--- a/includes/class-oras-ai-source-classification-result.php
++++ b/includes/class-oras-ai-source-classification-result.php
+@@ -121,6 +121,16 @@ final class ORAS_AI_Source_Classification_Result {
+ 			$errors[]       = 'invalid_classifier';
+ 		}
+ 
++		// AI classifications have no trusted reference clock. Relative-date reasons
++		// cannot establish policy approval/applicability; preserve fail-closed review.
++		if ( 'ai' === $classified_by && preg_match(
++			'/\b(?:past|future|upcoming|expired)\s+(?:effective\s+)?dates?\b|\b(?:effective\s+)?dates?\s+(?:(?:is|are|falls?|lies?|remains?)\s+)?(?:in\s+the\s+)?(?:past|future)\b|\b(?:already|not\s+yet)\s+(?:effective|in\s+effect)\b/i',
++			$reason
++		) ) {
++			$errors[] = 'unsupported_temporal_reference';
++			$payload['reason'] = 'Human review is required: the classification used relative-date reasoning without a trusted reference date. Verify source approval, applicability and critical qualifications independently; an effective-date label alone does not establish them.';
++		}
++
+ 		$stable_fragments = self::normalize_stable_fragments(
+ 			isset( $payload['stable_fragments'] ) ? $payload['stable_fragments'] : null,
+ 			$errors
+diff --git a/tests/actions/PartialFailureQualityTest.php b/tests/actions/PartialFailureQualityTest.php
+new file mode 100644
+index 0000000..39dc489
+--- /dev/null
++++ b/tests/actions/PartialFailureQualityTest.php
+@@ -0,0 +1,95 @@
++<?php
++declare(strict_types=1);
++
++/** Real connectors and assembly; only external reads and model output are substituted. */
++function oras_ai_task3i_live(array $failed = array(), array $product = array()): ORAS_AI_Live_Service {
++	return new ORAS_AI_Live_Service(array(
++		new ORAS_AI_PMPro_Context_Connector(static fn() => in_array('pmpro', $failed, true) ? new WP_Error('oras_ai_pmpro_unavailable') : array(oras_ai_test_pmpro_level('Family'))),
++		new ORAS_AI_WooCommerce_Connector(static fn() => in_array('woo', $failed, true) ? new WP_Error('oras_ai_woocommerce_unavailable') : array(oras_ai_test_woo_record($product))),
++		new ORAS_AI_Events_Calendar_Connector(
++			static fn(): array => array(oras_ai_test_event_record(array('start' => '2026-10-18 20:00:00', 'end' => '2026-10-18 23:00:00'))),
++			static fn(): string => '2026-10-01T12:00:00-04:00',
++			static fn() => in_array('event', $failed, true) ? new WP_Error('provider_down') : array(array('state' => 'open'))
++		),
++	), new ORAS_AI_URL_Policy(array('oras.org')));
++}
++
++foreach (array(
++	'membership succeeds / price unavailable' => array(array('woo'), array(), array('Current membership status: active', 'Annual Observer Pass price'), array('45.00 USD', 'currently purchasable'), 1),
++	'price succeeds / membership unavailable' => array(array('pmpro'), array(), array('could not verify current membership', '45.00 USD'), array('Current membership status: active'), 1),
++	'both succeed' => array(array(), array(), array('Current membership status: active', '45.00 USD'), array('could not verify'), 1),
++	'both unavailable' => array(array('woo', 'pmpro'), array(), array('could not verify current membership', 'Annual Observer Pass price'), array('45.00 USD', 'Current membership status: active', 'currently purchasable'), 0),
++) as $label => $case) {
++	oras_ai_test('M9 Task 3I partial failure ' . $label, function () use ($case): void {
++		oras_ai_test_reset();
++		list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success('Costs $1. Purchased and paid. https://evil.example/pay'), array(), oras_ai_task3i_live($case[0], $case[1]));
++		$result = $orchestrator->answer(oras_ai_test_authorized_request(91, 'What is my membership status and Annual Observer Pass price?'));
++		foreach ($case[2] as $text) { oras_ai_assert_contains($text, $result->answer(), 'Requested subquestion disappeared: ' . $result->answer()); }
++		foreach ($case[3] as $text) { oras_ai_assert_not_contains($text, $result->answer(), 'Unqualified or failed sibling fact asserted.'); }
++		oras_ai_assert_same($case[4], count($provider->calls), 'Total unavailability must not generate an answer-model call.');
++		oras_ai_m8_assert_no_model_commerce($result);
++	});
++}
++
++foreach (array(
++	'price known / availability unknown' => array(array('stock_status' => 'unknown'), array('45.00 USD', 'could not verify whether the Annual Observer Pass is currently purchasable'), array('. Annual Observer Pass is currently purchasable.')),
++	'availability known / price unknown' => array(array('current_price' => 'unavailable'), array('could not verify the Annual Observer Pass price', 'Annual Observer Pass is currently purchasable', 'WooCommerce checkout'), array('45.00 USD')),
++) as $label => $case) {
++	oras_ai_test('M9 Task 3I independent fields ' . $label, function () use ($case): void {
++		oras_ai_test_reset();
++		list($orchestrator) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success('Costs $1. Purchased and paid.'), array(), oras_ai_task3i_live(array(), $case[0]));
++		$result = $orchestrator->answer(oras_ai_test_authorized_request(91, 'What is the Annual Observer Pass price and can I buy it?'));
++		foreach ($case[1] as $text) { oras_ai_assert_contains($text, $result->answer(), 'Independent requested field omitted.'); }
++		foreach ($case[2] as $text) { oras_ai_assert_not_contains($text, $result->answer(), 'Failed field asserted as known.'); }
++		oras_ai_m8_assert_no_model_commerce($result);
++	});
++}
++
++foreach (array('woo', 'pmpro', 'event') as $failed) {
++	oras_ai_test('M9 Task 3I combined price membership event failure ' . $failed, function () use ($failed): void {
++		oras_ai_test_reset();
++		list($orchestrator) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success('Paid and purchased for $1.'), array(), oras_ai_task3i_live(array($failed)));
++		$result = $orchestrator->answer(oras_ai_test_authorized_request(91, 'What is my membership status, the Annual Observer Pass price, and can I register for AstroBlast?'));
++		oras_ai_assert_contains('pmpro' === $failed ? 'could not verify current membership' : 'Current membership status: active', $result->answer(), 'Membership portion omitted.');
++		oras_ai_assert_contains('woo' === $failed ? 'Annual Observer Pass price' : '45.00 USD', $result->answer(), 'Requested price portion omitted.');
++		oras_ai_assert_contains('event' === $failed ? 'could not verify registration availability' : 'Registration is currently open', $result->answer(), 'Event portion omitted.');
++		oras_ai_assert_contains('AstroBlast 2026 starts', $result->answer(), 'Healthy schedule omitted.');
++		oras_ai_m8_assert_no_model_commerce($result);
++	});
++}
++
++foreach (array('Annual' => 'What does an Annual Observer Pass cost?', 'Daily' => 'How much is a Daily Observer Pass?', 'Annual and Daily' => 'What do Observer Passes cost?') as $label => $question) {
++	oras_ai_test('M9 Task 3I no product facts retains price intent ' . $label, function () use ($label, $question): void {
++		oras_ai_test_reset();
++		list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), oras_ai_task3i_live(array('woo')));
++		$result = $orchestrator->answer(oras_ai_test_authorized_request(91, $question));
++		foreach (explode(' and ', $label) as $option) { oras_ai_assert_contains($option . ' Observer Pass price', $result->answer(), 'Pass identity or price intent lost.'); }
++		oras_ai_assert_not_contains('availability', $result->answer(), 'Price uncertainty was replaced by unrelated availability uncertainty.');
++		oras_ai_assert_same(0, count($provider->calls), 'Unavailable product dispatched answer generation.');
++	});
++}
++
++oras_ai_test('M9 Task 3I price-only success does not introduce unrequested availability uncertainty', function (): void {
++	oras_ai_test_reset();
++	list($orchestrator) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), oras_ai_task3i_live());
++	$result = $orchestrator->answer(oras_ai_test_authorized_request(91, 'What does an Annual Observer Pass cost?'));
++	oras_ai_assert_contains('45.00 USD', $result->answer(), 'Verified price omitted.');
++	oras_ai_assert_not_contains('could not verify', $result->answer(), 'Unrequested fields were treated as failures.');
++});
++
++oras_ai_test('M9 Task 3I connector denial does not become scoped failure or expose healthy sibling', function (): void {
++	oras_ai_test_reset();
++	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), oras_ai_task3i_live());
++	$result = $orchestrator->answer(new ORAS_AI_Authorized_Request(91, 'What is my membership status and Annual Observer Pass price?', array('members'), false));
++	oras_ai_assert_same(ORAS_AI_Answer_Result::NO_EVIDENCE, $result->status(), 'Denied connector became an answer.');
++	oras_ai_assert_same(ORAS_AI_Answer_Orchestrator::NO_EVIDENCE_MESSAGE, $result->answer(), 'Denied data leaked through scoped assembly.');
++	oras_ai_assert_same(0, count($provider->calls), 'Denied request reached answer generation.');
++});
++
++oras_ai_test('M9 Task 3I ambiguous event identity retains clarification and zero model calls', function (): void {
++	oras_ai_test_reset();
++	list($orchestrator, $provider) = oras_ai_test_answer_fixture(new ORAS_AI_Evidence_Packet(), oras_ai_test_provider_success(), array(), oras_ai_task3i_live());
++	$result = $orchestrator->answer(oras_ai_test_authorized_request(91, 'When are the next AstroBlast and Public Night?'));
++	oras_ai_assert_contains('Please name the event', $result->answer(), 'Ambiguous event became a guessed subject.');
++	oras_ai_assert_same(0, count($provider->calls), 'Ambiguous event reached model generation.');
++});
+diff --git a/tests/openai/ScannerReasonQualityTest.php b/tests/openai/ScannerReasonQualityTest.php
+new file mode 100644
+index 0000000..796462f
+--- /dev/null
++++ b/tests/openai/ScannerReasonQualityTest.php
+@@ -0,0 +1,58 @@
++<?php
++declare(strict_types=1);
++
++foreach (array(
++	'past date plus pending approval' => array('Effective March 1, 2025. Board vote pending.', 'The notice has a future effective date and Board approval is pending.'),
++	'future date plus pending approval' => array('Effective March 1, 2035. Board vote pending.', 'Its effective date is in the future; approval is pending.'),
++	'missing effective date' => array('Board vote pending. Effective date unspecified.', 'The policy is not yet effective.'),
++	'conflicting dates' => array('Footer effective March 1, 2025; header effective July 1, 2035. Approval unclear.', 'The footer has a past effective date but the header has a future date.'),
++	'approval unknown' => array('Effective March 1, 2025. Approving resolution unspecified.', 'The effective date is past, so this policy is already effective.'),
++) as $label => $case) {
++	oras_ai_test('M9 Task 3I scanner no-clock boundary ' . $label, function () use ($case): void {
++		oras_ai_test_reset();
++		oras_ai_test_configure_paid_prices();
++		update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
++		$payload = oras_ai_test_classification(array('source_kind' => 'review', 'reason' => $case[1], 'validation' => array('stable_dynamic_separation' => false, 'critical_qualifications_preserved' => false)));
++		$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(200, array('output_text' => wp_json_encode(array('classification' => $payload))));
++		$result = (new ORAS_AI_OpenAI_Source_Classifier())->classify_source('Equipment notice', 'https://oras.org/equipment-notice/', 'page', $case[0]);
++		oras_ai_assert_same('review', $result->source_kind(), 'Disputed source left review.');
++		oras_ai_assert_true($result->requires_review(), 'Human review was removed.');
++		oras_ai_assert_same(array(), $result->stable_fragments(), 'Disputed policy admitted durable content.');
++		oras_ai_assert_same(array(), $result->excluded_dynamic_claims(), 'Non-mixed arrays changed.');
++		oras_ai_assert_same(array(), $result->dynamic_fact_types(), 'Non-mixed arrays changed.');
++		oras_ai_assert_true(in_array('unsupported_temporal_reference', $result->validation_errors(), true), 'No-clock date claim passed validation.');
++		oras_ai_assert_not_contains($case[1], $result->reason(), 'Unsupported relative-date reason survived.');
++		oras_ai_assert_contains('reference date', $result->reason(), 'Neutral human-review reason lost the validation limitation.');
++	});
++}
++
++oras_ai_test('M9 Task 3I approved unambiguous notice retains absolute date and safe disposition', function (): void {
++	oras_ai_test_reset();
++	oras_ai_test_configure_paid_prices();
++	update_option(ORAS_AI_OpenAI::OPTION_API_KEY, 'stored-test-key');
++	$reason = 'The source identifies Board resolution 2025-12, approval and an explicit effective date of March 1, 2025 without conflicting qualifications.';
++	$payload = oras_ai_test_classification(array('reason' => $reason));
++	$GLOBALS['oras_ai_test_remote_responses'][] = oras_ai_test_http_response(200, array('output_text' => wp_json_encode(array('classification' => $payload))));
++	$result = (new ORAS_AI_OpenAI_Source_Classifier())->classify_source('Approved orientation policy', 'https://oras.org/orientation-policy/', 'page', 'Approved by Board resolution 2025-12; effective March 1, 2025. Orientation is required for independent equipment use.');
++	oras_ai_assert_same('static_knowledge', $result->source_kind(), 'Unambiguous absolute-date policy was rejected.');
++	oras_ai_assert_same('valid', $result->validation_status(), 'Grounded absolute-date reason failed.');
++	oras_ai_assert_same($reason, $result->reason(), 'Grounded reason was overwritten.');
++	oras_ai_assert_false($result->requires_review(), 'Unambiguous policy disposition changed.');
++});
++
++foreach (array('future effective date', 'effective date is past', 'already effective', 'not yet in effect') as $claim) {
++	oras_ai_test('M9 Task 3I scanner rejects relative-date approval inference ' . $claim, function () use ($claim): void {
++		$result = ORAS_AI_Source_Classification_Result::from_array(oras_ai_test_classification(array('reason' => 'The policy is approved because it has a ' . $claim . '.')));
++		oras_ai_assert_same('review', $result->source_kind(), 'Relative time was used to approve knowledge without a reference clock.');
++		oras_ai_assert_same('low', $result->confidence(), 'Rejected temporal reasoning retained high confidence.');
++		oras_ai_assert_same(array(), $result->stable_fragments(), 'Unqualified policy content survived.');
++	});
++}
++
++oras_ai_test('M9 Task 3I grounded review ambiguity reason remains unchanged', function (): void {
++	$payload = oras_ai_test_classification(array('source_kind' => 'review', 'reason' => 'Board approval and applicability are unclear; the posted dates conflict.', 'validation' => array('stable_dynamic_separation' => false, 'critical_qualifications_preserved' => false)));
++	$result = ORAS_AI_Source_Classification_Result::from_array($payload);
++	oras_ai_assert_same('valid', $result->validation_status(), 'Valid review explanation became invalid.');
++	oras_ai_assert_same($payload['reason'], $result->reason(), 'Source-grounded ambiguity explanation was rewritten.');
++	oras_ai_assert_true($result->requires_review(), 'Human review requirement removed.');
++});

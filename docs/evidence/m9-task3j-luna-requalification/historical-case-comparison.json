@@ -1,0 +1,39 @@
+{
+  "historical_source_commit": "d93aa8ec236c9aa40f95b51d99fed0cc8c415c15",
+  "historical_full_results_path": "docs/evidence/m9-model-evaluation/v3-gpt-5.6-luna-full-results.json",
+  "historical_full_results_sha256": "c03f17de06723b01265dda2442f801255b7fbacc59292bd6f05687b73bfc735e",
+  "new_source_commit": "ced199a16b31699dddb66d7644f120874ca088a1",
+  "cases": [
+    {
+      "id": "P-one-down",
+      "historical_final_answer": "Your membership is active. Your membership level is Fixture Member. I could not verify current Observer Pass availability or purchasability.",
+      "historical_raw_outputs": [
+        "Your membership is active at the Fixture Member level. The Annual Observer Pass price isn’t provided in the available information."
+      ],
+      "new_final_answer": "Your membership is active. Your membership level is Fixture Member. I could not verify the Annual Observer Pass price from current WooCommerce information.",
+      "new_raw_outputs": [
+        "Your membership is active at the Fixture Member level. The Annual Observer Pass price is not provided in the available information."
+      ],
+      "new_frozen_rule_pass": true,
+      "new_task3j_focused_pass": true
+    },
+    {
+      "id": "M-price",
+      "historical_final_answer": "Annual Observer Pass price: 45.00 USD. Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+      "historical_raw_outputs": [
+        "An Annual Observer Pass costs **$45.00 USD**."
+      ],
+      "new_final_answer": "Annual Observer Pass price: 45.00 USD. Annual Observer Pass is currently purchasable. Use the linked ORAS product page to continue through WooCommerce checkout.",
+      "new_raw_outputs": [
+        "An Annual Observer Pass costs $45.00 USD."
+      ],
+      "new_frozen_rule_pass": true,
+      "new_task3j_focused_pass": false
+    }
+  ],
+  "not_rerun": [
+    "X-review",
+    "C-broad",
+    "W-weekend"
+  ]
+}

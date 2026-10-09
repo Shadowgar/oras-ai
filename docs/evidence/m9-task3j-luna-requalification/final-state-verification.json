@@ -1,0 +1,27 @@
+{
+  "checked_at_utc": "2026-10-09T01:22:38.946110+00:00",
+  "branch": "m9/production-release",
+  "head": "ced199a16b31699dddb66d7644f120874ca088a1",
+  "origin_ahead_behind": [
+    0,
+    0
+  ],
+  "tracked_changes": [],
+  "staged_changes": [],
+  "untracked_scope": "docs/evidence/m9-task3j-luna-requalification/ only",
+  "new_live_evidence_committed": false,
+  "new_live_evidence_pushed": false,
+  "git_diff_check_exit_code": 0,
+  "source_files_match_frozen_commit": true,
+  "preserved_paths_match_sha256": 94,
+  "raw_journal_results_match_report": true,
+  "all_42_report_items_present": true,
+  "artifact_hashes_match": true,
+  "historical_human_cards": 69,
+  "blank_reviewer_fields": 690,
+  "version": "0.2.1",
+  "focused_qualification": "FAIL",
+  "full_run": "NOT_RUN",
+  "repository_clean": false,
+  "worktree_note": "Intentionally untracked Task 3J evidence only; correction commit was clean after push."
+}

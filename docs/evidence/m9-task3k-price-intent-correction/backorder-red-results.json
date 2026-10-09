@@ -1,0 +1,9 @@
+{
+  "command": "php tools/run-tests.php",
+  "exit_code": 1,
+  "new_registered_cases": 34,
+  "failures": [
+    "FAIL M9 Task 3K intent matrix backorder availability preserves qualified handoff",
+    "FAIL M8 Task 3 qualified Woo backorder remains a member-driven handoff"
+  ]
+}

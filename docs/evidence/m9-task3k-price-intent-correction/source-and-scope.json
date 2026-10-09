@@ -1,0 +1,25 @@
+{
+  "branch": "m9/production-release",
+  "baseline_head": "ced199a16b31699dddb66d7644f120874ca088a1",
+  "production_paths": [
+    "includes/class-oras-ai-answer-orchestrator.php",
+    "includes/class-oras-ai-woocommerce-connector.php"
+  ],
+  "new_test_paths": [
+    "tests/actions/PassIntentQualityTest.php"
+  ],
+  "changed_files_sha256": {
+    "includes/class-oras-ai-answer-orchestrator.php": "2e795c9980e7f2e7fcba82a1c7a823164384588febf9d34c68433c74e63d4f09",
+    "includes/class-oras-ai-woocommerce-connector.php": "015a2d83c23a8fba91dceae49cdd801fcf93d831df17fb1bbc8a4a098e1a76dd",
+    "tests/actions/PassIntentQualityTest.php": "e0da5527d47f972a0c63ef8a5e2e156075b89c7f1a6cb4ecb4a90125bb6cab27"
+  },
+  "all_other_405_tracked_paths_unchanged": true,
+  "working_source_fingerprint_sha256": "63153084c07adecbc9d6bc0eb112f1b6316281e3ab900039855281321ecded54",
+  "source_tree_uncommitted": true,
+  "corpus_version": "oras-release-core-v3",
+  "corpus_sha256": "360b93db97999563182018f2a858ad28d107605298d2f44b96fa1272a41b1411",
+  "production_method_scope": "bounded_pass_answer only; WooCommerce offering intent and price-field routing recognize singular/plural price/cost",
+  "neighbor_review": "bounded_membership_answer and bounded_event_answer remain unchanged; new membership-only/event-only controls ignore admitted unrelated siblings; existing event/backorder/combined regressions preserved",
+  "not_committed": true,
+  "not_pushed": true
+}
